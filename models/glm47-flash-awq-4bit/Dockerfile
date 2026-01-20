@@ -14,11 +14,10 @@
 FROM runpod/pytorch:1.0.3-cu1290-torch291-ubuntu2404
 
 # Install vLLM and dependencies
-# Note: vLLM nightly has glm47 tool parser, but wheels are currently unavailable for x86_64
-# Using PyPI stable vLLM as fallback - glm4_moe_lite will use TransformersMoE backend
+# Note: Using PyPI stable vLLM - the model will load via --trust-remote-code
+# which allows it to use its own modeling code from HuggingFace
 # Note: --break-system-packages needed for Ubuntu 24.04 externally managed Python
-RUN pip install --break-system-packages -U vllm huggingface_hub && \
-    pip install --break-system-packages git+https://github.com/huggingface/transformers.git
+RUN pip install --break-system-packages -U vllm huggingface_hub
 
 # Install Node.js 22.x and GitHub CLI in single layer to reduce image size
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
