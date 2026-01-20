@@ -17,11 +17,11 @@ FROM runpod/pytorch:1.0.3-cu1290-torch291-ubuntu2404
 # Note: vLLM nightly is required for native Glm4MoeLiteForCausalLM support
 # The commit-specific wheel URL ensures reproducible builds
 # Note: --break-system-packages needed for Ubuntu 24.04 externally managed Python
-ENV VLLM_WHEEL_URL="https://wheels.vllm.ai/22375f8d13dbf5c201c6f1564f72310193930816/vllm-0.14.0rc2.dev187%2Bg22375f8d1-cp38-abi3-manylinux_2_31_x86_64.whl"
-RUN curl -L -o /tmp/vllm.whl "${VLLM_WHEEL_URL}" && \
-    pip install --break-system-packages /tmp/vllm.whl huggingface_hub && \
+RUN VLLM_WHEEL="vllm-0.14.0rc2.dev187+g22375f8d1-cp38-abi3-manylinux_2_31_x86_64.whl" && \
+    curl -L -o "/tmp/${VLLM_WHEEL}" "https://wheels.vllm.ai/22375f8d13dbf5c201c6f1564f72310193930816/vllm-0.14.0rc2.dev187%2Bg22375f8d1-cp38-abi3-manylinux_2_31_x86_64.whl" && \
+    pip install --break-system-packages "/tmp/${VLLM_WHEEL}" huggingface_hub && \
     pip install --break-system-packages git+https://github.com/huggingface/transformers.git && \
-    rm /tmp/vllm.whl
+    rm "/tmp/${VLLM_WHEEL}"
 
 # Install Node.js 22.x and GitHub CLI in single layer to reduce image size
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
