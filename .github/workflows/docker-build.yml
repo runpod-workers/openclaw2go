@@ -1,0 +1,284 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    paths:
+      - 'models/**'
+      - 'Dockerfile'
+      - '.github/workflows/docker-build.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'Model to build (or all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - glm47-flash-fp16
+          - glm47-flash-awq-4bit
+          - glm47-reap-w4a16
+          - base
+
+jobs:
+  build-glm47-flash-awq-4bit:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.model == 'all' || github.event.inputs.model == 'glm47-flash-awq-4bit' || github.event.inputs.model == '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clear space
+        run: |
+          rm -rf /usr/share/dotnet
+          rm -rf /opt/ghc
+          rm -rf "/usr/local/share/boost"
+          rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine build type
+        id: build_type
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # Tag push: use tag name (e.g., v1.0.0)
+            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
+            # Main branch: use 'latest'
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            # Other branches: use 'dev-{branch-name}'
+            BRANCH_NAME=$(echo ${GITHUB_REF##refs/heads/} | sed 's/\//-/g')
+            echo "VERSION=dev-${BRANCH_NAME}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: models/glm47-flash-awq-4bit
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-awq-4bit:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/clawdbot-glm47-flash-awq-4bit:latest', env.DOCKERHUB_REPO) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  build-glm47-flash-fp16:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.model == 'all' || github.event.inputs.model == 'glm47-flash-fp16' || github.event.inputs.model == '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clear space
+        run: |
+          rm -rf /usr/share/dotnet
+          rm -rf /opt/ghc
+          rm -rf "/usr/local/share/boost"
+          rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine build type
+        id: build_type
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            BRANCH_NAME=$(echo ${GITHUB_REF##refs/heads/} | sed 's/\//-/g')
+            echo "VERSION=dev-${BRANCH_NAME}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: models/glm47-flash-fp16
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-fp16:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/clawdbot-glm47-flash-fp16:latest', env.DOCKERHUB_REPO) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  build-glm47-reap-w4a16:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.model == 'all' || github.event.inputs.model == 'glm47-reap-w4a16' || github.event.inputs.model == '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clear space
+        run: |
+          rm -rf /usr/share/dotnet
+          rm -rf /opt/ghc
+          rm -rf "/usr/local/share/boost"
+          rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine build type
+        id: build_type
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            BRANCH_NAME=$(echo ${GITHUB_REF##refs/heads/} | sed 's/\//-/g')
+            echo "VERSION=dev-${BRANCH_NAME}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: models/glm47-reap-w4a16
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-reap-w4a16:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/clawdbot-glm47-reap-w4a16:latest', env.DOCKERHUB_REPO) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  build-base:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.model == 'all' || github.event.inputs.model == 'base' || github.event.inputs.model == '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clear space
+        run: |
+          rm -rf /usr/share/dotnet
+          rm -rf /opt/ghc
+          rm -rf "/usr/local/share/boost"
+          rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine build type
+        id: build_type
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            BRANCH_NAME=$(echo ${GITHUB_REF##refs/heads/} | sed 's/\//-/g')
+            echo "VERSION=dev-${BRANCH_NAME}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_REPO }}/clawdbot-vllm:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/clawdbot-vllm:latest', env.DOCKERHUB_REPO) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64

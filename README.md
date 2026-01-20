@@ -1,151 +1,161 @@
-# Clawdbot on RunPod with Local Coding Model
+# Clawdbot on RunPod with vLLM
 
-Run Clawdbot with open-source coding models on RunPod using vLLM. Chat with your AI assistant via Telegram!
+Run Clawdbot with GLM-4.7 and other open-source coding models on RunPod using vLLM. Chat with your AI assistant via Telegram!
 
-## Overview
+## Model Comparison
 
-This project provides a complete setup for running Clawdbot with local coding models on RunPod infrastructure. It uses vLLM for high-performance inference with tool calling support.
+| Model | GPU | VRAM | Cost/hr | Context | Folder |
+|-------|-----|------|---------|---------|--------|
+| **Base (Qwen2.5-7B)** | Any | 16GB | $0.50 | 16k | `Dockerfile` |
+| **GLM-4.7-Flash FP16** | H100/A100 80GB | 56GB | $1.20-1.99 | 32k-64k | `models/glm47-flash-fp16/` |
+| **GLM-4.7-Flash AWQ 4-bit** | A100 80GB | 71GB | $1.19 | 114k | `models/glm47-flash-awq-4bit/` |
+| **GLM-4.7-REAP W4A16** | B200 | 108GB | $5.19 | 32k | `models/glm47-reap-w4a16/` |
 
-## Quick Start (Docker Image - Recommended)
+### Recommended: GLM-4.7-Flash AWQ 4-bit
 
-### Option A: Use Pre-built Docker Image
+Best value option with full 114k context window at $1.19/hr on A100 80GB.
 
-```bash
-# On RunPod, create a pod with:
-# - Image: your-dockerhub-username/clawdbot-vllm:latest
-# - GPU: 1x H100 80GB (or larger for bigger models)
-# - Volume: 150GB at /workspace
-# - Ports: 8000/http, 18789/http, 22/tcp
+## Quick Start
 
-# Environment variables:
-MODEL_NAME=Qwen/Qwen2.5-Coder-7B-Instruct
-VLLM_API_KEY=your-secure-key
-```
-
-### Option B: Build Docker Image Yourself
+### 1. Choose Your Model
 
 ```bash
-# Clone and build
-git clone https://github.com/your-repo/runpod-clawdbot.git
-cd runpod-clawdbot
+# GLM-4.7-Flash AWQ 4-bit (Best value, A100 80GB)
+IMAGE=yourusername/clawdbot-glm47-flash-awq-4bit:latest
 
-# Build the image
-docker build -t clawdbot-vllm:latest .
+# GLM-4.7-Flash FP16 (Full precision, H100/A100 80GB)
+IMAGE=yourusername/clawdbot-glm47-flash-fp16:latest
 
-# Push to Docker Hub (for RunPod to use)
-docker tag clawdbot-vllm:latest your-username/clawdbot-vllm:latest
-docker push your-username/clawdbot-vllm:latest
+# GLM-4.7-REAP W4A16 (High-end, B200)
+IMAGE=yourusername/clawdbot-glm47-reap-w4a16:latest
+
+# Base (Qwen2.5-7B, any GPU)
+IMAGE=yourusername/clawdbot-vllm:latest
 ```
 
-### Set Up Telegram (After Pod is Running)
+### 2. Create RunPod Pod
+
+- **Image**: Your chosen image from above
+- **GPU**: Match model requirements
+- **Volume**: 150GB at `/workspace`
+- **Container Disk**: 50-100GB (depending on model)
+- **Ports**: `8000/http, 18789/http, 22/tcp`
+
+### 3. Set Environment Variables
 
 ```bash
-# SSH into your pod
-ssh root@YOUR_POD_IP -p SSH_PORT
-
-# Add your Telegram bot token (get it from @BotFather)
-clawdbot channels add --channel telegram --token "YOUR_BOT_TOKEN"
-
-# Restart gateway
-pkill clawdbot-gateway && clawdbot gateway &
-
-# Check status
-clawdbot channels status
+VLLM_API_KEY=your-secure-key           # Required
+TELEGRAM_BOT_TOKEN=your-telegram-token  # Optional
+GITHUB_TOKEN=ghp_xxx                    # Optional
 ```
 
-Now message your bot on Telegram! 🎉
-
----
-
-## Manual Setup (Without Docker)
-
-### Phase 1: Deploy to RunPod
-
-1. **Create a RunPod Pod**
-
-   Go to [RunPod Console](https://runpod.io/console/pods) and create a new pod:
-
-   - **Template**: Select `vllm/vllm-openai:v0.12.0`
-   - **GPU**: 1x NVIDIA H100 PCIe (80GB)
-   - **Container Disk**: 50 GB
-   - **Volume**: 100 GB
-   - **Ports**: 8000/http, 8888/http, 22/tcp
-
-2. **SSH into your pod and run the setup**
-
-   ```bash
-   # Clone this repo
-   git clone https://github.com/your-repo/runpod-clawdbot.git
-   cd runpod-clawdbot
-
-   # Set environment variables
-   export VLLM_API_KEY="your-secure-key"
-   export MODEL_NAME="Qwen/Qwen3-30B-A3B-Instruct"
-   export SERVED_MODEL_NAME="qwen3-30b-a3b"
-   export TOOL_CALL_PARSER="hermes"
-   export HF_HOME="/workspace/huggingface"
-
-   # Start vLLM server
-   ./scripts/start-vllm.sh
-   ```
-
-3. **Wait for model to load** (first run downloads ~60GB)
-
-4. **Test the server** (in a new terminal)
-
-   ```bash
-   ./tests/test-vllm.sh
-   ./tests/test-tool-calling.sh
-   ```
-
-5. **Install and configure Clawdbot**
-
-   ```bash
-   export RUNPOD_POD_ID="your-pod-id"  # Found in RunPod console URL
-   ./scripts/setup-clawdbot.sh
-   ```
-
-### Phase 2: Upgrade to GLM-4.7 (Optional)
-
-For SOTA tool calling performance:
+### 4. Test It
 
 ```bash
-# Stop current vLLM server (Ctrl+C)
+# Health check
+curl http://localhost:8000/health
 
-# Update configuration
-export MODEL_NAME="zai-org/GLM-4.7-FP8"
-export SERVED_MODEL_NAME="glm-4.7"
-export TOOL_CALL_PARSER="glm47"
-export REASONING_PARSER="glm45"
-export TENSOR_PARALLEL_SIZE="4"  # or "2" for H200
-
-# Upgrade vLLM to nightly (required for GLM-4.7)
-pip install -U vllm --pre
-
-# Restart vLLM
-./scripts/start-vllm.sh
+# Chat completion
+curl http://localhost:8000/v1/chat/completions \
+  -H "Authorization: Bearer $VLLM_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "glm-4.7-flash",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
 ```
+
+## Docker Images
+
+Images are automatically built and pushed to Docker Hub via GitHub Actions.
+
+| Image | Description |
+|-------|-------------|
+| `clawdbot-glm47-flash-awq-4bit` | GLM-4.7-Flash AWQ 4-bit for A100 80GB |
+| `clawdbot-glm47-flash-fp16` | GLM-4.7-Flash FP16 for H100/A100 80GB |
+| `clawdbot-glm47-reap-w4a16` | GLM-4.7-REAP W4A16 for B200 |
+| `clawdbot-vllm` | Base image with Qwen2.5-7B |
 
 ## Project Structure
 
 ```
 runpod-clawdbot/
-├── templates/
-│   └── clawdbot-vllm.json    # RunPod template configurations (all tiers)
+├── README.md                           # This file
+├── .github/
+│   └── workflows/
+│       └── docker-build.yml            # Build & push to Docker Hub
+│
+├── models/
+│   ├── glm47-flash-fp16/              # Full precision FP16 (H100/A100 80GB)
+│   │   ├── README.md
+│   │   ├── Dockerfile
+│   │   └── entrypoint.sh
+│   │
+│   ├── glm47-flash-awq-4bit/          # AWQ 4-bit quantized (A100 80GB)
+│   │   ├── README.md
+│   │   ├── Dockerfile
+│   │   └── entrypoint.sh
+│   │
+│   └── glm47-reap-w4a16/              # Pruned W4A16 quantized (B200)
+│       ├── README.md
+│       ├── Dockerfile
+│       └── entrypoint.sh
+│
 ├── scripts/
-│   ├── start-vllm.sh         # vLLM startup script
-│   └── setup-clawdbot.sh     # Clawdbot installation script
+│   ├── setup-clawdbot.sh
+│   └── start-vllm.sh
+│
 ├── config/
-│   ├── clawdbot.json         # Main config template
-│   ├── clawdbot-tier1.json   # Qwen3-30B-A3B config
-│   ├── clawdbot-tier2.json   # MiMo-V2-Flash config
-│   └── clawdbot-tier3.json   # GLM-4.7 config
+│   ├── clawdbot.json
+│   └── workspace/
+│
+├── templates/
+│   └── clawdbot-vllm.json
+│
 ├── tests/
-│   ├── test-vllm.sh          # vLLM server tests
-│   └── test-tool-calling.sh  # Tool calling tests
-├── docker-compose.yml        # Local development setup
-├── .env.example              # Environment variables template
-└── README.md                 # This file
+│   ├── test-vllm.sh
+│   └── test-tool-calling.sh
+│
+├── Dockerfile                          # Base image (Qwen2.5-7B)
+├── docker-compose.yml
+└── .env.example
+```
+
+## GitHub Actions
+
+Images are built automatically on:
+- Push to `main` → tagged as `:latest`
+- Push to other branches → tagged as `:dev-{branch-name}` (e.g., `:dev-feature-xyz`)
+- Push git tag (e.g., `v1.0.0`) → tagged as `:v1.0.0` + `:latest`
+- Pull requests → build only, no push (validation)
+- Manual workflow dispatch → select specific model
+
+### Required Setup
+
+**Secrets** (Repository → Settings → Secrets → Actions):
+
+| Secret | Description |
+|--------|-------------|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | Docker Hub access token (not password) |
+
+**Variables** (Repository → Settings → Variables → Actions):
+
+| Variable | Description |
+|----------|-------------|
+| `DOCKERHUB_REPO` | (Optional) Custom repo name, defaults to username |
+
+### Manual Build
+
+```bash
+# Build locally
+docker build -t clawdbot-glm47-flash-awq-4bit models/glm47-flash-awq-4bit/
+docker build -t clawdbot-glm47-flash-fp16 models/glm47-flash-fp16/
+docker build -t clawdbot-glm47-reap-w4a16 models/glm47-reap-w4a16/
+
+# Push to Docker Hub
+docker tag clawdbot-glm47-flash-awq-4bit yourusername/clawdbot-glm47-flash-awq-4bit:latest
+docker push yourusername/clawdbot-glm47-flash-awq-4bit:latest
 ```
 
 ## Configuration
@@ -155,24 +165,23 @@ runpod-clawdbot/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `VLLM_API_KEY` | `changeme` | API key for vLLM authentication |
-| `MODEL_NAME` | `Qwen/Qwen3-30B-A3B-Instruct` | HuggingFace model ID |
-| `SERVED_MODEL_NAME` | `qwen3-30b-a3b` | Model name in API responses |
-| `MAX_MODEL_LEN` | `32768` | Maximum context length |
-| `TENSOR_PARALLEL_SIZE` | `auto` | Number of GPUs for tensor parallelism |
-| `TOOL_CALL_PARSER` | `hermes` | Parser for tool/function calling |
-| `REASONING_PARSER` | `` | Reasoning parser (GLM-4.7 only) |
-| `HF_HOME` | `/workspace/huggingface` | HuggingFace cache directory |
+| `MODEL_NAME` | Model-specific | HuggingFace model ID |
+| `SERVED_MODEL_NAME` | `glm-4.7-flash` | Model name in API responses |
+| `MAX_MODEL_LEN` | Auto-detected | Maximum context length |
+| `GPU_MEMORY_UTILIZATION` | `0.92` | GPU memory to use |
+| `TELEGRAM_BOT_TOKEN` | | Telegram bot token from @BotFather |
+| `GITHUB_TOKEN` | | GitHub PAT for git/gh operations |
 
 ### Clawdbot Configuration
 
-Edit `~/.clawdbot/clawdbot.json` to point to your vLLM endpoint:
+Config is auto-generated at `/workspace/.clawdbot/clawdbot.json`:
 
 ```json
 {
   "models": {
     "providers": {
-      "runpod-vllm": {
-        "baseUrl": "https://<POD_ID>-8000.proxy.runpod.net/v1",
+      "local-vllm": {
+        "baseUrl": "http://localhost:8000/v1",
         "apiKey": "your-vllm-api-key",
         "api": "openai-completions"
       }
@@ -181,132 +190,95 @@ Edit `~/.clawdbot/clawdbot.json` to point to your vLLM endpoint:
 }
 ```
 
-## Hardware Requirements
+## Telegram Setup
 
-### Tier 1: Qwen3-30B-A3B (~$2/hr)
-- **GPU**: 1x H100 80GB or 1x H200
-- **VRAM**: ~45GB (3B active parameters)
-- **Best for**: Validation, cost-conscious usage
+1. Create a bot with [@BotFather](https://t.me/BotFather)
+2. Copy the bot token
+3. Set `TELEGRAM_BOT_TOKEN` environment variable
+4. Start or restart the pod
+5. Message your bot on Telegram!
 
-### Tier 2: MiMo-V2-Flash (~$4/hr)
-- **GPU**: 2x H100 80GB or 1x H200
-- **VRAM**: ~80GB total
-- **Best for**: Fast inference (150 tok/s)
+## GitHub Authentication
 
-### Tier 3: GLM-4.7-FP8 (~$7-8/hr)
-- **GPU**: 4x H100 80GB or 2x H200
-- **VRAM**: ~150GB total
-- **Best for**: SOTA tool calling, agentic workflows
+For git operations inside the container:
+
+1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens)
+2. Select scopes: `repo`, `read:org`, `workflow`
+3. Set `GITHUB_TOKEN` environment variable
+4. Token is auto-configured on startup
 
 ## Testing
 
-### Basic vLLM Tests
-
 ```bash
-# Health check
+# Basic health check
 curl http://localhost:8000/health
 
 # List models
 curl http://localhost:8000/v1/models \
   -H "Authorization: Bearer $VLLM_API_KEY"
 
-# Chat completion
+# Tool calling test
 curl http://localhost:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
   -H "Authorization: Bearer $VLLM_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{
-    "model": "qwen3-30b-a3b",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "max_tokens": 50
+    "model": "glm-4.7-flash",
+    "messages": [{"role": "user", "content": "What is 2+2?"}],
+    "tools": [{
+      "type": "function",
+      "function": {
+        "name": "calculate",
+        "description": "Perform a calculation",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "expression": {"type": "string"}
+          }
+        }
+      }
+    }]
   }'
 ```
-
-### Run Full Test Suite
-
-```bash
-./tests/test-vllm.sh
-./tests/test-tool-calling.sh
-```
-
-## Local Development
-
-For local testing with Docker (requires NVIDIA GPU):
-
-```bash
-# Copy environment file
-cp .env.example .env
-# Edit .env with your values
-
-# Start vLLM server
-docker-compose up vllm
-
-# Run tests
-docker-compose --profile test up tests
-```
-
-## Model Comparison Details
-
-### Qwen3-30B-A3B-Instruct
-- **Architecture**: MoE (30B total, 3B active)
-- **Context**: 32K tokens
-- **SWE-bench Verified**: 69.6%
-- **Tool Parser**: `hermes`
-- **Pros**: Fast, efficient, great value
-- **Cons**: Smaller active params
-
-### MiMo-V2-Flash
-- **Architecture**: MoE (309B total, 15B active)
-- **Context**: 256K tokens
-- **SWE-bench Verified**: 73.4%
-- **Speed**: 150 tokens/second (fastest)
-- **License**: MIT
-- **Pros**: Speed + quality balance
-- **Cons**: Requires 2 GPUs
-
-### GLM-4.7-FP8
-- **Architecture**: MoE (358B total, 32B active)
-- **Context**: 200K tokens
-- **SWE-bench Verified**: 73.8%
-- **τ²-Bench**: 84.7% (SOTA)
-- **Tool Parser**: `glm47`
-- **Innovation**: Interleaved thinking
-- **Pros**: Best tool calling, preserved reasoning
-- **Cons**: Requires 4 GPUs, vLLM nightly
 
 ## Troubleshooting
 
 ### vLLM doesn't start
-1. Check GPU availability: `nvidia-smi`
-2. Verify VRAM is sufficient
-3. Check HuggingFace cache: `du -sh $HF_HOME`
-4. Review vLLM logs for OOM errors
-
-### Tool calling not working
-1. Verify `--enable-auto-tool-choice` is set
-2. Check tool parser matches model (e.g., `glm47` for GLM-4.7)
-3. Run `./tests/test-tool-calling.sh` for diagnostics
+- Check GPU availability: `nvidia-smi`
+- Verify VRAM is sufficient for model
+- Check logs: `journalctl -u vllm` or container logs
 
 ### Model loading is slow
-- First load downloads 30-100GB from HuggingFace
-- Use network volume to persist cache across pod restarts
-- Consider pre-downloading to RunPod volume
+- First load downloads model from HuggingFace (can be 18-60GB)
+- Use network volume to persist model across restarts
+- AWQ 4-bit model (18GB) loads faster than FP16 (31GB)
 
-### Clawdbot can't connect
-1. Verify vLLM is running: `curl http://localhost:8000/health`
-2. Check firewall allows port 8000
-3. Verify Pod ID in config matches RunPod URL
-4. Test with curl before Clawdbot
+### Tool calling not working
+- Verify `--enable-auto-tool-choice` is set
+- Check tool parser matches model (`glm47` for GLM-4.7)
+- Run test script: `./tests/test-tool-calling.sh`
+
+### Orphaned GPU memory
+- If vLLM crashes, GPU memory may stay allocated
+- Restart the pod to clear memory
+- Check with: `nvidia-smi`
+
+### SSH port changes
+- RunPod assigns random SSH ports after restart
+- Check port via RunPod console or API
+- Use RunPod web terminal as alternative
+
+## Known Issues
+
+1. **GGUF not supported** - vLLM doesn't support GLM-4.7's GGUF format. Use AWQ.
+2. **Container disk doesn't persist** - Only `/workspace` survives restarts.
+3. **B200 requires CUDA 13.1+** - The REAP image includes this automatically.
 
 ## Cost Optimization
 
-1. **Use Tier 1 for development** - $2/hr vs $8/hr
-2. **Stop pods when not in use** - RunPod charges per minute
+1. **Use AWQ 4-bit** - Same model, lower VRAM, cheaper GPU ($1.19 vs $1.99/hr)
+2. **Stop pods when idle** - RunPod charges per minute
 3. **Use network volumes** - Avoid re-downloading models
 4. **Consider spot instances** - Up to 80% cheaper
-
-## License
-
-MIT
 
 ## Resources
 
@@ -314,4 +286,7 @@ MIT
 - [vLLM Documentation](https://docs.vllm.ai/)
 - [RunPod Documentation](https://docs.runpod.io/)
 - [GLM-4.7 Announcement](https://z.ai/blog/glm-4.7)
-- [MiMo-V2-Flash GitHub](https://github.com/XiaomiMiMo/MiMo-V2-Flash)
+
+## License
+
+MIT
