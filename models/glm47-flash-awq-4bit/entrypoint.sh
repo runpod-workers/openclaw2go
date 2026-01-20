@@ -40,7 +40,8 @@ vllm serve "$MODEL_PATH" \
     --trust-remote-code \
     --enable-auto-tool-choice \
     --tool-call-parser glm47 \
-    --reasoning-parser glm45 &
+    --reasoning-parser glm45 \
+    --block-size 32 &
 
 VLLM_PID=$!
 
