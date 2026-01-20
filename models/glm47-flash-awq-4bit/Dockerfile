@@ -18,11 +18,10 @@ FROM runpod/pytorch:1.0.3-cu1290-torch291-ubuntu2404
 # 1. vLLM nightly from wheels.vllm.ai/nightly/cu130 (x86_64 wheels available) - for glm47 tool parser
 # 2. transformers from git (NOT PyPI!) - for glm4_moe_lite architecture
 # Note: --break-system-packages needed for Ubuntu 24.04 externally managed Python
-RUN pip install --break-system-packages -U vllm \
-    --pre \
-    --extra-index-url https://wheels.vllm.ai/nightly/cu130 && \
+# Note: Using pip install from direct URL to force nightly wheel
+RUN pip install --break-system-packages -U "vllm @ https://wheels.vllm.ai/nightly/cu130/vllm-0.14.0rc2.dev185+g226134080.cu130-cp38-abi3-manylinux_2_35_x86_64.whl" && \
     pip install --break-system-packages huggingface_hub && \
-    pip install --break-system-packages git+https://github.com/huggingface/transformers.git
+    pip install --break-system-packages --no-deps git+https://github.com/huggingface/transformers.git
 
 # Install Node.js 22.x and GitHub CLI in single layer to reduce image size
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
