@@ -64,6 +64,8 @@ jobs:
             ${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-awq-4bit:${{ env.VERSION }}
             ${{ env.ALSO_LATEST == 'true' && format('{0}/clawdbot-glm47-flash-awq-4bit:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-awq-4bit:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-awq-4bit:buildcache,mode=max
 
   # Disabled for now - only building AWQ 4-bit
   # build-glm47-flash-fp16:
