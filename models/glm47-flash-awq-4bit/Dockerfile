@@ -15,11 +15,11 @@ FROM runpod/pytorch:1.0.3-cu1290-torch291-ubuntu2404
 
 # Install vLLM nightly (required for glm47 tool parser) and huggingface_hub
 # GLM-4.7 models need vLLM nightly from wheels.vllm.ai, NOT PyPI stable!
-RUN uv pip install --system -U vllm \
-    --pre \
+RUN uv pip install --system --break-system-packages -U vllm \
+    --prerelease=allow \
     --index-url https://pypi.org/simple \
     --extra-index-url https://wheels.vllm.ai/nightly && \
-    uv pip install --system huggingface_hub
+    uv pip install --system --break-system-packages huggingface_hub
 
 # Install Node.js 22.x and GitHub CLI in single layer to reduce image size
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
