@@ -14,6 +14,12 @@ if [ -f /start.sh ]; then
     sleep 5
 fi
 
+# Persist vLLM cache (CUDA graphs, torch compile) on network storage
+# This speeds up subsequent pod starts by reusing cached compiled kernels
+export XDG_CACHE_HOME=/workspace/.cache
+export HF_HOME=/workspace/.cache/huggingface
+mkdir -p /workspace/.cache/vllm /workspace/.cache/huggingface
+
 # Download model if not present
 MODEL_PATH="${MODEL_PATH:-/workspace/models/GLM-4.7-Flash-AWQ-4bit}"
 if [ ! -d "$MODEL_PATH" ]; then
@@ -58,7 +64,8 @@ vllm serve "$MODEL_PATH" \
     --enable-auto-tool-choice \
     --tool-call-parser glm47 \
     --reasoning-parser glm45 \
-    --block-size 32 &
+    --block-size 32 \
+    --disable-log-requests &
 
 VLLM_PID=$!
 
