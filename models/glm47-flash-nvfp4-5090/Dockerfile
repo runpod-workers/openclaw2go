@@ -27,10 +27,11 @@ RUN pip install uv
 
 # Upgrade PyTorch to 2.9 nightly (required for vLLM 0.14+ and SM120)
 # Then install vLLM and dependencies
-RUN uv pip install --system --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128 && \
-    uv pip install --system vllm && \
-    uv pip install --system "transformers>=5.0.0rc2" --pre && \
-    uv pip install --system "huggingface_hub[cli]"
+# --break-system-packages needed for NGC containers with externally-managed Python
+RUN uv pip install --system --break-system-packages --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128 && \
+    uv pip install --system --break-system-packages vllm && \
+    uv pip install --system --break-system-packages "transformers>=5.0.0rc2" --pre && \
+    uv pip install --system --break-system-packages "huggingface_hub[cli]"
 
 # Install Node.js 22.x and GitHub CLI in single layer to reduce image size
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
