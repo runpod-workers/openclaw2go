@@ -5,7 +5,7 @@
 # Context: 200,000 tokens
 # Cost: ~$0.89/hr (RTX 5090)
 
-FROM vllm/vllm-openai:v0.8.5
+FROM vllm/vllm-openai:latest
 
 # Critical: Force Flash Attention v2 (v3 doesn't work on Blackwell yet)
 ENV VLLM_FLASH_ATTN_VERSION=2
