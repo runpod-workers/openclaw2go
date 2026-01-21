@@ -120,7 +120,7 @@ if [ ! -f "$CLAWDBOT_HOME/clawdbot.json" ]; then
           "maxTokens": 8192,
           "reasoning": false,
           "input": ["text"],
-          "cost": { "input": 0, "output": 0 }
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
         }]
       }
     }
