@@ -130,16 +130,20 @@ claude
 
 ## Benchmark Results
 
-Tested on A100 80GB PCIe:
+Tested on A100 80GB PCIe with optimizations enabled:
 
-| Test | Prompt Tokens | Output Tokens | Time | Speed |
-|------|---------------|---------------|------|-------|
-| Medium message | 17 | 100 | 1.5s | **68.6 tok/s** |
-| Code generation | 15 | 127 | 1.8s | **69.1 tok/s** |
-| Long generation | 14 | 400 | 4.2s | **94.2 tok/s** |
-| Tool calling | 150 | 79 | 1.3s | **59.3 tok/s** |
+| Test | Output Tokens | Time | Speed |
+|------|---------------|------|-------|
+| 2,000 tokens | 2,000 | 21.2s | **94.2 tok/s** |
+| 5,000 tokens | 3,590 | 39.4s | **91.1 tok/s** |
+| 10,000 tokens | 10,000 | 119.8s | **83.4 tok/s** |
+| Tool calling | 132 | 1.5s | **86.6 tok/s** |
 
-**Typical throughput: 60-95 tokens/second**
+**Sustained throughput: 83-94 tokens/second**
+
+Prefix caching benefit (same system prompt):
+- 1st request: 2.77s (cache miss)
+- 2nd request: 2.20s (cache hit, -20%)
 
 Run the benchmark yourself:
 ```bash
