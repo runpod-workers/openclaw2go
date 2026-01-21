@@ -1,11 +1,11 @@
 # Dockerfile for GLM-4.7-Flash NVFP4 on RTX 5090 (Blackwell SM120)
-# Using vLLM official image - much smaller than NGC (~8GB vs 17GB)
+# Using vLLM v0.8.5 (CUDA 12.8) - latest requires CUDA 12.9 which RunPod doesn't support yet
 #
 # Model: GadflyII/GLM-4.7-Flash-NVFP4
 # Context: 200,000 tokens
 # Cost: ~$0.89/hr (RTX 5090)
 
-FROM vllm/vllm-openai:latest
+FROM vllm/vllm-openai:v0.8.5
 
 # Critical: Force Flash Attention v2 (v3 doesn't work on Blackwell yet)
 ENV VLLM_FLASH_ATTN_VERSION=2
