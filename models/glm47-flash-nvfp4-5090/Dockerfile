@@ -2,8 +2,9 @@
 # Model: Gadflyll/GLM-4.7-Flash-NVFP4 (~20.4GB on disk, ~30GB VRAM total with MLA)
 #
 # VERSIONS:
-# - Base: nvcr.io/nvidia/pytorch:25.02-py3 (CUDA 12.8, PyTorch 2.7 - proven for RTX 5090)
-# - vLLM: Latest prebuilt wheel (has SM120 support since CUDA 12.8)
+# - Base: nvcr.io/nvidia/pytorch:25.02-py3 (CUDA 12.8)
+# - PyTorch: 2.9 nightly (cu128) - required for vLLM 0.14+
+# - vLLM: Latest (0.14+)
 # - Transformers: 5.0.0rc2 (pre-release with glm4_moe_lite support)
 #
 # Specifications:
@@ -21,12 +22,15 @@ FROM nvcr.io/nvidia/pytorch:25.02-py3
 # Critical: Force Flash Attention v2 (v3 doesn't work on Blackwell yet)
 ENV VLLM_FLASH_ATTN_VERSION=2
 
-# Install vLLM (prebuilt wheels now support SM120 with CUDA 12.8+)
-# Also install Transformers 5.0.0rc2 for glm4_moe_lite support
-RUN pip install --upgrade pip && \
-    pip install vllm && \
-    pip install "transformers>=5.0.0rc2" --pre && \
-    pip install "huggingface_hub[cli]"
+# Install uv for fast package management
+RUN pip install uv
+
+# Upgrade PyTorch to 2.9 nightly (required for vLLM 0.14+ and SM120)
+# Then install vLLM and dependencies
+RUN uv pip install --system --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128 && \
+    uv pip install --system vllm && \
+    uv pip install --system "transformers>=5.0.0rc2" --pre && \
+    uv pip install --system "huggingface_hub[cli]"
 
 # Install Node.js 22.x and GitHub CLI in single layer to reduce image size
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
