@@ -28,9 +28,15 @@ MODEL_PATH="${MODEL_PATH:-/workspace/models/GLM-4.7-Flash-AWQ-4bit}"
 if [ ! -d "$MODEL_PATH" ]; then
     echo "Downloading model to $MODEL_PATH..."
     mkdir -p /workspace/models
-    python -m huggingface_hub.cli download cyankiwi/GLM-4.7-Flash-AWQ-4bit \
-        --local-dir "$MODEL_PATH" \
-        --local-dir-use-symlinks False
+    # Use 'hf download' - the modern Hugging Face CLI command
+    # Falls back to python module if 'hf' command not in PATH
+    if command -v hf &> /dev/null; then
+        hf download cyankiwi/GLM-4.7-Flash-AWQ-4bit --local-dir "$MODEL_PATH"
+    else
+        python -m huggingface_hub.cli download cyankiwi/GLM-4.7-Flash-AWQ-4bit \
+            --local-dir "$MODEL_PATH" \
+            --local-dir-use-symlinks False
+    fi
 fi
 
 # Set defaults

@@ -18,7 +18,7 @@ FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 # The commit-specific wheel URL ensures reproducible builds
 RUN VLLM_WHEEL="vllm-0.14.0rc2.dev187+g22375f8d1-cp38-abi3-manylinux_2_31_x86_64.whl" && \
     curl -L -o "/tmp/${VLLM_WHEEL}" "https://wheels.vllm.ai/22375f8d13dbf5c201c6f1564f72310193930816/vllm-0.14.0rc2.dev187%2Bg22375f8d1-cp38-abi3-manylinux_2_31_x86_64.whl" && \
-    pip install "/tmp/${VLLM_WHEEL}" huggingface_hub && \
+    pip install "/tmp/${VLLM_WHEEL}" "huggingface_hub[cli]" && \
     pip install git+https://github.com/huggingface/transformers.git && \
     rm "/tmp/${VLLM_WHEEL}"
 
