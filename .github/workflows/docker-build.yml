@@ -15,7 +15,9 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Temporarily disabled - only building NVFP4 5090 image
   build-glm47-flash-awq-4bit:
+    if: false
     runs-on: DO
     steps:
       - name: Checkout
@@ -67,7 +69,59 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-awq-4bit:buildcache
           cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-awq-4bit:buildcache,mode=max
 
-  # Disabled for now - only building AWQ 4-bit
+  build-glm47-flash-nvfp4-5090:
+    runs-on: DO
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine build type
+        id: build_type
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            BRANCH_NAME=$(echo ${GITHUB_REF##refs/heads/} | sed 's/\//-/g')
+            echo "VERSION=dev-${BRANCH_NAME}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: models/glm47-flash-nvfp4-5090
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-nvfp4-5090:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/clawdbot-glm47-flash-nvfp4-5090:latest', env.DOCKERHUB_REPO) || '' }}
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-nvfp4-5090:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-nvfp4-5090:buildcache,mode=max
+
+  # Disabled for now - only building AWQ 4-bit and NVFP4 5090
   # build-glm47-flash-fp16:
   # build-glm47-reap-w4a16:
   # build-base:
