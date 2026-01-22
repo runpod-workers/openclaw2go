@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+# Don't use set -e - we want to continue even if some commands fail
 
 echo "================================================"
 echo "  GLM-4.7-Flash NVFP4 on RTX 5090 (Blackwell)"
@@ -21,21 +21,28 @@ setup_ssh() {
     fi
 
     # Generate host keys if they don't exist
-    for keytype in rsa dsa ecdsa ed25519; do
+    for keytype in rsa ecdsa ed25519; do
         keyfile="/etc/ssh/ssh_host_${keytype}_key"
         if [ ! -f "$keyfile" ]; then
-            ssh-keygen -t $keytype -f $keyfile -N "" -q
+            ssh-keygen -t $keytype -f $keyfile -N "" -q 2>/dev/null || true
             echo "  Generated $keytype host key"
         fi
     done
 
-    # Start SSH service
-    service ssh start
-    echo "  SSH service started"
+    # Create run directory for sshd
+    mkdir -p /var/run/sshd
+
+    # Start sshd directly (not via service command which may not exist)
+    if [ -x /usr/sbin/sshd ]; then
+        /usr/sbin/sshd
+        echo "  SSH daemon started"
+    else
+        echo "  WARNING: sshd not found, SSH will not be available"
+    fi
 }
 
-# Run SSH setup
-setup_ssh
+# Run SSH setup (errors are non-fatal)
+setup_ssh || echo "SSH setup had issues but continuing..."
 
 # Persist vLLM cache (CUDA graphs, torch compile) on network storage
 # This speeds up subsequent pod starts by reusing cached compiled kernels
@@ -45,7 +52,7 @@ mkdir -p /workspace/.cache/vllm /workspace/.cache/huggingface
 
 # Download model if not present
 MODEL_PATH="${MODEL_PATH:-/workspace/models/GLM-4.7-Flash-NVFP4}"
-if [ ! -d "$MODEL_PATH" ]; then
+if [ ! -d "$MODEL_PATH" ] || [ -z "$(ls -A $MODEL_PATH 2>/dev/null)" ]; then
     echo "Downloading model to $MODEL_PATH..."
     mkdir -p /workspace/models
 
@@ -57,7 +64,11 @@ if [ ! -d "$MODEL_PATH" ]; then
     fi
 
     # Use huggingface-cli for downloading
-    huggingface-cli download GadflyII/GLM-4.7-Flash-NVFP4 --local-dir "$MODEL_PATH"
+    huggingface-cli download GadflyII/GLM-4.7-Flash-NVFP4 --local-dir "$MODEL_PATH" || {
+        echo "ERROR: Failed to download model"
+        echo "Keeping container alive for debugging..."
+        sleep infinity
+    }
 fi
 
 # Set defaults
@@ -113,7 +124,7 @@ done
 
 if [ $WAITED -ge $MAX_WAIT ]; then
     echo "ERROR: vLLM failed to start within $MAX_WAIT seconds"
-    echo "Container will stay running for debugging. Check logs with: ps aux; cat /var/log/*"
+    echo "Container will stay running for debugging. Check logs with: ps aux"
     # Don't exit - keep container running for debugging
 fi
 
@@ -173,13 +184,13 @@ fi
 
 # Auto-fix config to match current Clawdbot version's schema
 echo "Running clawdbot doctor to validate/fix config..."
-CLAWDBOT_STATE_DIR=$CLAWDBOT_HOME clawdbot doctor --fix || true
+CLAWDBOT_STATE_DIR=$CLAWDBOT_HOME clawdbot doctor --fix 2>/dev/null || true
 
 # Setup GitHub CLI if token provided
 if [ -n "$GITHUB_TOKEN" ]; then
     echo "Configuring GitHub CLI..."
-    echo "$GITHUB_TOKEN" | gh auth login --with-token
-    gh auth setup-git
+    echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null || true
+    gh auth setup-git 2>/dev/null || true
     mkdir -p /workspace/.config/gh
     cp -r ~/.config/gh/* /workspace/.config/gh/ 2>/dev/null || true
 elif [ -d "/workspace/.config/gh" ] && [ -f "/workspace/.config/gh/hosts.yml" ]; then
@@ -196,7 +207,7 @@ export OPENAI_BASE_URL="http://localhost:8000/v1"
 # Start Clawdbot gateway with password auth for web UI access
 echo ""
 echo "Starting Clawdbot gateway..."
-CLAWDBOT_STATE_DIR=$CLAWDBOT_HOME clawdbot gateway --auth password --password "$CLAWDBOT_WEB_PASSWORD" &
+CLAWDBOT_STATE_DIR=$CLAWDBOT_HOME clawdbot gateway --auth password --password "$CLAWDBOT_WEB_PASSWORD" 2>/dev/null &
 GATEWAY_PID=$!
 
 echo ""
