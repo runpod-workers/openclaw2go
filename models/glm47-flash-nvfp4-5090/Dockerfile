@@ -4,9 +4,11 @@
 # Context: 200,000 tokens
 # Cost: ~$0.89/hr (RTX 5090)
 #
-# Uses official vLLM image with CUDA 13.0 for SM120 (Blackwell) support
+# Uses vLLM nightly image with CUDA 13.0 - nightly builds include SM120 support
+# (versioned releases like v0.14.0 may have been built without SM120)
+# CI builds from: .buildkite/release-pipeline.yaml with torch_cuda_arch_list including 12.0
 
-FROM vllm/vllm-openai:v0.14.0-cu130
+FROM vllm/vllm-openai:cu130-nightly
 
 # Install SSH server (for RunPod remote access)
 # Remove host keys - they'll be generated at runtime
