@@ -4,20 +4,49 @@
 # Context: 200,000 tokens
 # Cost: ~$0.89/hr (RTX 5090)
 #
-# Uses vLLM nightly image with CUDA 13.0 - nightly builds include SM120 support
-# (versioned releases like v0.14.0 may have been built without SM120)
-# CI builds from: .buildkite/release-pipeline.yaml with torch_cuda_arch_list including 12.0
+# Pre-built vLLM images don't work on Blackwell because PyTorch in those images
+# lacks SM120 support. Solution: Use NGC PyTorch container + build vLLM from source.
+# Reference: https://discuss.vllm.ai/t/vllm-on-rtx5090-working-gpu-setup-with-torch-2-9-0-cu128/1492
+# Reference: https://github.com/vllm-project/vllm/issues/14452
 
-FROM vllm/vllm-openai:cu130-nightly
+# NGC PyTorch container with CUDA 12.8 and PyTorch 2.6 (has proper Blackwell support)
+FROM nvcr.io/nvidia/pytorch:25.02-py3
 
-# Install SSH server (for RunPod remote access)
-# Remove host keys - they'll be generated at runtime
+# Build arguments
+ARG VLLM_VERSION=main
+ARG MAX_JOBS=8
+
+# Environment for building vLLM with Blackwell support
+ENV TORCH_CUDA_ARCH_LIST="12.0"
+ENV VLLM_FLASH_ATTN_VERSION=2
+ENV MAX_JOBS=${MAX_JOBS}
+
+# Install build dependencies and SSH server
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends openssh-server && \
-    rm -f /etc/ssh/ssh_host_* && \
-    mkdir -p /var/run/sshd && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+        openssh-server \
+        ccache \
+        git \
+        curl \
+    && rm -f /etc/ssh/ssh_host_* \
+    && mkdir -p /var/run/sshd \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Setup ccache for faster rebuilds
+ENV PATH="/usr/lib/ccache:${PATH}"
+ENV CCACHE_DIR="/workspace/.ccache"
+
+# Clone and build vLLM from source
+WORKDIR /tmp/vllm-build
+RUN git clone --depth 1 --branch ${VLLM_VERSION} https://github.com/vllm-project/vllm.git . \
+    && python use_existing_torch.py \
+    && pip install --no-cache-dir -r requirements/build.txt \
+    && pip install --no-cache-dir setuptools_scm \
+    && pip install --no-build-isolation -e . \
+    && rm -rf /tmp/vllm-build/.git
+
+WORKDIR /
 
 # Install Node.js 22.x and GitHub CLI
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
@@ -44,9 +73,6 @@ ENV MODEL_PATH="/workspace/models/GLM-4.7-Flash-NVFP4"
 ENV SERVED_MODEL_NAME="glm-4.7-flash"
 ENV MAX_MODEL_LEN="200000"
 ENV VLLM_API_KEY="changeme"
-
-# Flash Attention 2 for Blackwell (FA3 doesn't work yet)
-ENV VLLM_FLASH_ATTN_VERSION=2
 
 # Clawdbot workspace
 ENV CLAWDBOT_HOME="/workspace/.clawdbot"
