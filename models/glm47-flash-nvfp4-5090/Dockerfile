@@ -37,6 +37,10 @@ RUN uv pip install --system --prerelease=allow \
     --index-strategy unsafe-best-match && \
     python3 -c "import vllm; print(f'vLLM {vllm.__version__} installed')"
 
+# Install transformers from source for glm4_moe_lite architecture support
+RUN uv pip install --system git+https://github.com/huggingface/transformers.git && \
+    python3 -c "import transformers; print(f'Transformers {transformers.__version__} installed')"
+
 # Install Node.js and GitHub CLI
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
