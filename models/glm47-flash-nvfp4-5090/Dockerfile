@@ -9,7 +9,7 @@
 # Reference: https://discuss.vllm.ai/t/vllm-on-rtx5090-working-gpu-setup-with-torch-2-9-0-cu128/1492
 # Reference: https://github.com/vllm-project/vllm/issues/14452
 
-# NGC PyTorch container with CUDA 12.8 and PyTorch 2.6 (has proper Blackwell support)
+# NGC PyTorch container with CUDA 12.8 (we'll upgrade PyTorch to nightly for Blackwell)
 FROM nvcr.io/nvidia/pytorch:25.02-py3
 
 # Build arguments
@@ -36,6 +36,10 @@ RUN apt-get update && \
 # Setup ccache for faster rebuilds
 ENV PATH="/usr/lib/ccache:${PATH}"
 ENV CCACHE_DIR="/workspace/.ccache"
+
+# Upgrade PyTorch to nightly (cu128) - NGC's PyTorch 2.6 is too old for vLLM main
+# vLLM needs PyTorch 2.7+ for Float8_e8m0fnu scalar type
+RUN pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
 
 # Clone and build vLLM from source (with retry for transient GitHub errors)
 WORKDIR /tmp/vllm-build
