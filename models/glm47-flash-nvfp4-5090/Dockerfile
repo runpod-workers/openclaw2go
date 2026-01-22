@@ -3,14 +3,19 @@
 # Model: GadflyII/GLM-4.7-Flash-NVFP4
 # Context: 200,000 tokens
 # Cost: ~$0.89/hr (RTX 5090)
+#
+# Uses official vLLM image which includes SM120 (Blackwell) support
 
-FROM runpod/pytorch:1.0.3-cu1290-torch291-ubuntu2404
+FROM vllm/vllm-openai:v0.14.0
 
-# Install vLLM nightly (required for glm47/glm45 parsers)
-# Install Transformers from git main (required for GLM-4.7 support)
-RUN pip install --no-cache-dir vllm --pre --extra-index-url https://wheels.vllm.ai/nightly && \
-    pip install --no-cache-dir git+https://github.com/huggingface/transformers.git && \
-    pip install --no-cache-dir "huggingface_hub[cli]"
+# Install SSH server (for RunPod remote access)
+# Remove host keys - they'll be generated at runtime
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssh-server && \
+    rm -f /etc/ssh/ssh_host_* && \
+    mkdir -p /var/run/sshd && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 22.x and GitHub CLI
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
@@ -24,6 +29,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Install huggingface_hub CLI for model downloads
+RUN pip install --no-cache-dir "huggingface_hub[cli]"
+
 # Install Clawdbot and Claude Code
 RUN npm install -g --prefer-offline @anthropic-ai/claude-code clawdbot && \
     npm cache clean --force
@@ -34,6 +42,9 @@ ENV MODEL_PATH="/workspace/models/GLM-4.7-Flash-NVFP4"
 ENV SERVED_MODEL_NAME="glm-4.7-flash"
 ENV MAX_MODEL_LEN="200000"
 ENV VLLM_API_KEY="changeme"
+
+# Flash Attention 2 for Blackwell (FA3 doesn't work yet)
+ENV VLLM_FLASH_ATTN_VERSION=2
 
 # Clawdbot workspace
 ENV CLAWDBOT_HOME="/workspace/.clawdbot"

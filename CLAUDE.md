@@ -111,3 +111,24 @@ Always use the local RunPod SSH key when connecting to pods:
 ```bash
 ssh -i ~/.ssh/id_runpod root@<public-ip> -p <port>
 ```
+
+## Debugging on RunPod Pods
+
+When SSH'd into a RunPod pod, check these locations for logs:
+
+```bash
+# vLLM logs (runs in foreground, check container logs in RunPod UI)
+# Or if debugging after SSH:
+ps aux | grep vllm           # Check if vLLM is running
+nvidia-smi                   # Check GPU memory usage
+
+# System logs
+journalctl -u ssh            # SSH service logs
+dmesg | tail -50             # Kernel messages (CUDA errors appear here)
+
+# Container startup logs visible in RunPod web UI under "Logs" tab
+
+# Common debugging commands
+curl http://localhost:8000/health    # vLLM health check
+curl http://localhost:8000/v1/models # List loaded models
+```

@@ -5,14 +5,37 @@ echo "================================================"
 echo "  GLM-4.7-Flash NVFP4 on RTX 5090 (Blackwell)"
 echo "================================================"
 
-# RunPod's /start.sh handles SSH setup using PUBLIC_KEY env var
-# It ends with 'sleep infinity' so we run it in background
-if [ -f /start.sh ]; then
-    echo "Running RunPod start script (background)..."
-    /start.sh &
-    # Give it a moment to set up SSH
-    sleep 5
-fi
+# Setup SSH for remote access (mirrors RunPod's /start.sh behavior)
+setup_ssh() {
+    echo "Setting up SSH..."
+
+    # Setup authorized_keys from PUBLIC_KEY env var
+    if [ -n "$PUBLIC_KEY" ]; then
+        mkdir -p ~/.ssh
+        echo "$PUBLIC_KEY" >> ~/.ssh/authorized_keys
+        chmod 700 ~/.ssh
+        chmod 600 ~/.ssh/authorized_keys
+        echo "  Added public key to authorized_keys"
+    else
+        echo "  WARNING: No PUBLIC_KEY set - SSH login will not work"
+    fi
+
+    # Generate host keys if they don't exist
+    for keytype in rsa dsa ecdsa ed25519; do
+        keyfile="/etc/ssh/ssh_host_${keytype}_key"
+        if [ ! -f "$keyfile" ]; then
+            ssh-keygen -t $keytype -f $keyfile -N "" -q
+            echo "  Generated $keytype host key"
+        fi
+    done
+
+    # Start SSH service
+    service ssh start
+    echo "  SSH service started"
+}
+
+# Run SSH setup
+setup_ssh
 
 # Persist vLLM cache (CUDA graphs, torch compile) on network storage
 # This speeds up subsequent pod starts by reusing cached compiled kernels
@@ -33,15 +56,8 @@ if [ ! -d "$MODEL_PATH" ]; then
         echo "Using HF_TOKEN for authenticated downloads"
     fi
 
-    # Use 'hf download' - the modern Hugging Face CLI command
-    # Falls back to python module if 'hf' command not in PATH
-    if command -v hf &> /dev/null; then
-        hf download GadflyII/GLM-4.7-Flash-NVFP4 --local-dir "$MODEL_PATH"
-    else
-        python -m huggingface_hub.cli download GadflyII/GLM-4.7-Flash-NVFP4 \
-            --local-dir "$MODEL_PATH" \
-            --local-dir-use-symlinks False
-    fi
+    # Use huggingface-cli for downloading
+    huggingface-cli download GadflyII/GLM-4.7-Flash-NVFP4 --local-dir "$MODEL_PATH"
 fi
 
 # Set defaults
