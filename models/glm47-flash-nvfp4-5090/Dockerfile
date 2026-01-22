@@ -4,9 +4,9 @@
 # Context: 200,000 tokens
 # Cost: ~$0.89/hr (RTX 5090)
 #
-# Uses official vLLM image which includes SM120 (Blackwell) support
+# Uses official vLLM image with CUDA 13.0 for SM120 (Blackwell) support
 
-FROM vllm/vllm-openai:v0.14.0
+FROM vllm/vllm-openai:v0.14.0-cu130
 
 # Install SSH server (for RunPod remote access)
 # Remove host keys - they'll be generated at runtime
