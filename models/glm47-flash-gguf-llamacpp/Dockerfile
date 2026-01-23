@@ -47,6 +47,8 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git && \
     cmake --build build --config Release -j$(nproc) && \
     cp build/bin/llama-server /usr/local/bin/ && \
     cp build/bin/llama-cli /usr/local/bin/ && \
+    cp build/bin/*.so* /usr/local/lib/ 2>/dev/null || true && \
+    ldconfig && \
     cd / && rm -rf /workspace/llama.cpp
 
 # Install Node.js and GitHub CLI
