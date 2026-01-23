@@ -30,10 +30,18 @@ if [ ! -f "$MODEL_PATH/$MODEL_FILE" ]; then
         echo "Using HF_TOKEN for authenticated downloads"
     fi
 
-    # Download specific GGUF file
-    huggingface-cli download "$MODEL_NAME" "$MODEL_FILE" \
-        --local-dir "$MODEL_PATH" \
-        --local-dir-use-symlinks False
+    # Download specific GGUF file using Python API (huggingface-cli not available in newer versions)
+    python3 -c "
+from huggingface_hub import hf_hub_download
+import os
+hf_hub_download(
+    repo_id='$MODEL_NAME',
+    filename='$MODEL_FILE',
+    local_dir='$MODEL_PATH',
+    local_dir_use_symlinks=False
+)
+print('Download complete!')
+"
 fi
 
 # Set defaults
