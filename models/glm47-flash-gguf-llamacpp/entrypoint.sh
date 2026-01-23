@@ -13,7 +13,57 @@ if [ -f /start.sh ]; then
     sleep 5
 fi
 
+# ============================================================
+# Build llama.cpp from source (cached on network volume)
+# ============================================================
+LLAMA_BUILD_DIR="/workspace/llama.cpp-build"
+LLAMA_SERVER="/workspace/llama.cpp-build/bin/llama-server"
+
+if [ ! -f "$LLAMA_SERVER" ]; then
+    echo ""
+    echo "Building llama.cpp from source (first-time setup, ~10-15 min)..."
+    echo "This will be cached on /workspace for future starts."
+    echo ""
+
+    mkdir -p "$LLAMA_BUILD_DIR"
+    cd /tmp
+
+    # Clone and build
+    rm -rf llama.cpp
+    git clone --depth 1 https://github.com/ggml-org/llama.cpp.git
+    cd llama.cpp
+
+    # Configure with CUDA for Blackwell (SM120)
+    cmake -B build \
+        -DGGML_CUDA=ON \
+        -DCMAKE_CUDA_ARCHITECTURES="120" \
+        -DCMAKE_BUILD_TYPE=Release
+
+    # Build (use all cores)
+    cmake --build build --config Release -j$(nproc)
+
+    # Copy binaries to persistent storage
+    mkdir -p "$LLAMA_BUILD_DIR/bin" "$LLAMA_BUILD_DIR/lib"
+    cp build/bin/llama-server "$LLAMA_BUILD_DIR/bin/"
+    cp build/bin/llama-cli "$LLAMA_BUILD_DIR/bin/" 2>/dev/null || true
+    cp build/bin/lib*.so* "$LLAMA_BUILD_DIR/lib/" 2>/dev/null || true
+
+    # Cleanup
+    cd /
+    rm -rf /tmp/llama.cpp
+
+    echo "llama.cpp build complete!"
+else
+    echo "Using cached llama.cpp build from $LLAMA_BUILD_DIR"
+fi
+
+# Add to PATH and LD_LIBRARY_PATH
+export PATH="$LLAMA_BUILD_DIR/bin:$PATH"
+export LD_LIBRARY_PATH="$LLAMA_BUILD_DIR/lib:$LD_LIBRARY_PATH"
+
+# ============================================================
 # Download model if not present
+# ============================================================
 MODEL_PATH="${MODEL_PATH:-/workspace/models/GLM-4.7-Flash-GGUF}"
 MODEL_FILE="${MODEL_FILE:-GLM-4.7-Flash-Q4_K_M.gguf}"
 MODEL_NAME="${MODEL_NAME:-unsloth/GLM-4.7-Flash-GGUF}"
@@ -55,7 +105,7 @@ echo "  API Key: ${LLAMA_API_KEY:0:4}..."
 #   --jinja: Required for GLM-4.7 chat template
 #   -ctk q8_0 -ctv q8_0: Quantize KV cache to fit 200k in 32GB VRAM
 #   --api-key: Enable API key authentication
-llama-server \
+"$LLAMA_BUILD_DIR/bin/llama-server" \
     -m "$MODEL_PATH/$MODEL_FILE" \
     --host 0.0.0.0 \
     --port 8000 \

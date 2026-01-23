@@ -34,21 +34,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /workspace
 
-# Build llama.cpp with CUDA support for Blackwell (SM120)
-RUN git clone https://github.com/ggml-org/llama.cpp.git && \
-    cd llama.cpp && \
-    cmake -B build \
-        -DGGML_CUDA=ON \
-        -DCMAKE_CUDA_ARCHITECTURES="120" \
-        -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build build --config Release -j$(nproc) && \
-    # Copy binaries to /usr/local/bin for easy access
-    cp build/bin/llama-server /usr/local/bin/ && \
-    cp build/bin/llama-cli /usr/local/bin/ && \
-    cp build/bin/lib*.so* /usr/local/lib/ && \
-    ldconfig && \
-    # Clean up build artifacts to reduce image size
-    rm -rf /workspace/llama.cpp
+# llama.cpp will be built from source at runtime on first start
+# This is necessary because:
+# 1. No official pre-built CUDA 12.8 binaries for Linux exist
+# 2. SM120 (Blackwell/RTX 5090) requires CUDA 12.8+
+# 3. Building at runtime ensures optimal binaries for the actual GPU
+#
+# The build is cached on /workspace (network volume) so subsequent starts are instant
+# First start takes ~10-15 minutes for compilation
 
 # Install Node.js and GitHub CLI
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
