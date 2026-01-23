@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main, feat/add-model-folders]
+    branches: [main, feat/add-model-folders, gguf-v3]
     paths:
       - 'models/**'
       - 'Dockerfile'
@@ -170,12 +170,11 @@ jobs:
         with:
           context: models/glm47-flash-gguf-llamacpp
           push: true
+          no-cache: true
           tags: |
             ${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-gguf:${{ env.VERSION }}
             ${{ env.ALSO_LATEST == 'true' && format('{0}/clawdbot-glm47-flash-gguf:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-gguf:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/clawdbot-glm47-flash-gguf:buildcache,mode=max
 
   # Disabled for now
   # build-glm47-flash-fp16:
