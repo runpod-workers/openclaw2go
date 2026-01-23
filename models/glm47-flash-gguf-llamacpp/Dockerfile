@@ -35,16 +35,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /workspace
 
 # Build llama.cpp from source with CUDA SM120 support
-# Using CUDA stubs for linking (actual driver available at runtime)
-# Create libcuda.so.1 symlink since stubs only have libcuda.so
-RUN ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
-    export LIBRARY_PATH=/usr/local/cuda/lib64/stubs:$LIBRARY_PATH && \
-    git clone --depth 1 https://github.com/ggml-org/llama.cpp.git && \
+# Using --allow-shlib-undefined to defer libcuda.so resolution to runtime
+RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git && \
     cd llama.cpp && \
     cmake -B build \
         -DGGML_CUDA=ON \
         -DCMAKE_CUDA_ARCHITECTURES="120" \
-        -DCMAKE_BUILD_TYPE=Release && \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined && \
     cmake --build build --config Release -j$(nproc) && \
     cp build/bin/llama-server /usr/local/bin/ && \
     cp build/bin/llama-cli /usr/local/bin/ && \
