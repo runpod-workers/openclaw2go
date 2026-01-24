@@ -26,6 +26,57 @@ llama.cpp has native support for `Glm4MoeLite` architecture (PR #18936 merged Ja
 - **OpenAI-compatible API** - Works with Clawdbot, Claude Code, etc.
 - **Native chat template** - Uses `--jinja` for correct GLM-4.7 formatting
 
+## Runpod Deployment
+
+### Quick Start
+
+1. **Add your SSH key** to [Runpod Account Settings → SSH Public Keys](https://www.runpod.io/console/user/settings) (required for device pairing later). If you don't have an SSH key, follow the [Runpod SSH guide](https://docs.runpod.io/pods/configuration/use-ssh).
+
+2. **Create a Pod** with:
+   - Image: `runpod/clawdbot-glm47-flash-gguf:latest`
+   - GPU: RTX 5090 (or any 32GB+ GPU)
+   - Ports: `8000/http`, `18789/http`, `22/tcp`
+   - Network Volume: **30GB minimum**, mounted to `/workspace`
+     - Required for model download (~17GB) and config persistence
+     - Without a network volume, data is lost on pod restart
+   - Environment Variables:
+     - `CLAWDBOT_WEB_PASSWORD` - Token for Web UI (default: `clawdbot`)
+     - `LLAMA_API_KEY` - API key for llama.cpp (default: `changeme`)
+
+3. **Wait for startup** - First launch downloads the model (~17GB), which takes a few minutes. Check pod logs for progress.
+
+4. **Access the Web UI**:
+   ```
+   https://<pod-id>-18789.proxy.runpod.net/?token=<CLAWDBOT_WEB_PASSWORD>
+   ```
+
+### First-Time Device Pairing
+
+Clawdbot requires device pairing for security. On first access, you'll see "pairing required".
+
+**To approve your browser:**
+
+```bash
+# SSH into your pod
+ssh root@<pod-ip> -p <ssh-port>
+
+# List pending pairing requests
+CLAWDBOT_STATE_DIR=/workspace/.clawdbot clawdbot devices list
+
+# Approve your device (use the Request ID from the list)
+CLAWDBOT_STATE_DIR=/workspace/.clawdbot clawdbot devices approve <request-id>
+```
+
+After approval, refresh the Web UI - it will work permanently for that browser.
+
+### Ports
+
+| Port | Service |
+|------|---------|
+| 8000 | llama.cpp API (OpenAI-compatible) |
+| 18789 | Clawdbot Web UI |
+| 22 | SSH |
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -33,7 +84,7 @@ llama.cpp has native support for `Glm4MoeLite` architecture (PR #18936 merged Ja
 | `MODEL_FILE` | `GLM-4.7-Flash-Q4_K_M.gguf` | GGUF file to use |
 | `MAX_MODEL_LEN` | `200000` | Context length |
 | `LLAMA_API_KEY` | `changeme` | API authentication |
-| `CLAWDBOT_WEB_PASSWORD` | `clawdbot` | Web UI password |
+| `CLAWDBOT_WEB_PASSWORD` | `clawdbot` | Web UI token |
 | `TELEGRAM_BOT_TOKEN` | - | Optional Telegram integration |
 | `GITHUB_TOKEN` | - | Optional GitHub CLI auth |
 

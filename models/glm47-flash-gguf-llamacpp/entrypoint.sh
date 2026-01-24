@@ -170,7 +170,9 @@ if [ ! -f "$CLAWDBOT_HOME/clawdbot.json" ]; then
   },
   "gateway": {
     "mode": "local",
-    "bind": "lan"
+    "bind": "lan",
+    "auth": { "token": "$CLAWDBOT_WEB_PASSWORD" },
+    "remote": { "token": "$CLAWDBOT_WEB_PASSWORD" }
   },
   "logging": { "level": "info" }
 }
@@ -200,10 +202,10 @@ fi
 export OPENAI_API_KEY="$LLAMA_API_KEY"
 export OPENAI_BASE_URL="http://localhost:8000/v1"
 
-# Start Clawdbot gateway
+# Start Clawdbot gateway (use token auth for URL parameter support)
 echo ""
 echo "Starting Clawdbot gateway..."
-CLAWDBOT_STATE_DIR=$CLAWDBOT_HOME clawdbot gateway --auth password --password "$CLAWDBOT_WEB_PASSWORD" &
+CLAWDBOT_STATE_DIR=$CLAWDBOT_HOME CLAWDBOT_GATEWAY_TOKEN="$CLAWDBOT_WEB_PASSWORD" clawdbot gateway --auth token --token "$CLAWDBOT_WEB_PASSWORD" &
 GATEWAY_PID=$!
 
 echo ""
@@ -211,8 +213,8 @@ echo "================================================"
 echo "  Ready!"
 echo "  llama.cpp API: http://localhost:8000"
 echo "  Clawdbot Gateway: ws://localhost:18789"
-echo "  Web UI: https://<pod-id>-18789.proxy.runpod.net"
-echo "  Web UI Password: $CLAWDBOT_WEB_PASSWORD"
+echo "  Web UI: https://<pod-id>-18789.proxy.runpod.net/?token=$CLAWDBOT_WEB_PASSWORD"
+echo "  Web UI Token: $CLAWDBOT_WEB_PASSWORD"
 echo "  Model: $SERVED_MODEL_NAME"
 echo "  Context: $MAX_MODEL_LEN tokens (200k!)"
 echo "  VRAM: ~28GB / 32GB"
