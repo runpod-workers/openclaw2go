@@ -139,7 +139,9 @@ if [ $WAITED -ge $MAX_WAIT ]; then
 fi
 
 # Setup Moltbot config
-mkdir -p "$MOLTBOT_HOME"
+mkdir -p "$MOLTBOT_HOME" "$MOLTBOT_HOME/agents/main/sessions" "$MOLTBOT_HOME/credentials"
+chmod 700 "$MOLTBOT_HOME" "$MOLTBOT_HOME/agents" "$MOLTBOT_HOME/agents/main" \
+    "$MOLTBOT_HOME/agents/main/sessions" "$MOLTBOT_HOME/credentials" 2>/dev/null || true
 
 if [ ! -f "$MOLTBOT_HOME/clawdbot.json" ]; then
     echo "Creating Moltbot config (legacy clawdbot.json)..."
@@ -194,6 +196,7 @@ fi
 # Auto-fix config
 echo "Running moltbot doctor to validate/fix config..."
 CLAWDBOT_STATE_DIR=$MOLTBOT_HOME "$BOT_CMD" doctor --fix || true
+chmod 600 "$MOLTBOT_HOME/clawdbot.json" 2>/dev/null || true
 
 # Setup GitHub CLI if token provided
 if [ -n "$GITHUB_TOKEN" ]; then
