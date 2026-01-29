@@ -125,6 +125,7 @@ runpod-moltbot/
 
 Images are built automatically on:
 - Pull requests → tagged as `:{branch-name}` (slashes → `-`, e.g., `:feature-xyz`)
+- Push to `main` → tagged as `:latest`
 - Push git tag (e.g., `v1.0.0`) → tagged as `:v1.0.0` + `:latest`
 - Manual workflow dispatch → select specific model
 
