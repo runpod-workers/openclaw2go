@@ -124,10 +124,8 @@ runpod-moltbot/
 ## GitHub Actions
 
 Images are built automatically on:
-- Push to `main` → tagged as `:latest`
-- Push to other branches → tagged as `:{branch-name}` (slashes → `-`, e.g., `:feature-xyz`)
+- Pull requests → tagged as `:{branch-name}` (slashes → `-`, e.g., `:feature-xyz`)
 - Push git tag (e.g., `v1.0.0`) → tagged as `:v1.0.0` + `:latest`
-- Pull requests → build only, no push (validation)
 - Manual workflow dispatch → select specific model
 
 ### Required Setup
