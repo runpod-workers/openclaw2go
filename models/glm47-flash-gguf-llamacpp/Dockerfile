@@ -67,7 +67,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 RUN python3 -m pip install --no-cache-dir huggingface_hub
 
 # Install Moltbot and Claude Code
-RUN npm install -g --prefer-offline @anthropic-ai/claude-code moltbot && \
+# NOTE: npm "latest" lacks a CLI; use beta tag for moltbot binary.
+RUN npm install -g --prefer-offline @anthropic-ai/claude-code moltbot@2026.1.27-beta.1 && \
     npm cache clean --force
 
 WORKDIR /
