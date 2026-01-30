@@ -10,9 +10,9 @@ RunPod-optimized Docker deployment for running OpenClaw (AI coding assistant) wi
 
 ```bash
 # Build a specific model variant
-docker build -t openclaw-glm47-flash-awq-4bit models/glm47-flash-awq-4bit/
-docker build -t openclaw-glm47-flash-fp16 models/glm47-flash-fp16/
-docker build -t openclaw-glm47-flash-nvfp4-5090 models/glm47-flash-nvfp4-5090/
+docker build -f models/glm47-flash-awq-4bit/Dockerfile -t openclaw-glm47-flash-awq-4bit .
+docker build -f models/glm47-flash-fp16/Dockerfile -t openclaw-glm47-flash-fp16 .
+docker build -f models/glm47-flash-nvfp4-5090/Dockerfile -t openclaw-glm47-flash-nvfp4-5090 .
 
 # Push to Docker Hub
 docker tag openclaw-glm47-flash-awq-4bit yourusername/openclaw-glm47-flash-awq-4bit:latest

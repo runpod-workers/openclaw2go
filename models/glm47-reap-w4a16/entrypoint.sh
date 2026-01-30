@@ -1,6 +1,7 @@
 #!/bin/bash
 # entrypoint.sh - GLM-4.7-REAP W4A16 + OpenClaw startup script for RunPod B200
 set -e
+source /opt/openclaw/entrypoint-common.sh
 
 echo "============================================"
 echo "  GLM-4.7-REAP W4A16 + OpenClaw Startup"
@@ -164,16 +165,7 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR "$BOT_CMD" gateway --auth password --pass
 GATEWAY_PID=$!
 
 echo ""
-echo "============================================"
-echo "  Services Running"
-echo "============================================"
-echo "  vLLM API: http://localhost:8000"
-echo "  OpenClaw Gateway: ws://localhost:18789"
-echo ""
-echo "  vLLM PID: $VLLM_PID"
-echo "  Gateway PID: $GATEWAY_PID"
-echo "============================================"
-echo ""
+oc_print_ready "vLLM API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens" "password"
 
 # Keep container running and handle signals
 trap "kill $VLLM_PID $GATEWAY_PID 2>/dev/null; exit 0" SIGTERM SIGINT

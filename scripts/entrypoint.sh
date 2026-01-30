@@ -1,6 +1,7 @@
 #!/bin/bash
 # entrypoint.sh - OpenClaw + vLLM startup script for RunPod
 set -e
+source /opt/openclaw/entrypoint-common.sh
 
 echo "============================================"
 echo "  OpenClaw + vLLM Startup"
@@ -149,15 +150,7 @@ echo "Starting OpenClaw gateway..."
 GATEWAY_PID=$!
 
 echo ""
-echo "============================================"
-echo "  Services Running"
-echo "============================================"
-echo "  vLLM API: http://localhost:8000"
-echo "  OpenClaw Gateway: ws://localhost:18789"
-echo ""
-echo "  vLLM PID: $VLLM_PID"
-echo "  Gateway PID: $GATEWAY_PID"
-echo "============================================"
+oc_print_ready "vLLM API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens" "token"
 echo ""
 
 # Keep container running and handle signals

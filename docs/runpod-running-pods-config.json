@@ -1,0 +1,90 @@
+{
+  "capturedAt": "2026-01-30T15:05:00Z",
+  "source": "Runpod API",
+  "redactedEnvKeys": [
+    "CLAWDBOT_WEB_PASSWORD",
+    "JUPYTER_PASSWORD",
+    "LLAMA_API_KEY"
+  ],
+  "pods": [
+    {
+      "id": "2qwieis50c7h5u",
+      "name": "moltbot-rename-gguf-3",
+      "imageName": "runpod/moltbot-glm47-flash-gguf:moltbot-rename",
+      "desiredStatus": "RUNNING",
+      "createdAt": "2026-01-29 14:13:37.655 +0000 UTC",
+      "publicIp": "103.196.86.208",
+      "machineId": "t9a5syfwwtdt",
+      "machine": {
+        "dataCenterId": "US-NC-1",
+        "location": "US",
+        "gpuTypeId": "NVIDIA GeForce RTX 5090",
+        "secureCloud": true,
+        "supportPublicIp": true
+      },
+      "resources": {
+        "gpuCount": 1,
+        "vcpuCount": 16,
+        "memoryInGb": 141,
+        "containerDiskInGb": 50,
+        "volumeInGb": 30,
+        "volumeMountPath": "/workspace"
+      },
+      "ports": [
+        "8000/http",
+        "18789/http",
+        "22/tcp"
+      ],
+      "portMappings": {
+        "22": 19380
+      },
+      "env": {
+        "PUBLIC_KEY": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC8HcZgRXPw8bzTgs0y4WvZDGBezM6FTjia5tcyDD7KV timpietrusky@Tims-MBP.fritz.box\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC1r8yh6DiHGXreAqYFlt7fGdg4W4x4g+xKpCIgjOYSk\n\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAjIDf+a51/v+NvoerPn61wwC6cLgQFzKuQ+GOP9CwxQp9rHxOVKCGC10RSa8iBilfF8jpn8bemc8wQP9Rw4bJeUAijJEbbRpWlsm7g5R68++NNq7x2735l0fmxqBG82lzJFx/HqJQih8viZYM3Zh9tSaefWc7taJGokphCv5VsP7FBrU/Sp9YbMO7m2uQemhRiUXFRwc0A+LBUndvuyoeRIhvSybbRdEynQvuqi1q7GEhQm3EeoHcl4ho1aZNFtKxSJNsNSEE210i1yLSBKr53zrOT4vmTBtVL1IsLQyZP7cgHwgte4iIJnqON+EZvZMF8Tz0n1KUZKDkYPI7u9kN RunPod-Key-Go"
+      }
+    },
+    {
+      "id": "en31ohfmici04w",
+      "name": "moltbot",
+      "imageName": "runpod/clawdbot-glm47-flash-gguf:latest",
+      "desiredStatus": "RUNNING",
+      "createdAt": "2026-01-24 09:39:34.915 +0000 UTC",
+      "publicIp": "213.173.111.162",
+      "machineId": "ien62wzvzuu9",
+      "machine": {
+        "dataCenterId": "EU-RO-1",
+        "location": "RO",
+        "gpuTypeId": "NVIDIA GeForce RTX 5090",
+        "secureCloud": true,
+        "supportPublicIp": true
+      },
+      "resources": {
+        "gpuCount": 1,
+        "vcpuCount": 16,
+        "memoryInGb": 93,
+        "containerDiskInGb": 30,
+        "volumeInGb": 0,
+        "volumeMountPath": "/workspace"
+      },
+      "networkVolume": {
+        "id": "7s6cz292jy",
+        "name": "glm-4.7-flash-gguf",
+        "size": 30,
+        "dataCenterId": "EU-RO-1"
+      },
+      "ports": [
+        "8000/http",
+        "18789/http",
+        "22/tcp"
+      ],
+      "portMappings": {
+        "22": 35234
+      },
+      "env": {
+        "CLAWDBOT_WEB_PASSWORD": "<redacted>",
+        "JUPYTER_PASSWORD": "<redacted>",
+        "LLAMA_API_KEY": "<redacted>",
+        "PUBLIC_KEY": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC8HcZgRXPw8bzTgs0y4WvZDGBezM6FTjia5tcyDD7KV timpietrusky@Tims-MBP.fritz.box\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC1r8yh6DiHGXreAqYFlt7fGdg4W4x4g+xKpCIgjOYSk\n\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAjIDf+a51/v+NvoerPn61wwC6cLgQFzKuQ+GOP9CwxQp9rHxOVKCGC10RSa8iBilfF8jpn8bemc8wQP9Rw4bJeUAijJEbbRpWlsm7g5R68++NNq7x2735l0fmxqBG82lzJFx/HqJQih8viZYM3Zh9tSaefWc7taJGokphCv5VsP7FBrU/Sp9YbMO7m2uQemhRiUXFRwc0A+LBUndvuyoeRIhvSybbRdEynQvuqi1q7GEhQm3EeoHcl4ho1aZNFtKxSJNsNSEE210i1yLSBKr53zrOT4vmTBtVL1IsLQyZP7cgHwgte4iIJnqON+EZvZMF8Tz0n1KUZKDkYPI7u9kN RunPod-Key-Go"
+      }
+    }
+  ]
+}

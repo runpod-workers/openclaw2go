@@ -92,7 +92,7 @@ After approval, refresh the Web UI - it will work permanently for that browser.
 
 ```bash
 # Build
-docker build -t openclaw-glm47-gguf-llamacpp .
+docker build -f models/glm47-flash-gguf-llamacpp/Dockerfile -t openclaw-glm47-gguf-llamacpp .
 
 # Run on RTX 5090
 docker run --gpus all -p 8000:8000 -p 18789:18789 \

@@ -1,48 +1,14 @@
 #!/bin/bash
 # Don't use set -e - we want to continue even if some commands fail
 
+source /opt/openclaw/entrypoint-common.sh
+
 echo "================================================"
 echo "  GLM-4.7-Flash NVFP4 on RTX 5090 (Blackwell)"
 echo "================================================"
 
 # Setup SSH for remote access (mirrors RunPod's /start.sh behavior)
-setup_ssh() {
-    echo "Setting up SSH..."
-
-    # Setup authorized_keys from PUBLIC_KEY env var
-    if [ -n "$PUBLIC_KEY" ]; then
-        mkdir -p ~/.ssh
-        echo "$PUBLIC_KEY" >> ~/.ssh/authorized_keys
-        chmod 700 ~/.ssh
-        chmod 600 ~/.ssh/authorized_keys
-        echo "  Added public key to authorized_keys"
-    else
-        echo "  WARNING: No PUBLIC_KEY set - SSH login will not work"
-    fi
-
-    # Generate host keys if they don't exist
-    for keytype in rsa ecdsa ed25519; do
-        keyfile="/etc/ssh/ssh_host_${keytype}_key"
-        if [ ! -f "$keyfile" ]; then
-            ssh-keygen -t $keytype -f $keyfile -N "" -q 2>/dev/null || true
-            echo "  Generated $keytype host key"
-        fi
-    done
-
-    # Create run directory for sshd
-    mkdir -p /var/run/sshd
-
-    # Start sshd directly (not via service command which may not exist)
-    if [ -x /usr/sbin/sshd ]; then
-        /usr/sbin/sshd
-        echo "  SSH daemon started"
-    else
-        echo "  WARNING: sshd not found, SSH will not be available"
-    fi
-}
-
-# Run SSH setup (errors are non-fatal)
-setup_ssh || echo "SSH setup had issues but continuing..."
+oc_setup_ssh_manual || echo "SSH setup had issues but continuing..."
 
 # Persist vLLM cache (CUDA graphs, torch compile) on network storage
 # This speeds up subsequent pod starts by reusing cached compiled kernels
@@ -220,16 +186,8 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR "$BOT_CMD" gateway --auth password --pass
 GATEWAY_PID=$!
 
 echo ""
-echo "================================================"
-echo "  Ready! (RTX 5090 Blackwell SM120)"
-echo "  vLLM API: http://localhost:8000"
-echo "  OpenClaw Gateway: ws://localhost:18789"
-echo "  Web UI: https://<pod-id>-18789.proxy.runpod.net"
-echo "  Web UI Password: $OPENCLAW_WEB_PASSWORD"
-echo "  Model: $SERVED_MODEL_NAME (NVFP4)"
-echo "  Context: $MAX_MODEL_LEN tokens"
-echo "  Cost: ~\$0.89/hr (36% savings vs A100)"
-echo "================================================"
+oc_print_ready "vLLM API" "$SERVED_MODEL_NAME (NVFP4)" "$MAX_MODEL_LEN tokens" "password" \
+    "Cost: ~\$0.89/hr (36% savings vs A100)"
 
 # Handle shutdown
 cleanup() {

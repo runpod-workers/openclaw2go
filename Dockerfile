@@ -37,7 +37,8 @@ RUN mkdir -p /workspace/huggingface \
     /workspace/openclaw \
     /workspace/scripts
 
-# Copy startup script
+# Copy startup scripts
+COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
 COPY scripts/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

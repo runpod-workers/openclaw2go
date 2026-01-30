@@ -49,7 +49,8 @@ ENV TOOL_CALL_PARSER=glm45
 RUN mkdir -p /workspace/huggingface /workspace/.openclaw /workspace/openclaw
 
 # Copy entrypoint script
-COPY entrypoint.sh /entrypoint.sh
+COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
+COPY models/glm47-reap-w4a16/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Expose ports

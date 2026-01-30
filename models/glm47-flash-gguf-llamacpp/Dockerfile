@@ -82,7 +82,8 @@ ENV MODEL_NAME="unsloth/GLM-4.7-Flash-GGUF" \
     OPENCLAW_STATE_DIR="/workspace/.openclaw" \
     OPENCLAW_WORKSPACE="/workspace/openclaw"
 
-COPY entrypoint.sh /entrypoint.sh
+COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
+COPY models/glm47-flash-gguf-llamacpp/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000 18789 22

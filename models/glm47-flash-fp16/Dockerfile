@@ -53,8 +53,9 @@ ENV GPU_MEMORY_UTILIZATION=0.92
 ENV TOOL_CALL_PARSER=glm47
 # MAX_MODEL_LEN is auto-detected based on GPU - don't set here
 
-# Copy entrypoint script
-COPY entrypoint.sh /entrypoint.sh
+# Copy entrypoint scripts
+COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
+COPY models/glm47-flash-fp16/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Expose ports

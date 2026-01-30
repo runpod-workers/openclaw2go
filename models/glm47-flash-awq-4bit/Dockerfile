@@ -49,7 +49,8 @@ ENV VLLM_API_KEY="changeme"
 ENV OPENCLAW_STATE_DIR="/workspace/.openclaw"
 ENV OPENCLAW_WORKSPACE="/workspace/openclaw"
 
-COPY entrypoint.sh /entrypoint.sh
+COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
+COPY models/glm47-flash-awq-4bit/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000 18789 22

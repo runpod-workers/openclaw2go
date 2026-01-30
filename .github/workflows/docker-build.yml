@@ -68,7 +68,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: models/glm47-flash-awq-4bit
+          context: .
+          file: models/glm47-flash-awq-4bit/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
             ${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-awq-4bit:${{ env.VERSION }}
@@ -134,7 +135,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: models/glm47-flash-nvfp4-5090
+          context: .
+          file: models/glm47-flash-nvfp4-5090/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
             ${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-nvfp4-5090:${{ env.VERSION }}
@@ -198,7 +200,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: models/glm47-flash-gguf-llamacpp
+          context: .
+          file: models/glm47-flash-gguf-llamacpp/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
             ${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-gguf:${{ env.VERSION }}

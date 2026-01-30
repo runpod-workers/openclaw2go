@@ -66,7 +66,8 @@ ENV MODEL_NAME="GadflyII/GLM-4.7-Flash-NVFP4" \
     OPENCLAW_STATE_DIR="/workspace/.openclaw" \
     OPENCLAW_WORKSPACE="/workspace/openclaw"
 
-COPY entrypoint.sh benchmark.sh /
+COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
+COPY models/glm47-flash-nvfp4-5090/entrypoint.sh models/glm47-flash-nvfp4-5090/benchmark.sh /
 RUN chmod +x /entrypoint.sh /benchmark.sh
 
 EXPOSE 8000 18789 22

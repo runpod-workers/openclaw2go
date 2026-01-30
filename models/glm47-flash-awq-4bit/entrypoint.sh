@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+source /opt/openclaw/entrypoint-common.sh
 
 echo "================================================"
 echo "  GLM-4.7-Flash AWQ (4-bit) on A100 80GB"
@@ -7,12 +8,7 @@ echo "================================================"
 
 # RunPod's /start.sh handles SSH setup using PUBLIC_KEY env var
 # It ends with 'sleep infinity' so we run it in background
-if [ -f /start.sh ]; then
-    echo "Running RunPod start script (background)..."
-    /start.sh &
-    # Give it a moment to set up SSH
-    sleep 5
-fi
+oc_start_runpod_ssh
 
 # Persist vLLM cache (CUDA graphs, torch compile) on network storage
 # This speeds up subsequent pod starts by reusing cached compiled kernels
@@ -189,15 +185,7 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR "$BOT_CMD" gateway --auth password --pass
 GATEWAY_PID=$!
 
 echo ""
-echo "================================================"
-echo "  Ready!"
-echo "  vLLM API: http://localhost:8000"
-echo "  OpenClaw Gateway: ws://localhost:18789"
-echo "  Web UI: https://<pod-id>-18789.proxy.runpod.net"
-echo "  Web UI Password: $OPENCLAW_WEB_PASSWORD"
-echo "  Model: $SERVED_MODEL_NAME"
-echo "  Context: $MAX_MODEL_LEN tokens"
-echo "================================================"
+oc_print_ready "vLLM API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens" "password"
 
 # Handle shutdown
 cleanup() {

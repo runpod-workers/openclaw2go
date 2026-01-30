@@ -1,6 +1,7 @@
 #!/bin/bash
 # entrypoint.sh - GLM-4.7-Flash FP16 + OpenClaw startup script
 set -e
+source /opt/openclaw/entrypoint-common.sh
 
 echo "============================================"
 echo "  GLM-4.7-Flash FP16 + OpenClaw Startup"
@@ -13,31 +14,25 @@ echo ""
 # Auto-detect GPU and set optimal context length
 # GLM-4.7-Flash: ~31GB model weights, KV cache ~160KB/token (BF16) or ~80KB/token (FP8)
 detect_optimal_context() {
-    local gpu_mem_mb=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1)
-    local gpu_name=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+    local gpu_mem_mb
+    gpu_mem_mb=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1)
+    local gpu_name
+    gpu_name=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
 
     echo "Detected GPU: $gpu_name with ${gpu_mem_mb}MB VRAM"
 
-    # Calculate optimal context based on GPU memory
-    # Model weights: ~31GB, leaving rest for KV cache
-    # Using conservative estimates with FP8 KV cache
     if [ -z "$gpu_mem_mb" ]; then
-        echo "32768"  # Fallback
+        echo "32768"
     elif [ "$gpu_mem_mb" -ge 180000 ]; then
-        # B200 180GB: Can do 200k+ easily
-        echo "196608"  # 192k
+        echo "196608"
     elif [ "$gpu_mem_mb" -ge 140000 ]; then
-        # H200 141GB: Can do ~150k
-        echo "131072"  # 128k
+        echo "131072"
     elif [ "$gpu_mem_mb" -ge 80000 ]; then
-        # H100/A100 80GB: Can do ~64k safely, maybe 96k with FP8 KV
-        echo "65536"   # 64k
+        echo "65536"
     elif [ "$gpu_mem_mb" -ge 48000 ]; then
-        # A100 40GB or similar: ~32k
-        echo "32768"   # 32k
+        echo "32768"
     else
-        # Smaller GPUs
-        echo "16384"   # 16k
+        echo "16384"
     fi
 }
 
@@ -46,6 +41,7 @@ MODEL_NAME="${MODEL_NAME:-zai-org/GLM-4.7-Flash}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-glm-4.7-flash}"
 VLLM_API_KEY="${VLLM_API_KEY:-changeme}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.92}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-}"
 # glm47 parser requires vLLM nightly from wheels.vllm.ai
 TOOL_CALL_PARSER="${TOOL_CALL_PARSER:-glm47}"
 # Keep model on container disk (requires 100GB containerDiskInGb)
@@ -56,7 +52,6 @@ TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 OPENCLAW_WEB_PASSWORD="${OPENCLAW_WEB_PASSWORD:-openclaw}"
 
-# Auto-detect optimal context if not explicitly set
 if [ -z "$MAX_MODEL_LEN" ]; then
     MAX_MODEL_LEN=$(detect_optimal_context)
     echo "Auto-detected optimal context length: $MAX_MODEL_LEN tokens"
@@ -248,16 +243,7 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR "$BOT_CMD" gateway --auth password --pass
 GATEWAY_PID=$!
 
 echo ""
-echo "============================================"
-echo "  Services Running"
-echo "============================================"
-echo "  vLLM API: http://localhost:8000"
-echo "  OpenClaw Gateway: ws://localhost:18789"
-echo ""
-echo "  vLLM PID: $VLLM_PID"
-echo "  Gateway PID: $GATEWAY_PID"
-echo "============================================"
-echo ""
+oc_print_ready "vLLM API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens" "password"
 
 # Keep container running and handle signals
 trap "kill $VLLM_PID $GATEWAY_PID 2>/dev/null; exit 0" SIGTERM SIGINT

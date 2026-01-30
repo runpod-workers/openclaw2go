@@ -2,31 +2,12 @@
 # Don't exit on error - we want the container to stay alive for debugging
 set +e
 
+source /opt/openclaw/entrypoint-common.sh
+
 # ============================================================
 # Setup SSH server FIRST so we can always connect
 # ============================================================
-echo "Setting up SSH server..."
-
-# Generate host keys if they don't exist
-if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
-    ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
-    ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N ''
-    ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ''
-fi
-
-# Setup authorized_keys from PUBLIC_KEY env var
-if [ -n "$PUBLIC_KEY" ]; then
-    mkdir -p ~/.ssh
-    echo "$PUBLIC_KEY" > ~/.ssh/authorized_keys
-    chmod 700 ~/.ssh
-    chmod 600 ~/.ssh/authorized_keys
-    echo "SSH public key configured"
-fi
-
-# Start SSH daemon
-mkdir -p /var/run/sshd
-/usr/sbin/sshd
-echo "SSH server started on port 22"
+oc_setup_ssh_manual
 
 echo ""
 echo "================================================"
@@ -224,16 +205,8 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_WEB_PAS
 GATEWAY_PID=$!
 
 echo ""
-echo "================================================"
-echo "  Ready!"
-echo "  llama.cpp API: http://localhost:8000"
-echo "  OpenClaw Gateway: ws://localhost:18789"
-echo "  Web UI: https://<pod-id>-18789.proxy.runpod.net/?token=$OPENCLAW_WEB_PASSWORD"
-echo "  Web UI Token: $OPENCLAW_WEB_PASSWORD"
-echo "  Model: $SERVED_MODEL_NAME"
-echo "  Context: $MAX_MODEL_LEN tokens (200k!)"
-echo "  VRAM: ~28GB / 32GB"
-echo "================================================"
+oc_print_ready "llama.cpp API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens (200k!)" "token" \
+    "VRAM: ~28GB / 32GB"
 
 # Handle shutdown
 cleanup() {
