@@ -67,8 +67,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 RUN python3 -m pip install --no-cache-dir huggingface_hub
 
 # Image generation dependencies (SDNQ + Diffusers + Torch)
-RUN python3 -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu124 && \
-    python3 -m pip install --no-cache-dir sdnq diffusers transformers accelerate safetensors
+# PyTorch cu128 required for RTX 5090 (Blackwell sm_120) support
+# Diffusers from git required for Flux2KleinPipeline
+RUN python3 -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu128 && \
+    python3 -m pip install --no-cache-dir sdnq git+https://github.com/huggingface/diffusers.git transformers accelerate safetensors
 
 # Install OpenClaw and Claude Code
 RUN npm install -g --prefer-offline @anthropic-ai/claude-code openclaw@latest && \
