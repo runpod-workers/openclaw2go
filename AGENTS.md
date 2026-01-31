@@ -1,67 +1,50 @@
 # AGENTS.md
 
-High-level guide for AI agents and new developers.
-
-## What This Is
-
-OpenClaw on RunPod: Docker images that run an AI coding assistant (OpenClaw) with GLM-4.7 LLM on various GPUs.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│                  RunPod Pod                      │
-│  ┌───────────────┐    ┌───────────────────────┐ │
-│  │  llama.cpp /  │    │      OpenClaw         │ │
-│  │    vLLM       │◄──►│   (AI Assistant)      │ │
-│  │   :8000       │    │      :18789           │ │
-│  └───────────────┘    └───────────────────────┘ │
-│           ▲                                      │
-│           │ GPU (GLM-4.7 model)                 │
-└─────────────────────────────────────────────────┘
-```
-
-## Model Variants
-
-| Folder | GPU Target | Inference |
-|--------|------------|-----------|
-| `glm47-flash-gguf-llamacpp/` | RTX 5090 | llama.cpp |
-| `glm47-flash-awq-4bit/` | A100 80GB | vLLM |
-| `glm47-flash-fp16/` | H100/A100 | vLLM |
-| `glm47-flash-nvfp4-5090/` | RTX 5090 | vLLM |
-| `glm47-reap-w4a16/` | B200 | vLLM |
-
-## Key Folders
-
-- `models/` — Dockerfiles per GPU variant
-- `scripts/` — Entrypoints, startup logic
-- `skills/` — Agent capabilities (image gen, etc.)
-- `config/workspace/` — Files copied into container for OpenClaw
-
-## Skills
-
-### Image Generation
-```bash
-openclaw-image-gen --prompt "a robot" --width 1024 --height 1024 --output /workspace/openclaw/images/out.png
-```
-Uses FLUX.2 Klein SDNQ (4-bit). Requires PyTorch cu128 for RTX 5090.
-
-## Quick Commands
+## Build commands
 
 ```bash
-# Build
+# Build specific model variant
 docker build -f models/glm47-flash-gguf-llamacpp/Dockerfile -t openclaw-gguf .
+docker build -f models/glm47-flash-awq-4bit/Dockerfile -t openclaw-awq .
+docker build -f models/glm47-flash-fp16/Dockerfile -t openclaw-fp16 .
+```
 
-# SSH into running pod
+## Test commands
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# List models
+curl http://localhost:8000/v1/models -H "Authorization: Bearer $VLLM_API_KEY"
+
+# Run test suites
+./tests/test-vllm.sh
+./tests/test-tool-calling.sh
+```
+
+## Code style
+
+- Shell scripts: Use `set -e` at top, quote variables
+- Dockerfiles: Combine RUN commands to reduce layers, add comments for non-obvious steps
+- Python: Standard formatting, type hints where helpful
+
+## Testing on RunPod
+
+```bash
+# SSH into pod
 ssh -i ~/.ssh/id_runpod root@<ip> -p <port>
 
-# Test on pod
-curl http://localhost:8000/health
+# Check GPU
+nvidia-smi
+
+# Test image generation
 openclaw-image-gen --prompt "test" --width 512 --height 512 --output /tmp/test.png
 ```
 
-## Current Focus
+## Important notes
 
-- RTX 5090 (Blackwell sm_120) support
-- Image generation with FLUX.2 Klein SDNQ
-- PyTorch cu128 required for Blackwell GPUs
+- RTX 5090 requires PyTorch cu128 (not cu124) for Blackwell sm_120 support
+- Diffusers must be installed from git for `Flux2KleinPipeline`
+- Never start/stop servers — user handles that
+- Use RunPod MCP tools to manage pods

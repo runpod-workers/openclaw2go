@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **For high-level architecture and onboarding, see [AGENTS.md](./AGENTS.md).**
+> **Also read [AGENTS.md](./AGENTS.md) for build/test commands and project conventions.**
 
 ## Project Overview
 
