@@ -15,6 +15,12 @@ import os
 import sys
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+# Reduce VRAM pressure from torch.compile/inductor
+os.environ.setdefault("TORCH_COMPILE_DISABLE", "1")
+os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
+os.environ.setdefault("TORCHINDUCTOR_DISABLE", "1")
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 # Global pipeline reference
 pipe = None
 device = None
@@ -150,6 +156,7 @@ def load_model(model_id):
     try:
         import sdnq  # noqa: F401
         from sdnq.loader import apply_sdnq_options_to_model
+        from sdnq.quantizer import SDNQConfig, SDNQQuantizer, QuantizationMethod
         has_sdnq = True
     except ImportError:
         has_sdnq = False
@@ -159,6 +166,18 @@ def load_model(model_id):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     generator_device = device
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
+
+    # Register SDNQ quantizer with diffusers if available
+    if has_sdnq:
+        try:
+            from diffusers.quantizers import auto as diff_auto
+            diff_auto.AUTO_QUANTIZATION_CONFIG_MAPPING.setdefault(QuantizationMethod.SDNQ.value, SDNQConfig)
+            diff_auto.AUTO_QUANTIZATION_CONFIG_MAPPING.setdefault(QuantizationMethod.SDNQ_TRAINING.value, SDNQConfig)
+            diff_auto.AUTO_QUANTIZER_MAPPING.setdefault(QuantizationMethod.SDNQ.value, SDNQQuantizer)
+            diff_auto.AUTO_QUANTIZER_MAPPING.setdefault(QuantizationMethod.SDNQ_TRAINING.value, SDNQQuantizer)
+            print("[ImageServer] SDNQ quantizer registered with diffusers")
+        except Exception as exc:
+            print(f"[ImageServer] WARNING: failed to register SDNQ quantizer: {exc}")
 
     # Load pipeline - SDNQ models need special handling
     pipe = diffusers.Flux2KleinPipeline.from_pretrained(model_id, torch_dtype=dtype)
@@ -181,6 +200,14 @@ def load_model(model_id):
             print(f"[ImageServer] SDNQ optimization failed: {e}")
 
     pipe.to(device)
+    if device == "cuda":
+        try:
+            pipe.enable_attention_slicing()
+            pipe.enable_vae_slicing()
+            pipe.enable_vae_tiling()
+            print("[ImageServer] Enabled attention/vae slicing for lower VRAM")
+        except Exception as exc:
+            print(f"[ImageServer] WARNING: could not enable VRAM optimizations: {exc}")
     print(f"[ImageServer] Model loaded on {device}")
     
     # Report VRAM usage

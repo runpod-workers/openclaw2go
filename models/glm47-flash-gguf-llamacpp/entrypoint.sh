@@ -104,10 +104,11 @@ else
 fi
 
 # Set defaults
-# Note: 100k context to leave VRAM for audio + image gen servers
 LLAMA_API_KEY="${LLAMA_API_KEY:-changeme}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-glm-4.7-flash}"
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-100000}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-200000}"
+LLAMA_PARALLEL="${LLAMA_PARALLEL:-1}"
+LLAMA_GPU_LAYERS="${LLAMA_GPU_LAYERS:-44}"
 OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
 export OPENCLAW_STATE_DIR OPENCLAW_WORKSPACE
@@ -126,6 +127,8 @@ fi
 echo "Starting llama.cpp server..."
 echo "  Model: $MODEL_PATH/$MODEL_FILE"
 echo "  Context: $MAX_MODEL_LEN tokens"
+echo "  Parallel slots: $LLAMA_PARALLEL"
+echo "  GPU layers: $LLAMA_GPU_LAYERS"
 echo "  API Key: ${LLAMA_API_KEY:0:4}..."
 
 # Start llama-server with OpenAI-compatible API
@@ -139,7 +142,8 @@ llama-server \
     -m "$MODEL_PATH/$MODEL_FILE" \
     --host 0.0.0.0 \
     --port 8000 \
-    -ngl 999 \
+    -ngl "$LLAMA_GPU_LAYERS" \
+    --parallel "$LLAMA_PARALLEL" \
     -c "$MAX_MODEL_LEN" \
     --jinja \
     -ctk q8_0 \
@@ -171,7 +175,7 @@ AUDIO_PID=$!
 echo ""
 echo "Starting FLUX.2 Klein image generation server..."
 echo "  Model: Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic"
-echo "  Port: 8002 (GPU accelerated, ~6 GB VRAM)"
+echo "  Port: 8002 (GPU accelerated, ~3-4 GB VRAM)"
 
 openclaw-image-server --port 8002 > /tmp/image-server.log 2>&1 &
 IMAGE_PID=$!
@@ -232,7 +236,7 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
   "agents": {
     "defaults": {
       "model": { "primary": "local-llamacpp/$SERVED_MODEL_NAME" },
-      "contextTokens": 90000,
+      "contextTokens": 180000,
       "workspace": "$OPENCLAW_WORKSPACE"
     }
   },
@@ -285,8 +289,8 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_WEB_PAS
 GATEWAY_PID=$!
 
 echo ""
-oc_print_ready "llama.cpp API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens (100k)" "token" \
-    "VRAM: LLM ~20GB + Audio ~2GB + Image ~6GB = ~28GB / 32GB"
+oc_print_ready "llama.cpp API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens (200k)" "token" \
+    "VRAM: LLM ~24GB + Audio ~2GB + Image ~3-4GB = ~29-30GB / 32GB"
 echo ""
 echo "  Audio Server (TTS/STT): http://localhost:8001"
 echo "    - openclaw-tts \"Hello world\" --output /tmp/hello.wav"

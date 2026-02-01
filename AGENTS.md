@@ -31,6 +31,8 @@ runpod-clawdbot/
 - **PyTorch cu128 required for RTX 5090** — cu124 doesn't support Blackwell sm_120 architecture
 - **Diffusers from git** — stable release lacks `Flux2KleinPipeline` for image generation
 - **llama.cpp built from source** with `DCMAKE_CUDA_ARCHITECTURES="120"` for sm_120 support
+- **LLM and Audio binaries MUST be separate** — LLM uses main llama.cpp branch, Audio uses PR #18641 branch. They have incompatible shared libraries. LLM libs go to `/usr/local/lib/`, Audio libs go to `/usr/local/bin/` (see Dockerfile lines 52 vs 73). Mixing them breaks LLM server startup.
+- **Persistent servers for low latency** — Audio (port 8001) and Image (port 8002) run as persistent servers with models pre-loaded in VRAM. CLI scripts (`openclaw-tts`, `openclaw-stt`, `openclaw-image-gen`) call these servers via HTTP API for instant inference (~0.3-0.8s vs 2-3s with per-request loading).
 
 ## Build Commands
 
@@ -79,9 +81,22 @@ curl http://localhost:8000/v1/models
 | Modify OpenClaw workspace | `config/workspace/` |
 | Update CI/CD | `.github/workflows/docker-build.yml` |
 
+## VRAM Usage (RTX 5090 - 32GB)
+
+| Component | VRAM | Notes |
+|-----------|------|-------|
+| GLM-4.7 LLM (200k ctx) | ~22.5 GB | Model + KV cache (q8_0), `LLAMA_GPU_LAYERS=44` |
+| Audio Server (TTS/STT) | ~2 GB | LFM2.5-Audio-1.5B-Q4_0 |
+| Image Server (FLUX.2) | ~3-4 GB | FLUX.2-klein-4B-SDNQ-4bit-dynamic |
+| **Total (all 3)** | **~29-30 GB** | **~2 GB free** |
+| **LLM + Audio only** | **~26 GB** | **~6 GB free** |
+
+**Note**: 200k context fits with all 3 servers on 32GB when `LLAMA_PARALLEL=1` and `LLAMA_GPU_LAYERS=44`. If memory pressure occurs, reduce `MAX_MODEL_LEN` or lower `LLAMA_GPU_LAYERS`.
+
 ## Important Notes
 
 - Never start/stop servers in code — user handles that
 - Use RunPod MCP tools to manage pods
 - RTX 5090 image gen requires: PyTorch cu128 + diffusers from git
 - Model downloads go to `/workspace/huggingface/` (persisted volume)
+- **CRITICAL**: LLM binaries (main branch) and Audio binaries (PR #18641) must use separate library paths. Never copy audio `.so` files to `/usr/local/lib/` - they will break LLM server.
