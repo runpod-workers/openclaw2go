@@ -106,9 +106,9 @@ fi
 # Set defaults
 LLAMA_API_KEY="${LLAMA_API_KEY:-changeme}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-glm-4.7-flash}"
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-200000}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-150000}"
 LLAMA_PARALLEL="${LLAMA_PARALLEL:-1}"
-LLAMA_GPU_LAYERS="${LLAMA_GPU_LAYERS:-44}"
+LLAMA_GPU_LAYERS="${LLAMA_GPU_LAYERS:-999}"
 OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
 export OPENCLAW_STATE_DIR OPENCLAW_WORKSPACE
@@ -134,7 +134,7 @@ echo "  API Key: ${LLAMA_API_KEY:0:4}..."
 # Start llama-server with OpenAI-compatible API
 # Key flags:
 #   -ngl 999: Offload all layers to GPU
-#   -c: Context length (200k tokens)
+#   -c: Context length (default 150k tokens)
 #   --jinja: Required for GLM-4.7 chat template
 #   -ctk q8_0 -ctv q8_0: Quantize KV cache to fit 200k in 32GB VRAM
 #   --api-key: Enable API key authentication
@@ -159,7 +159,7 @@ echo "Starting LFM2.5-Audio server for TTS/STT..."
 echo "  Model: $AUDIO_MODEL_PATH/LFM2.5-Audio-1.5B-${AUDIO_QUANT}.gguf"
 echo "  Port: 8001 (GPU accelerated, ~845 MiB VRAM)"
 
-llama-liquid-audio-server \
+env LD_LIBRARY_PATH="/usr/local/bin" llama-liquid-audio-server \
     -m "$AUDIO_MODEL_PATH/LFM2.5-Audio-1.5B-${AUDIO_QUANT}.gguf" \
     -mm "$AUDIO_MODEL_PATH/mmproj-LFM2.5-Audio-1.5B-${AUDIO_QUANT}.gguf" \
     -mv "$AUDIO_MODEL_PATH/vocoder-LFM2.5-Audio-1.5B-${AUDIO_QUANT}.gguf" \
@@ -236,7 +236,7 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
   "agents": {
     "defaults": {
       "model": { "primary": "local-llamacpp/$SERVED_MODEL_NAME" },
-      "contextTokens": 180000,
+      "contextTokens": 135000,
       "workspace": "$OPENCLAW_WORKSPACE"
     }
   },
@@ -289,7 +289,7 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_WEB_PAS
 GATEWAY_PID=$!
 
 echo ""
-oc_print_ready "llama.cpp API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens (200k)" "token" \
+oc_print_ready "llama.cpp API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens" "token" \
     "VRAM: LLM ~24GB + Audio ~2GB + Image ~3-4GB = ~29-30GB / 32GB"
 echo ""
 echo "  Audio Server (TTS/STT): http://localhost:8001"
