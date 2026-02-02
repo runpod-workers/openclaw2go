@@ -1,0 +1,188 @@
+#!/usr/bin/env node
+"use strict";
+
+const http = require("http");
+const https = require("https");
+const fs = require("fs");
+const path = require("path");
+const { URL } = require("url");
+
+function readArg(flag, fallback) {
+  const idx = process.argv.indexOf(flag);
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return process.argv[idx + 1];
+  }
+  return fallback;
+}
+
+const host = readArg("--host", process.env.OPENCLAW_WEB_PROXY_HOST || "0.0.0.0");
+const port = parseInt(
+  readArg("--port", process.env.OPENCLAW_WEB_PROXY_PORT || "8080"),
+  10,
+);
+const webRoot = readArg("--web-root", process.env.OPENCLAW_WEB_ROOT || "/opt/openclaw/web");
+const llmBase = readArg("--llm-url", process.env.OPENCLAW_LLM_URL || "http://localhost:8000");
+const audioBase = readArg("--audio-url", process.env.OPENCLAW_AUDIO_URL || "http://localhost:8001");
+const imageBase = readArg("--image-url", process.env.OPENCLAW_IMAGE_URL || "http://localhost:8002");
+
+const configPayload = {
+  llmBasePath: "/api/llm",
+  audioBasePath: "/api/audio",
+  imageBasePath: "/api/image",
+  imagePublicBaseUrl: process.env.OPENCLAW_IMAGE_PUBLIC_BASE_URL || "",
+  llmModel: process.env.SERVED_MODEL_NAME || "glm-4.7-flash",
+};
+
+const mimeTypes = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".ico": "image/x-icon",
+  ".json": "application/json; charset=utf-8",
+};
+
+function sendJson(res, status, payload) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(payload));
+}
+
+function safeFilePath(requestPath) {
+  const cleanPath = requestPath.split("?")[0];
+  const normalized = path.normalize(cleanPath).replace(/^(\.\.(\/|\\|$))+/, "");
+  return path.join(webRoot, normalized);
+}
+
+function serveFile(filePath, res) {
+  fs.stat(filePath, (err, stat) => {
+    if (err || !stat.isFile()) {
+      res.statusCode = 404;
+      res.end("Not found");
+      return;
+    }
+    const ext = path.extname(filePath).toLowerCase();
+    res.statusCode = 200;
+    res.setHeader("Content-Type", mimeTypes[ext] || "application/octet-stream");
+    res.setHeader("Content-Length", String(stat.size));
+    fs.createReadStream(filePath).pipe(res);
+  });
+}
+
+function serveStatic(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  if (url.pathname === "/") {
+    return serveFile(path.join(webRoot, "index.html"), res);
+  }
+  return serveFile(safeFilePath(url.pathname), res);
+}
+
+function proxyRequest(req, res, targetBase, stripPrefix) {
+  const original = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  let proxiedPath = original.pathname;
+  if (stripPrefix && proxiedPath.startsWith(stripPrefix)) {
+    proxiedPath = proxiedPath.slice(stripPrefix.length) || "/";
+  }
+  const targetUrl = new URL(proxiedPath + original.search, targetBase);
+  const proxyHeaders = { ...req.headers, host: targetUrl.host };
+  const client = targetUrl.protocol === "https:" ? https : http;
+  const proxyReq = client.request(
+    {
+      hostname: targetUrl.hostname,
+      port: targetUrl.port || (targetUrl.protocol === "https:" ? 443 : 80),
+      method: req.method,
+      path: targetUrl.pathname + targetUrl.search,
+      headers: proxyHeaders,
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+      proxyRes.pipe(res);
+    },
+  );
+
+  proxyReq.on("error", (err) => {
+    if (!res.headersSent) {
+      sendJson(res, 502, { error: "proxy_error", details: err.message });
+    } else {
+      res.end();
+    }
+  });
+
+  req.pipe(proxyReq);
+  req.on("aborted", () => proxyReq.destroy());
+  res.on("close", () => proxyReq.destroy());
+}
+
+function probe(url) {
+  return new Promise((resolve) => {
+    const target = new URL(url);
+    const client = target.protocol === "https:" ? https : http;
+    const req = client.request(
+      {
+        hostname: target.hostname,
+        port: target.port || (target.protocol === "https:" ? 443 : 80),
+        path: target.pathname + target.search,
+        method: "GET",
+        timeout: 2000,
+      },
+      (res) => {
+        res.resume();
+        resolve({ ok: res.statusCode && res.statusCode < 500, status: res.statusCode });
+      },
+    );
+    req.on("error", () => resolve({ ok: false, status: null }));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve({ ok: false, status: null });
+    });
+    req.end();
+  });
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+
+  if (url.pathname === "/config.json") {
+    return sendJson(res, 200, configPayload);
+  }
+
+  if (url.pathname === "/health") {
+    const [llm, image, audio] = await Promise.all([
+      probe(new URL("/health", llmBase).toString()),
+      probe(new URL("/health", imageBase).toString()),
+      probe(new URL("/v1/models", audioBase).toString()),
+    ]);
+    return sendJson(res, 200, { llm, image, audio });
+  }
+
+  if (url.pathname.startsWith("/api/llm/")) {
+    return proxyRequest(req, res, llmBase, "/api/llm");
+  }
+  if (url.pathname.startsWith("/api/audio/")) {
+    return proxyRequest(req, res, audioBase, "/api/audio");
+  }
+  if (url.pathname.startsWith("/api/image/")) {
+    return proxyRequest(req, res, imageBase, "/api/image");
+  }
+  if (url.pathname === "/generate" || url.pathname.startsWith("/images/") || url.pathname === "/latest") {
+    return proxyRequest(req, res, imageBase, "");
+  }
+
+  if (req.method === "GET" || req.method === "HEAD") {
+    return serveStatic(req, res);
+  }
+
+  res.statusCode = 404;
+  res.end("Not found");
+});
+
+server.listen(port, host, () => {
+  console.log(`[WebProxy] Listening on http://${host}:${port}`);
+  console.log(`[WebProxy] Web root: ${webRoot}`);
+  console.log(`[WebProxy] LLM: ${llmBase}`);
+  console.log(`[WebProxy] Audio: ${audioBase}`);
+  console.log(`[WebProxy] Image: ${imageBase}`);
+});

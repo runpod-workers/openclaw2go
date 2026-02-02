@@ -1,0 +1,161 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: #0b0c0f;
+  color: #e8eaf0;
+}
+
+a {
+  color: #7cc4ff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.title {
+  font-size: 28px;
+  margin: 0 0 6px;
+}
+
+.subtitle {
+  color: #b1b6c1;
+  margin: 0 0 24px;
+}
+
+.card {
+  background: #151821;
+  border: 1px solid #2b303b;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  color: #b1b6c1;
+  margin-bottom: 6px;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #343a46;
+  background: #0f1117;
+  color: #e8eaf0;
+  font-size: 14px;
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+button {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #1f2937;
+  color: #d1d5db;
+}
+
+.pill.ok {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.pill.warn {
+  background: rgba(250, 204, 21, 0.15);
+  color: #facc15;
+}
+
+.pill.err {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+}
+
+.muted {
+  color: #9aa1ad;
+  font-size: 13px;
+}
+
+pre {
+  background: #0f1117;
+  border: 1px solid #2b303b;
+  border-radius: 10px;
+  padding: 12px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+img.preview {
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid #2b303b;
+  margin-top: 12px;
+}
+
+.error {
+  color: #fca5a5;
+  font-size: 13px;
+}

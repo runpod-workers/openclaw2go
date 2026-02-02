@@ -111,9 +111,10 @@ LLAMA_PARALLEL="${LLAMA_PARALLEL:-1}"
 LLAMA_GPU_LAYERS="${LLAMA_GPU_LAYERS:-999}"
 OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
-export OPENCLAW_STATE_DIR OPENCLAW_WORKSPACE
+OPENCLAW_WEB_PROXY_PORT="${OPENCLAW_WEB_PROXY_PORT:-8080}"
+export OPENCLAW_STATE_DIR OPENCLAW_WORKSPACE OPENCLAW_WEB_PROXY_PORT
 if [ -n "${RUNPOD_POD_ID:-}" ] && [ -z "${OPENCLAW_IMAGE_PUBLIC_BASE_URL:-}" ]; then
-    OPENCLAW_IMAGE_PUBLIC_BASE_URL="https://${RUNPOD_POD_ID}-8002.proxy.runpod.net"
+    OPENCLAW_IMAGE_PUBLIC_BASE_URL="https://${RUNPOD_POD_ID}-${OPENCLAW_WEB_PROXY_PORT}.proxy.runpod.net"
     export OPENCLAW_IMAGE_PUBLIC_BASE_URL
 fi
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
@@ -184,6 +185,12 @@ echo "  Port: 8002 (GPU accelerated, ~3-4 GB VRAM)"
 openclaw-image-server --port 8002 > /tmp/image-server.log 2>&1 &
 IMAGE_PID=$!
 
+# Start lightweight media proxy + UI
+echo ""
+echo "Starting OpenClaw media web proxy..."
+openclaw-web-proxy --port "$OPENCLAW_WEB_PROXY_PORT" --web-root "/opt/openclaw/web" > /tmp/openclaw-web-proxy.log 2>&1 &
+WEB_PROXY_PID=$!
+
 # Wait for llama-server to be ready
 echo "Waiting for llama-server to start..."
 MAX_WAIT=600
@@ -208,6 +215,15 @@ mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_STATE_DIR/agents/main/sessions" "$OPEN
 mkdir -p "$OPENCLAW_WORKSPACE/images" "$OPENCLAW_WORKSPACE/audio"
 chmod 700 "$OPENCLAW_STATE_DIR" "$OPENCLAW_STATE_DIR/agents" "$OPENCLAW_STATE_DIR/agents/main" \
     "$OPENCLAW_STATE_DIR/agents/main/sessions" "$OPENCLAW_STATE_DIR/credentials" 2>/dev/null || true
+
+# Install tool_result hook plugins into workspace (if bundled)
+OPENCLAW_EXT_DIR="$OPENCLAW_WORKSPACE/.openclaw/extensions"
+if [ -d "/opt/openclaw/plugins/toolresult-images" ]; then
+    mkdir -p "$OPENCLAW_EXT_DIR"
+    if [ ! -d "$OPENCLAW_EXT_DIR/toolresult-images" ]; then
+        cp -r "/opt/openclaw/plugins/toolresult-images" "$OPENCLAW_EXT_DIR/"
+    fi
+fi
 
 if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
     echo "Creating OpenClaw config..."
@@ -298,9 +314,16 @@ OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_WEB_PAS
 "$BOT_CMD" gateway --auth token --token "$OPENCLAW_WEB_PASSWORD" &
 GATEWAY_PID=$!
 
+MEDIA_PROXY_URL=""
+if [ -n "${RUNPOD_POD_ID:-}" ]; then
+    MEDIA_PROXY_URL="https://${RUNPOD_POD_ID}-${OPENCLAW_WEB_PROXY_PORT}.proxy.runpod.net"
+fi
+
 echo ""
 oc_print_ready "llama.cpp API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens" "token" \
-    "VRAM: LLM ~24GB + Audio ~2GB + Image ~3-4GB = ~29-30GB / 32GB"
+    "VRAM: LLM ~24GB + Audio ~2GB + Image ~3-4GB = ~29-30GB / 32GB" \
+    "Media UI (local): http://localhost:${OPENCLAW_WEB_PROXY_PORT}" \
+    "${MEDIA_PROXY_URL:+Media UI (public): ${MEDIA_PROXY_URL}}"
 echo ""
 echo "  Audio Server (TTS/STT): http://localhost:8001"
 echo "    - openclaw-tts \"Hello world\" --output /tmp/hello.wav"
@@ -308,6 +331,8 @@ echo "    - openclaw-stt /path/to/audio.wav"
 echo ""
 echo "  Image Server (FLUX.2): http://localhost:8002"
 echo "    - openclaw-image-gen --prompt \"A robot\" --output /tmp/robot.png"
+echo ""
+echo "  Media UI: http://localhost:${OPENCLAW_WEB_PROXY_PORT}"
 
 # Handle shutdown
 cleanup() {
@@ -315,6 +340,7 @@ cleanup() {
     [ -n "$GATEWAY_PID" ] && kill $GATEWAY_PID 2>/dev/null
     [ -n "$IMAGE_PID" ] && kill $IMAGE_PID 2>/dev/null
     [ -n "$AUDIO_PID" ] && kill $AUDIO_PID 2>/dev/null
+    [ -n "$WEB_PROXY_PID" ] && kill $WEB_PROXY_PID 2>/dev/null
     kill $LLAMA_PID 2>/dev/null
     exit 0
 }
