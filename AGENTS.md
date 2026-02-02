@@ -1,6 +1,6 @@
 # AGENTS.md
 
-OpenClaw on Runpod: Docker images that run an AI coding assistant with GLM-4.7 LLM on various GPUs.
+OpenClaw Stack on Runpod: self-contained Docker images with LLM + media services for GPU pods.
 
 ## Codebase Structure
 
@@ -32,7 +32,7 @@ openclaw-stack/
 - **Diffusers from git** — stable release lacks `Flux2KleinPipeline` for image generation
 - **llama.cpp built from source** with `DCMAKE_CUDA_ARCHITECTURES="120"` for sm_120 support
 - **LLM and Audio binaries MUST be separate** — LLM uses main llama.cpp branch, Audio uses PR #18641 branch. They have incompatible shared libraries. LLM libs go to `/usr/local/lib/`, Audio libs go to `/usr/local/bin/` (see Dockerfile lines 52 vs 73). Mixing them breaks LLM server startup.
-- **Persistent servers for low latency** — Audio (port 8001) and Image (port 8002) run as persistent servers with models pre-loaded in VRAM. CLI scripts (`openclaw-tts`, `openclaw-stt`, `openclaw-image-gen`) call these servers via HTTP API for instant inference (~0.3-0.8s vs 2-3s with per-request loading).
+- **Persistent servers for low latency** — Audio (port 8001) and Image (port 8002) run as persistent servers with models pre-loaded in VRAM. CLI scripts (`openclaw-tts`, `openclaw-stt`, `openclaw-image-gen`) call these servers via HTTP API for instant inference (~0.3-0.8s vs 2-3s with per-request loading). These ports are internal-only; public access goes through the proxy on 8080.
 
 ## Build Commands
 

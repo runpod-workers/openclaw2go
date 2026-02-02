@@ -82,8 +82,8 @@ You’ve got two options:
 **You say (walkthrough voice)**:
 Here’s the setup that actually matters:
 
-- **Image**: `runpod/openclaw-glm47-flash-gguf:latest`
-- **Ports**: `8000/http` (llama.cpp), `18789/http` (OpenClaw UI), `22/tcp` (SSH)
+- **Image**: `runpod/openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest`
+- **Ports**: `8000/http` (llama.cpp), `8080/http` (media proxy UI), `18789/http` (OpenClaw UI), `22/tcp` (SSH)
 - **Network volume mounted to `/workspace`** (non-negotiable; model is ~17GB and you want persistence across restarts)
 - **Environment variables**:
   - `LLAMA_API_KEY` (protects the model API)

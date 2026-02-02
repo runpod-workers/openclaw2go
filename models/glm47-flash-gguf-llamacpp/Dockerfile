@@ -124,5 +124,5 @@ COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
 COPY models/glm47-flash-gguf-llamacpp/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh /usr/local/bin/openclaw-image-gen /usr/local/bin/openclaw-image-server /usr/local/bin/openclaw-tts /usr/local/bin/openclaw-stt /usr/local/bin/openclaw-web-proxy
 
-EXPOSE 8000 8001 8002 8080 18789 22
+EXPOSE 8000 8080 18789 22
 ENTRYPOINT ["/entrypoint.sh"]

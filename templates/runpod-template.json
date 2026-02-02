@@ -1,7 +1,7 @@
 {
-  "name": "openclaw-vllm",
+  "name": "openclaw-stack-vllm",
   "description": "OpenClaw AI assistant with vLLM for local LLM inference. Includes Telegram integration.",
-  "imageName": "your-dockerhub-username/openclaw-vllm:latest",
+  "imageName": "your-dockerhub-username/openclaw-stack-vllm:latest",
   "containerDiskInGb": 50,
   "volumeInGb": 150,
   "volumeMountPath": "/workspace",

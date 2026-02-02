@@ -72,11 +72,11 @@ jobs:
           file: models/glm47-flash-awq-4bit/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-awq-4bit:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw-glm47-flash-awq-4bit:latest', env.DOCKERHUB_REPO) || '' }}
+            ${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-awq-4bit:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw-stack-glm4.7-flash-awq-4bit:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-awq-4bit:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-awq-4bit:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-awq-4bit:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-awq-4bit:buildcache,mode=max
 
   # Disabled - vLLM NVFP4 has bugs with GLM-4.7 MLA on Blackwell
   # See models/glm47-flash-nvfp4-5090/ISSUES.md
@@ -139,11 +139,11 @@ jobs:
           file: models/glm47-flash-nvfp4-5090/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-nvfp4-5090:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw-glm47-flash-nvfp4-5090:latest', env.DOCKERHUB_REPO) || '' }}
+            ${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-nvfp4-5090:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw-stack-glm4.7-flash-nvfp4-5090:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-nvfp4-5090:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-nvfp4-5090:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-nvfp4-5090:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-nvfp4-5090:buildcache,mode=max
 
   # GLM-4.7-Flash GGUF with llama.cpp - WORKING on RTX 5090!
   build-glm47-flash-gguf-llamacpp:
@@ -204,11 +204,11 @@ jobs:
           file: models/glm47-flash-gguf-llamacpp/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-gguf:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw-glm47-flash-gguf:latest', env.DOCKERHUB_REPO) || '' }}
+            ${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-gguf:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-glm47-flash-gguf:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache,mode=max
 
   # Disabled for now
   # build-glm47-flash-fp16:

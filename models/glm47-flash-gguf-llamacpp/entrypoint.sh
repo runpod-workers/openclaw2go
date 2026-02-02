@@ -329,11 +329,11 @@ oc_print_ready "llama.cpp API" "$SERVED_MODEL_NAME" "$MAX_MODEL_LEN tokens" "tok
     "Media UI (local): http://localhost:${OPENCLAW_WEB_PROXY_PORT}" \
     "${MEDIA_PROXY_URL:+Media UI (public): ${MEDIA_PROXY_URL}}"
 echo ""
-echo "  Audio Server (TTS/STT): http://localhost:8001"
+echo "  Audio Server (internal): http://localhost:8001 (not exposed)"
 echo "    - openclaw-tts \"Hello world\" --output /tmp/hello.wav"
 echo "    - openclaw-stt /path/to/audio.wav"
 echo ""
-echo "  Image Server (FLUX.2): http://localhost:8002"
+echo "  Image Server (internal): http://localhost:8002 (not exposed)"
 echo "    - openclaw-image-gen --prompt \"A robot\" --output /tmp/robot.png"
 echo ""
 echo "  Media UI: http://localhost:${OPENCLAW_WEB_PROXY_PORT}"

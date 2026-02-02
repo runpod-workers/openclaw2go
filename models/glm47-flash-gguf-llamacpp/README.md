@@ -33,9 +33,9 @@ llama.cpp has native support for `Glm4MoeLite` architecture (PR #18936 merged Ja
 1. **Add your SSH key** to [Runpod Account Settings → SSH Public Keys](https://www.runpod.io/console/user/settings) (required for device pairing later). If you don't have an SSH key, follow the [Runpod SSH guide](https://docs.runpod.io/pods/configuration/use-ssh).
 
 2. **Create a Pod** with:
-   - Image: `runpod/openclaw-glm47-flash-gguf:latest`
+   - Image: `runpod/openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest`
    - GPU: RTX 5090 (or any 32GB+ GPU)
-   - Ports: `8000/http`, `18789/http`, `22/tcp`
+   - Ports: `8000/http`, `8080/http`, `18789/http`, `22/tcp`
    - Network Volume: **30GB minimum**, mounted to `/workspace`
      - Required for model download (~17GB) and config persistence
      - Without a network volume, data is lost on pod restart
@@ -45,9 +45,13 @@ llama.cpp has native support for `Glm4MoeLite` architecture (PR #18936 merged Ja
 
 3. **Wait for startup** - First launch downloads the model (~17GB), which takes a few minutes. Check pod logs for progress.
 
-4. **Access the Web UI**:
+4. **Access the Control UI**:
    ```
    https://<pod-id>-18789.proxy.runpod.net/?token=<OPENCLAW_WEB_PASSWORD>
+   ```
+5. **Access the Media UI (proxy)**:
+   ```
+   https://<pod-id>-8080.proxy.runpod.net
    ```
 
 ### First-Time Device Pairing
@@ -74,8 +78,11 @@ After approval, refresh the Web UI - it will work permanently for that browser.
 | Port | Service |
 |------|---------|
 | 8000 | llama.cpp API (OpenAI-compatible) |
-| 18789 | OpenClaw Web UI |
+| 8080 | Media proxy + UI (image/audio links) |
+| 18789 | OpenClaw Control UI |
 | 22 | SSH |
+
+Note: audio/image servers run on `8001/8002` internally and are not exposed.
 
 ## Environment Variables
 
@@ -92,13 +99,13 @@ After approval, refresh the Web UI - it will work permanently for that browser.
 
 ```bash
 # Build
-docker build -f models/glm47-flash-gguf-llamacpp/Dockerfile -t openclaw-glm47-gguf-llamacpp .
+docker build -f models/glm47-flash-gguf-llamacpp/Dockerfile -t openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf .
 
 # Run on RTX 5090
-docker run --gpus all -p 8000:8000 -p 18789:18789 \
+docker run --gpus all -p 8000:8000 -p 8080:8080 -p 18789:18789 \
   -v /path/to/workspace:/workspace \
   -e LLAMA_API_KEY=your-key \
-  openclaw-glm47-gguf-llamacpp
+  openclaw-stack-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf
 ```
 
 ## API Usage
