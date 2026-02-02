@@ -34,6 +34,15 @@ function App() {
   const [imgResult, setImgResult] = useState(null);
   const [imgError, setImgError] = useState("");
   const [imgLoading, setImgLoading] = useState(false);
+  const [ttsText, setTtsText] = useState("");
+  const [ttsVoice, setTtsVoice] = useState("US male");
+  const [ttsAudioUrl, setTtsAudioUrl] = useState("");
+  const [ttsError, setTtsError] = useState("");
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [sttFile, setSttFile] = useState(null);
+  const [sttText, setSttText] = useState("");
+  const [sttError, setSttError] = useState("");
+  const [sttLoading, setSttLoading] = useState(false);
 
   useEffect(() => {
     fetch("/config.json")
@@ -41,6 +50,14 @@ function App() {
       .then(setConfig)
       .catch(() => setConfig(null));
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (ttsAudioUrl) {
+        URL.revokeObjectURL(ttsAudioUrl);
+      }
+    };
+  }, [ttsAudioUrl]);
 
   const refreshHealth = () => {
     setHealthError("");
@@ -137,6 +154,64 @@ function App() {
       setImgError(err.message || "Image request failed.");
     } finally {
       setImgLoading(false);
+    }
+  };
+
+  const readFileAsDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Failed to read file."));
+      reader.readAsDataURL(file);
+    });
+
+  const runTts = async () => {
+    setTtsError("");
+    setTtsAudioUrl("");
+    setTtsLoading(true);
+    try {
+      const res = await fetch("/api/audio/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: ttsText, voice: ttsVoice }),
+      });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || `Request failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setTtsAudioUrl(url);
+    } catch (err) {
+      setTtsError(err.message || "TTS request failed.");
+    } finally {
+      setTtsLoading(false);
+    }
+  };
+
+  const runStt = async () => {
+    setSttError("");
+    setSttText("");
+    setSttLoading(true);
+    try {
+      if (!sttFile) {
+        throw new Error("Select a WAV file first.");
+      }
+      const dataUrl = await readFileAsDataUrl(sttFile);
+      const res = await fetch("/api/audio/stt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio: dataUrl, format: "wav" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) {
+        throw new Error(data?.error || `Request failed (${res.status})`);
+      }
+      setSttText(data.text || "");
+    } catch (err) {
+      setSttError(err.message || "STT request failed.");
+    } finally {
+      setSttLoading(false);
     }
   };
 
@@ -355,18 +430,84 @@ function App() {
       title: "Audio (LFM2.5)",
       children: React.createElement(
         "div",
-        { className: "grid" },
+        { className: "grid two" },
         React.createElement(
-          "p",
-          { className: "muted" },
-          "Audio uses streaming responses. For now, use CLI or curl with the proxy endpoints.",
+          "div",
+          null,
+          React.createElement("label", null, "Text to speech"),
+          React.createElement("textarea", {
+            value: ttsText,
+            onChange: (e) => setTtsText(e.target.value),
+            placeholder: "Type text to synthesize...",
+          }),
+          React.createElement("label", null, "Voice"),
+          React.createElement(
+            "select",
+            { value: ttsVoice, onChange: (e) => setTtsVoice(e.target.value) },
+            React.createElement("option", { value: "US male" }, "US male"),
+            React.createElement("option", { value: "UK male" }, "UK male"),
+            React.createElement("option", { value: "US female" }, "US female"),
+            React.createElement("option", { value: "UK female" }, "UK female"),
+          ),
+          React.createElement(
+            "div",
+            { className: "row", style: { marginTop: "12px" } },
+            React.createElement(
+              "button",
+              { onClick: runTts, disabled: ttsLoading || !ttsText.trim() },
+              ttsLoading ? "Generating..." : "Generate speech",
+            ),
+            ttsError ? React.createElement("span", { className: "error" }, ttsError) : null,
+          ),
+          ttsAudioUrl
+            ? React.createElement(
+                "div",
+                { style: { marginTop: "12px" } },
+                React.createElement("audio", {
+                  controls: true,
+                  src: ttsAudioUrl,
+                  style: { width: "100%" },
+                }),
+                React.createElement(
+                  "div",
+                  { className: "muted", style: { marginTop: "6px" } },
+                  React.createElement("a", { href: ttsAudioUrl, download: "tts.wav" }, "Download"),
+                ),
+              )
+            : null,
         ),
         React.createElement(
-          "pre",
+          "div",
           null,
-          `openclaw-tts "Hello world" --output /workspace/openclaw/audio/hello.wav\n` +
-            `openclaw-stt /path/to/audio.wav\n\n` +
-            `curl -s ${window.location.origin}/api/audio/v1/chat/completions -H "Content-Type: application/json" -d '{\"model\":\"\",\"messages\":[{\"role\":\"system\",\"content\":\"Perform TTS. Use the US male voice.\"},{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true}'`,
+          React.createElement("label", null, "Speech to text (WAV)"),
+          React.createElement("input", {
+            type: "file",
+            accept: "audio/wav",
+            onChange: (e) => setSttFile(e.target.files?.[0] || null),
+          }),
+          React.createElement(
+            "div",
+            { className: "muted" },
+            "Upload a WAV file to transcribe.",
+          ),
+          React.createElement(
+            "div",
+            { className: "row", style: { marginTop: "12px" } },
+            React.createElement(
+              "button",
+              { onClick: runStt, disabled: sttLoading || !sttFile },
+              sttLoading ? "Transcribing..." : "Transcribe",
+            ),
+            sttError ? React.createElement("span", { className: "error" }, sttError) : null,
+          ),
+          sttText
+            ? React.createElement(
+                "div",
+                { style: { marginTop: "12px" } },
+                React.createElement("label", null, "Transcript"),
+                React.createElement("pre", null, sttText),
+              )
+            : null,
         ),
       ),
     }),

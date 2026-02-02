@@ -1,7 +1,7 @@
 {
   "id": "toolresult-images",
   "name": "Tool Result Images",
-  "description": "Convert image URLs in tool results into renderable image blocks.",
+  "description": "Convert image/audio outputs in tool results into renderable links.",
   "version": "1.0.0",
   "configSchema": {
     "type": "object",

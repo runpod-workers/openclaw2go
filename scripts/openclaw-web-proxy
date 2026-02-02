@@ -24,6 +24,17 @@ const webRoot = readArg("--web-root", process.env.OPENCLAW_WEB_ROOT || "/opt/ope
 const llmBase = readArg("--llm-url", process.env.OPENCLAW_LLM_URL || "http://localhost:8000");
 const audioBase = readArg("--audio-url", process.env.OPENCLAW_AUDIO_URL || "http://localhost:8001");
 const imageBase = readArg("--image-url", process.env.OPENCLAW_IMAGE_URL || "http://localhost:8002");
+const audioOutputDir = readArg(
+  "--audio-dir",
+  process.env.OPENCLAW_AUDIO_OUTPUT_DIR || "/workspace/openclaw/audio",
+);
+
+const TTS_VOICES = {
+  "US male": "Perform TTS. Use the US male voice.",
+  "UK male": "Perform TTS. Use the UK male voice.",
+  "US female": "Perform TTS. Use the US female voice.",
+  "UK female": "Perform TTS. Use the UK female voice.",
+};
 
 const configPayload = {
   llmBasePath: "/api/llm",
@@ -41,6 +52,10 @@ const mimeTypes = {
   ".svg": "image/svg+xml",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
+  ".wav": "audio/wav",
+  ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".ogg": "audio/ogg",
   ".ico": "image/x-icon",
   ".json": "application/json; charset=utf-8",
 };
@@ -49,6 +64,33 @@ function sendJson(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(JSON.stringify(payload));
+}
+
+function sendText(res, status, payload) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.end(payload);
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+async function readJson(req) {
+  const body = await readBody(req);
+  if (!body.length) {
+    return {};
+  }
+  try {
+    return JSON.parse(body.toString("utf-8"));
+  } catch (err) {
+    throw new Error("invalid_json");
+  }
 }
 
 function safeFilePath(requestPath) {
@@ -69,6 +111,28 @@ function serveFile(filePath, res) {
     res.setHeader("Content-Type", mimeTypes[ext] || "application/octet-stream");
     res.setHeader("Content-Length", String(stat.size));
     fs.createReadStream(filePath).pipe(res);
+  });
+}
+
+function serveMediaFile(filePath, res) {
+  const root = path.resolve(audioOutputDir);
+  const target = path.resolve(filePath);
+  if (!target.startsWith(root + path.sep) && target !== root) {
+    res.statusCode = 403;
+    res.end("Forbidden");
+    return;
+  }
+  fs.stat(target, (err, stat) => {
+    if (err || !stat.isFile()) {
+      res.statusCode = 404;
+      res.end("Not found");
+      return;
+    }
+    const ext = path.extname(target).toLowerCase();
+    res.statusCode = 200;
+    res.setHeader("Content-Type", mimeTypes[ext] || "application/octet-stream");
+    res.setHeader("Content-Length", String(stat.size));
+    fs.createReadStream(target).pipe(res);
   });
 }
 
@@ -116,6 +180,128 @@ function proxyRequest(req, res, targetBase, stripPrefix) {
   res.on("close", () => proxyReq.destroy());
 }
 
+async function parseSse(response, handlers) {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    return;
+  }
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    let idx = buffer.indexOf("\n");
+    while (idx !== -1) {
+      const line = buffer.slice(0, idx).trim();
+      buffer = buffer.slice(idx + 1);
+      idx = buffer.indexOf("\n");
+      if (!line.startsWith("data:")) {
+        continue;
+      }
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") {
+        continue;
+      }
+      try {
+        const data = JSON.parse(payload);
+        handlers(data);
+      } catch {
+        // ignore invalid json chunk
+      }
+    }
+  }
+}
+
+function pcmToWav(pcmBuffer, sampleRate = 24000, channels = 1, bitDepth = 16) {
+  const blockAlign = (channels * bitDepth) / 8;
+  const byteRate = sampleRate * blockAlign;
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + pcmBuffer.length, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(channels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitDepth, 34);
+  header.write("data", 36);
+  header.writeUInt32LE(pcmBuffer.length, 40);
+  return Buffer.concat([header, pcmBuffer]);
+}
+
+async function callAudioServer(payload) {
+  const url = new URL("/v1/chat/completions", audioBase);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(text || `audio server error (${response.status})`);
+  }
+  return response;
+}
+
+async function handleTts(text, voice) {
+  const prompt = TTS_VOICES[voice] || TTS_VOICES["US male"];
+  const payload = {
+    model: "",
+    messages: [
+      { role: "system", content: prompt },
+      { role: "user", content: text },
+    ],
+    stream: true,
+    max_tokens: 4096,
+  };
+  const response = await callAudioServer(payload);
+  const chunks = [];
+  await parseSse(response, (data) => {
+    const delta = data?.choices?.[0]?.delta || {};
+    const audio = delta.audio;
+    if (audio && audio.data) {
+      chunks.push(Buffer.from(audio.data, "base64"));
+    }
+  });
+  const pcm = Buffer.concat(chunks);
+  return pcmToWav(pcm);
+}
+
+async function handleStt(audioBase64, format) {
+  const payload = {
+    model: "",
+    messages: [
+      { role: "system", content: "Perform ASR." },
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_audio",
+            input_audio: { data: audioBase64, format: format || "wav" },
+          },
+        ],
+      },
+    ],
+    stream: true,
+    max_tokens: 4096,
+  };
+  const response = await callAudioServer(payload);
+  let text = "";
+  await parseSse(response, (data) => {
+    const delta = data?.choices?.[0]?.delta || {};
+    if (typeof delta.content === "string") {
+      text += delta.content;
+    }
+  });
+  return text.trim();
+}
+
 function probe(url) {
   return new Promise((resolve) => {
     const target = new URL(url);
@@ -158,6 +344,51 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { llm, image, audio });
   }
 
+  if (url.pathname === "/api/audio/tts") {
+    if (req.method !== "POST") {
+      return sendText(res, 405, "Method not allowed");
+    }
+    try {
+      const body = await readJson(req);
+      const text = typeof body.text === "string" ? body.text.trim() : "";
+      const voice = typeof body.voice === "string" ? body.voice.trim() : "US male";
+      if (!text) {
+        return sendJson(res, 400, { error: "text required" });
+      }
+      const wav = await handleTts(text, voice);
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "audio/wav");
+      res.setHeader("Content-Length", String(wav.length));
+      res.end(wav);
+    } catch (err) {
+      return sendJson(res, 500, { error: String(err.message || err) });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/audio/stt") {
+    if (req.method !== "POST") {
+      return sendText(res, 405, "Method not allowed");
+    }
+    try {
+      const body = await readJson(req);
+      const raw =
+        (typeof body.audioBase64 === "string" && body.audioBase64) ||
+        (typeof body.audio === "string" && body.audio) ||
+        "";
+      const format = typeof body.format === "string" ? body.format : "wav";
+      if (!raw) {
+        return sendJson(res, 400, { error: "audioBase64 required" });
+      }
+      const match = /^data:[^;]+;base64,(.*)$/.exec(raw);
+      const audioBase64 = match ? match[1] : raw;
+      const text = await handleStt(audioBase64, format);
+      return sendJson(res, 200, { text });
+    } catch (err) {
+      return sendJson(res, 500, { error: String(err.message || err) });
+    }
+  }
+
   if (url.pathname.startsWith("/api/llm/")) {
     return proxyRequest(req, res, llmBase, "/api/llm");
   }
@@ -167,6 +398,13 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith("/api/image/")) {
     return proxyRequest(req, res, imageBase, "/api/image");
   }
+  if (url.pathname.startsWith("/audio/")) {
+    const filename = decodeURIComponent(url.pathname.slice("/audio/".length));
+    const safeName = path.basename(filename);
+    const target = path.join(audioOutputDir, safeName);
+    return serveMediaFile(target, res);
+  }
+
   if (url.pathname === "/generate" || url.pathname.startsWith("/images/") || url.pathname === "/latest") {
     return proxyRequest(req, res, imageBase, "");
   }

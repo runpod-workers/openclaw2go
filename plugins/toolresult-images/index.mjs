@@ -4,6 +4,9 @@ const WORKSPACE_IMAGE_RE = /\/workspace\/openclaw\/images\/([^\s"'<>]+)/i;
 const IMAGE_JSON_RE =
   /"(image_public_url|image_proxy_url|image_local_url|image_url)"\s*:\s*"([^"]+)"/i;
 const IMAGE_PATH_JSON_RE = /"image_path"\s*:\s*"([^"]+)"/i;
+const WORKSPACE_AUDIO_RE = /\/workspace\/openclaw\/audio\/([^\s"'<>]+)/i;
+const AUDIO_JSON_RE = /"(audio_url|audio_link)"\s*:\s*"([^"]+)"/i;
+const AUDIO_PATH_JSON_RE = /"audio_path"\s*:\s*"([^"]+)"/i;
 
 function trimUrl(value) {
   return value.replace(/[)\].,;]+$/, "");
@@ -88,6 +91,56 @@ function normalizeImageUrl(url) {
   return url;
 }
 
+function extractAudioUrl(text) {
+  if (!text || typeof text !== "string") {
+    return "";
+  }
+
+  const jsonMatch = text.match(AUDIO_JSON_RE);
+  if (jsonMatch && jsonMatch[2]) {
+    return trimUrl(jsonMatch[2]);
+  }
+
+  const jsonPathMatch = text.match(AUDIO_PATH_JSON_RE);
+  if (jsonPathMatch && jsonPathMatch[1]) {
+    const local = jsonPathMatch[1];
+    const file = local.match(WORKSPACE_AUDIO_RE);
+    if (file && file[1]) {
+      return `/audio/${trimUrl(file[1])}`;
+    }
+  }
+
+  const savedLine = text.match(/Audio saved to:\s*([^\s"'<>]+)/i);
+  if (savedLine && savedLine[1]) {
+    const local = trimUrl(savedLine[1]);
+    const file = local.match(WORKSPACE_AUDIO_RE);
+    if (file && file[1]) {
+      return `/audio/${trimUrl(file[1])}`;
+    }
+  }
+
+  const localPath = text.match(WORKSPACE_AUDIO_RE);
+  if (localPath && localPath[1]) {
+    return `/audio/${trimUrl(localPath[1])}`;
+  }
+
+  return "";
+}
+
+function normalizeAudioUrl(url) {
+  if (!url) {
+    return "";
+  }
+  if (url.startsWith("/")) {
+    const base = resolveBaseUrl();
+    if (!base) {
+      return "";
+    }
+    return `${base}${url}`;
+  }
+  return url;
+}
+
 function hasImageBlock(content) {
   if (!Array.isArray(content)) {
     return false;
@@ -132,19 +185,28 @@ export default {
           return;
         }
         const content = Array.isArray(msg.content) ? msg.content : [];
-        if (hasImageBlock(content)) {
-          return;
-        }
-
         const text = collectText(content, msg.details);
-        const url = extractImageUrl(text);
-        const resolved = normalizeImageUrl(url);
-        if (!resolved) {
+        const updates = [];
+
+        if (!hasImageBlock(content)) {
+          const url = extractImageUrl(text);
+          const resolved = normalizeImageUrl(url);
+          if (resolved) {
+            updates.push({ type: "image_url", image_url: { url: resolved } });
+          }
+        }
+
+        const audioUrl = normalizeAudioUrl(extractAudioUrl(text));
+        if (audioUrl) {
+          updates.push({ type: "text", text: `Audio: ${audioUrl}` });
+        }
+
+        if (updates.length === 0) {
           return;
         }
 
-        const nextContent = [...content, { type: "image_url", image_url: { url: resolved } }];
-        return { message: { ...msg, content: nextContent } };
+        const finalContent = [...content, ...updates];
+        return { message: { ...msg, content: finalContent } };
       },
       { priority: 30 },
     );

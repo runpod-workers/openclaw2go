@@ -267,6 +267,10 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
   "skills": {
     "load": { "extraDirs": ["/opt/openclaw/skills"] }
   },
+  "plugins": {
+    "load": { "paths": ["$OPENCLAW_WORKSPACE/.openclaw/extensions"] },
+    "entries": { "toolresult-images": { "enabled": true } }
+  },
   "gateway": {
     "mode": "local",
     "bind": "lan",
