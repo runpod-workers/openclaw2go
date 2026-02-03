@@ -119,6 +119,8 @@ else
     echo "Existing config found at $OPENCLAW_STATE_DIR/openclaw.json - preserving it"
 fi
 
+oc_sync_gateway_auth "password"
+
 # Build vLLM command
 # Note: GLM-4.7-REAP requires:
 # - FlashInfer attention (downloads pre-compiled B200 cubins from NVIDIA)

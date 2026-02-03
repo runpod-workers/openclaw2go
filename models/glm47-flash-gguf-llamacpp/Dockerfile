@@ -7,7 +7,7 @@
 # - VRAM (model): ~17.3GB
 # - VRAM (KV cache): ~10GB with Q8 quantization
 # - Total VRAM: ~28GB -> fits on RTX 5090 (32GB)
-# - Context Window: 200,000 tokens (full model capacity!)
+# - Context Window: 150,000 tokens (default; increase if VRAM allows)
 # - Inference: ~175 tokens/sec on RTX 5090
 #
 # Why llama.cpp instead of vLLM?
@@ -104,7 +104,7 @@ ENV MODEL_NAME="unsloth/GLM-4.7-Flash-GGUF" \
     MODEL_FILE="GLM-4.7-Flash-Q4_K_M.gguf" \
     MODEL_PATH="/workspace/models/GLM-4.7-Flash-GGUF" \
     SERVED_MODEL_NAME="glm-4.7-flash" \
-    MAX_MODEL_LEN="200000" \
+    MAX_MODEL_LEN="150000" \
     LLAMA_API_KEY="changeme" \
     OPENCLAW_WEB_PASSWORD="changeme" \
     OPENCLAW_STATE_DIR="/workspace/.openclaw" \

@@ -193,6 +193,8 @@ else
     echo "Existing config found at $OPENCLAW_STATE_DIR/openclaw.json - preserving it"
 fi
 
+oc_sync_gateway_auth "password"
+
 # Build vLLM command
 # Note: GLM-4.7-Flash requires:
 # - --block-size 32 (workaround for FlashInfer bug with head_size 256)

@@ -103,6 +103,9 @@ else
     echo "Existing config found at $OPENCLAW_STATE_DIR/openclaw.json - preserving it"
 fi
 
+# Keep gateway tokens in sync with OPENCLAW_WEB_PASSWORD.
+oc_sync_gateway_auth "token"
+
 # Workspace files are seeded during image build.
 
 # Build vLLM command

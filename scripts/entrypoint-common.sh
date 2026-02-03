@@ -52,12 +52,113 @@ oc_print_ready() {
     echo "================================================"
 }
 
+oc_sync_gateway_auth() {
+    local mode="${1:-token}"
+    local cfg="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}/openclaw.json"
+    if [ ! -f "$cfg" ]; then
+        return
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "WARNING: python3 not found; skipping gateway auth sync"
+        return
+    fi
+
+    OPENCLAW_GATEWAY_AUTH_MODE="$mode" python3 - <<'PY'
+import json
+import os
+
+cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", "/workspace/.openclaw"), "openclaw.json")
+mode = os.environ.get("OPENCLAW_GATEWAY_AUTH_MODE", "token")
+token = os.environ.get("OPENCLAW_WEB_PASSWORD", "changeme")
+
+with open(cfg, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+gw = data.setdefault("gateway", {})
+auth = gw.setdefault("auth", {})
+changed = False
+
+if mode == "token":
+    if auth.get("mode") != "token":
+        auth["mode"] = "token"
+        changed = True
+    if auth.get("token") != token:
+        auth["token"] = token
+        changed = True
+    remote = gw.setdefault("remote", {})
+    if remote.get("token") != token:
+        remote["token"] = token
+        changed = True
+elif mode == "password":
+    if auth.get("mode") != "password":
+        auth["mode"] = "password"
+        changed = True
+    if auth.get("password") != token:
+        auth["password"] = token
+        changed = True
+
+if changed:
+    with open(cfg, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+PY
+    chmod 600 "$cfg" 2>/dev/null || true
+}
+
 oc_setup_ssh_manual() {
     echo "Initializing SSH..."
 
     if [ -n "${PUBLIC_KEY:-}" ]; then
         mkdir -p ~/.ssh
-        echo "$PUBLIC_KEY" > ~/.ssh/authorized_keys
+        if command -v python3 >/dev/null 2>&1; then
+            python3 - <<'PY'
+import os
+import re
+
+raw = os.environ.get("PUBLIC_KEY", "")
+raw = raw.strip()
+if raw:
+    raw = raw.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "\n")
+    raw = raw.replace("\r\n", "\n").replace("\r", "\n")
+    key_start = r"(?:ssh-|ecdsa-|sk-)"
+    raw = re.sub(rf"\s+(?={key_start}[^\s]+\s+[A-Za-z0-9+/=]{{20,}})", "\n", raw)
+
+lines = [line.strip() for line in raw.splitlines() if line.strip()]
+
+path = os.path.expanduser("~/.ssh/authorized_keys")
+with open(path, "w", encoding="utf-8") as f:
+    f.write("\n".join(lines) + ("\n" if lines else ""))
+
+print(f"SSH keys written: {len(lines)}")
+PY
+        else
+            printf '%b' "$PUBLIC_KEY" | awk '
+                BEGIN {
+                    key_re = "^(ssh-|ecdsa-|sk-)";
+                    base_re = "^[A-Za-z0-9+/=]{20,}$";
+                }
+                {
+                    for (i = 1; i <= NF; i++) {
+                        token = $i;
+                        next_token = (i < NF ? $(i + 1) : "");
+                        if (token ~ key_re && next_token ~ base_re) {
+                            if (line != "") {
+                                print line;
+                            }
+                            line = token;
+                        } else if (line != "") {
+                            line = line " " token;
+                        } else {
+                            line = token;
+                        }
+                    }
+                }
+                END {
+                    if (line != "") {
+                        print line;
+                    }
+                }
+            ' > ~/.ssh/authorized_keys
+        fi
         chmod 700 ~/.ssh
         chmod 600 ~/.ssh/authorized_keys
     else

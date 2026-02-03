@@ -15,14 +15,14 @@ llama.cpp has native support for `Glm4MoeLite` architecture (PR #18936 merged Ja
 | Model | unsloth/GLM-4.7-Flash-GGUF (Q4_K_M) |
 | Model Size | ~17GB |
 | VRAM (total) | ~28GB |
-| Context Window | **200,000 tokens** |
+| Context Window | **150,000 tokens (default)** |
 | GPU | RTX 5090 (32GB, Blackwell SM120) |
 | Inference Speed | ~175 tokens/sec |
 
 ## Key Features
 
-- **200k context** - Full model capacity on 32GB GPU
-- **Q8 KV cache quantization** - Fits 200k context in VRAM
+- **150k default context** - Balanced for stability on 32GB GPU
+- **Q8 KV cache quantization** - Fits 150k default context in VRAM
 - **OpenAI-compatible API** - Works with OpenClaw, Claude Code, etc.
 - **Native chat template** - Uses `--jinja` for correct GLM-4.7 formatting
 
@@ -89,7 +89,7 @@ Note: audio/image servers run on `8001/8002` internally and are not exposed.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MODEL_FILE` | `GLM-4.7-Flash-Q4_K_M.gguf` | GGUF file to use |
-| `MAX_MODEL_LEN` | `200000` | Context length |
+| `MAX_MODEL_LEN` | `150000` | Context length |
 | `LLAMA_API_KEY` | `changeme` | API authentication |
 | `OPENCLAW_WEB_PASSWORD` | `changeme` | Web UI token |
 | `TELEGRAM_BOT_TOKEN` | - | Optional Telegram integration |
@@ -140,6 +140,6 @@ You can use different GGUF quantizations by changing `MODEL_FILE`:
 | Feature | llama.cpp GGUF | vLLM NVFP4 |
 |---------|---------------|------------|
 | Works on RTX 5090 | ✅ Yes | ❌ No (bugs) |
-| 200k context | ✅ Yes | ❌ OOM |
+| Context length (default) | 150k (200k optional) | ❌ OOM at 200k |
 | Inference speed | ~175 tok/s | N/A |
 | KV cache quant | ✅ Q8 | ❌ FP16 only |

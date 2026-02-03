@@ -163,6 +163,7 @@ fi
 echo "Running openclaw doctor to validate/fix config..."
 OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR "$BOT_CMD" doctor --fix 2>/dev/null || true
 chmod 600 "$OPENCLAW_STATE_DIR/openclaw.json" 2>/dev/null || true
+oc_sync_gateway_auth "password"
 
 # Setup GitHub CLI if token provided
 if [ -n "$GITHUB_TOKEN" ]; then
