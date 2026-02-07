@@ -1,9 +1,9 @@
 # Dockerfile.unified - Unified OpenClaw2Go image
 #
-# Single image that works on tested GPUs (RTX 4090/L40/RTX 5090)
-# via DCMAKE_CUDA_ARCHITECTURES="89;120". Add more as tested.
+# Uses pre-built llama.cpp binaries from the engines image (no compilation).
+# Build the engines image first: see engines/Dockerfile and engines-build.yml.
 #
-# Configuration is done at runtime via OPENCLAW_CONFIG env var:
+# Configuration at runtime via OPENCLAW_CONFIG env var:
 #   {"llm": true, "audio": true, "image": true}     — all defaults
 #   {"llm": true, "audio": true}                      — LLM + audio only
 #   {"llm": "glm47-flash-gguf", "contextLength": 200000}
@@ -11,56 +11,17 @@
 #
 # Build: docker build -f Dockerfile.unified -t openclaw2go .
 
+ARG ENGINES_IMAGE=runpod/openclaw2go-engines:latest
 ARG CUDA_VERSION=12.8
 ARG UBUNTU_VERSION=24.04
 
-# ============================================================
-# Stage 1: Build llama.cpp LLM server (main branch)
-# ============================================================
-FROM nvcr.io/nvidia/cuda-dl-base:25.03-cuda${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS llamacpp-llm-builder
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential cmake git \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /build
-RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git && \
-    cd llama.cpp && \
-    cmake -B build \
-        -DGGML_CUDA=ON \
-        -DGGML_NATIVE=OFF \
-        -DCMAKE_CUDA_ARCHITECTURES="89;120" \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined && \
-    cmake --build build --config Release -j$(nproc)
+# Pull pre-built engines (llama.cpp LLM + Audio binaries)
+FROM ${ENGINES_IMAGE} AS engines
 
 # ============================================================
-# Stage 2: Build llama.cpp Audio server (PR #18641)
+# Runtime image
 # ============================================================
-FROM nvcr.io/nvidia/cuda-dl-base:25.03-cuda${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS llamacpp-audio-builder
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential cmake git \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /build
-RUN git clone https://github.com/ggml-org/llama.cpp.git && \
-    cd llama.cpp && \
-    git fetch origin pull/18641/head:liquid-audio && \
-    git checkout liquid-audio && \
-    cmake -B build \
-        -DGGML_CUDA=ON \
-        -DGGML_NATIVE=OFF \
-        -DCMAKE_CUDA_ARCHITECTURES="89;120" \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
-        -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined && \
-    cmake --build build --target llama-liquid-audio-cli llama-liquid-audio-server -j$(nproc)
-
-# ============================================================
-# Stage 3: Runtime image
-# ============================================================
-FROM nvcr.io/nvidia/cuda-dl-base:25.03-cuda${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS runtime
+FROM nvcr.io/nvidia/cuda-dl-base:25.03-cuda${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION}
 
 ARG CUDA_VERSION
 ENV DEBIAN_FRONTEND=noninteractive
@@ -76,20 +37,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ── Engine: llamacpp-llm ──────────────────────────────────
-# LLM binaries and libs go to /opt/engines/llamacpp-llm/
 # CRITICAL: LLM and Audio libs MUST be separate (incompatible .so files)
-COPY --from=llamacpp-llm-builder /build/llama.cpp/build/bin/llama-server /opt/engines/llamacpp-llm/bin/
-COPY --from=llamacpp-llm-builder /build/llama.cpp/build/bin/llama-cli /opt/engines/llamacpp-llm/bin/
-COPY --from=llamacpp-llm-builder /build/llama.cpp/build/bin/*.so* /opt/engines/llamacpp-llm/lib/
-RUN chmod +x /opt/engines/llamacpp-llm/bin/* && \
-    ldconfig /opt/engines/llamacpp-llm/lib/
+COPY --from=engines /opt/engines/llamacpp-llm/ /opt/engines/llamacpp-llm/
+RUN ldconfig /opt/engines/llamacpp-llm/lib/
 
 # ── Engine: llamacpp-audio ────────────────────────────────
-# Audio binaries and libs go to /opt/engines/llamacpp-audio/
-COPY --from=llamacpp-audio-builder /build/llama.cpp/build/bin/llama-liquid-audio-cli /opt/engines/llamacpp-audio/bin/
-COPY --from=llamacpp-audio-builder /build/llama.cpp/build/bin/llama-liquid-audio-server /opt/engines/llamacpp-audio/bin/
-COPY --from=llamacpp-audio-builder /build/llama.cpp/build/bin/*.so* /opt/engines/llamacpp-audio/lib/
-RUN chmod +x /opt/engines/llamacpp-audio/bin/*
+COPY --from=engines /opt/engines/llamacpp-audio/ /opt/engines/llamacpp-audio/
 
 # ── Engine: image-gen (Python venv) ───────────────────────
 # PyTorch cu128 required for RTX 5090 (Blackwell sm_120), works on all others too
