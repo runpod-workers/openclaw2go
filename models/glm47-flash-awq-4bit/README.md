@@ -22,7 +22,7 @@ Quantized version of GLM-4.7-Flash for **A100 80GB** GPUs. Best value for GLM-4.
 ### 1. Create Runpod Pod
 
 **Settings:**
-- **Image**: `runpod/openclaw-stack-glm4.7-flash-awq-4bit:latest`
+- **Image**: `runpod/openclaw2go-glm4.7-flash-awq-4bit:latest`
 - **GPU**: 1x A100 80GB
 - **Volume**: 150GB at `/workspace` (network storage)
 - **Container Disk**: 50GB

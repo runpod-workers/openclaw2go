@@ -2,8 +2,8 @@
 # Pre-configured with everything needed for AI coding assistant
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
-LABEL maintainer="Runpod OpenClaw Stack"
-LABEL description="OpenClaw Stack with vLLM for local LLM inference"
+LABEL maintainer="Runpod OpenClaw2Go"
+LABEL description="OpenClaw2Go with vLLM for local LLM inference"
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive

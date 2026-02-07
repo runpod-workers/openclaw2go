@@ -1,11 +1,11 @@
 # AGENTS.md
 
-OpenClaw Stack on Runpod: self-contained Docker images with LLM + media services for GPU pods.
+OpenClaw2Go on Runpod: self-contained Docker images with LLM + media services for GPU pods.
 
 ## Codebase Structure
 
 ```
-openclaw-stack/
+openclaw2go/
 ├── models/                      # GPU-specific Dockerfiles
 │   ├── glm47-flash-gguf-llamacpp/  # RTX 5090 - llama.cpp (primary)
 │   ├── glm47-flash-awq-4bit/       # A100 80GB - vLLM
@@ -58,6 +58,19 @@ curl http://localhost:8000/health
 # Image generation
 openclaw-image-gen --prompt "test" --width 512 --height 512 --output /tmp/test.png
 ```
+
+## Operational Gotchas
+
+- Control UI requires device pairing; without it, chat stays disconnected and previews won't render.
+  Use `OPENCLAW_GATEWAY_TOKEN=<token> openclaw devices list` then
+  `OPENCLAW_GATEWAY_TOKEN=<token> openclaw devices approve <request-id>`.
+- Image previews need a public proxy URL (port 8080). Runpod may 403 non-browser
+  requests; verify with a browser user agent when testing.
+- Disable external image skills in `/workspace/.openclaw/openclaw.json` so the model
+  never tries GPT/OpenAI image tools:
+  `skills.entries.openai-image-gen.enabled=false`,
+  `skills.entries.nano-banana-pro.enabled=false`.
+  Use `openclaw-image-gen` only.
 
 ## Runpod Pod Access
 
