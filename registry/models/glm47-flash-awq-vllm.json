@@ -9,7 +9,7 @@
   "servedAs": "glm-4.7-flash",
   "vram": { "model": 17300, "overhead": 1500 },
   "defaults": { "contextLength": 114688, "port": 8000 },
-  "startDefaults": { "gpuMemoryUtilization": "0.92", "kvCacheDtype": "fp8" },
+  "startDefaults": { "gpuMemoryUtilization": "0.92" },
   "extraStartArgs": [
     "--trust-remote-code",
     "--enable-auto-tool-choice", "--tool-call-parser", "glm47",
