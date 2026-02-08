@@ -57,12 +57,24 @@ RUN python3 -m venv /opt/engines/image-gen/venv && \
 # ── Engine: vllm (Python venv) ──────────────────────────
 # vLLM pip wheels include pre-built CUDA kernels for all archs (sm_80/89/90/100/120)
 # No compilation needed. transformers from git for latest architecture support.
+# flashinfer-cubin + flashinfer-jit-cache: pre-compiled kernels to avoid 10-30 min
+# JIT compilation on first run (especially on Blackwell sm_120).
 RUN python3 -m venv /opt/engines/vllm/venv && \
     /opt/engines/vllm/venv/bin/pip install --no-cache-dir \
         vllm --pre --extra-index-url https://wheels.vllm.ai/nightly && \
     /opt/engines/vllm/venv/bin/pip install --no-cache-dir \
         git+https://github.com/huggingface/transformers.git && \
-    /opt/engines/vllm/venv/bin/python -c "import vllm; print(f'vLLM {vllm.__version__}')"
+    FLASHINFER_VER=$(/opt/engines/vllm/venv/bin/python -c "import flashinfer; print(flashinfer.__version__)") && \
+    CUDA_SHORT=$(echo ${CUDA_VERSION} | tr -d '.') && \
+    /opt/engines/vllm/venv/bin/pip install --no-cache-dir \
+        flashinfer-cubin==${FLASHINFER_VER} && \
+    /opt/engines/vllm/venv/bin/pip install --no-cache-dir \
+        flashinfer-jit-cache==${FLASHINFER_VER} \
+        --index-url https://flashinfer.ai/whl/cu${CUDA_SHORT} && \
+    FLASHINFER_CUBIN_DOWNLOAD_THREADS=8 \
+        /opt/engines/vllm/venv/bin/python -m flashinfer --download-cubin && \
+    /opt/engines/vllm/venv/bin/python -c "import vllm; print(f'vLLM {vllm.__version__}')" && \
+    /opt/engines/vllm/venv/bin/flashinfer show-config
 
 # ── Node.js + GitHub CLI ──────────────────────────────────
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
@@ -88,7 +100,8 @@ ENV LLAMA_API_KEY="changeme" \
     OPENCLAW_WEB_PASSWORD="changeme" \
     OPENCLAW_STATE_DIR="/workspace/.openclaw" \
     OPENCLAW_WORKSPACE="/workspace/openclaw" \
-    OPENCLAW_REGISTRY_DIR="/opt/openclaw/registry"
+    OPENCLAW_REGISTRY_DIR="/opt/openclaw/registry" \
+    FLASHINFER_JIT_DIR="/workspace/.cache/flashinfer/jit"
 
 # ── Copy application files ────────────────────────────────
 COPY registry/ /opt/openclaw/registry/
@@ -117,5 +130,5 @@ RUN chmod +x /opt/openclaw/entrypoint-unified.sh \
     /usr/local/bin/openclaw-stt \
     /usr/local/bin/openclaw-web-proxy
 
-EXPOSE 8000 8001 8002 8080 18789 22
+EXPOSE 8000 8080 18789 22
 ENTRYPOINT ["/opt/openclaw/entrypoint-unified.sh"]

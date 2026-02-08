@@ -222,8 +222,10 @@ def build_from_models(config, models, engines, gpu_vram_mb):
             if engine_id == "vllm":
                 # vLLM auto-manages KV cache via --gpu-memory-utilization
                 # Adjust utilization to leave room for non-LLM services
+                # Add 2GB safety margin for CUDA runtime overhead + conservative VRAM estimates
+                VRAM_SAFETY_MARGIN_MB = 2048
                 if gpu_vram_mb > 0 and non_llm_vram > 0:
-                    adjusted_util = (gpu_vram_mb - non_llm_vram) / gpu_vram_mb
+                    adjusted_util = (gpu_vram_mb - non_llm_vram - VRAM_SAFETY_MARGIN_MB) / gpu_vram_mb
                     overrides["gpuMemoryUtilization"] = f"{adjusted_util:.2f}"
                 else:
                     default_util = model.get("startDefaults", {}).get("gpuMemoryUtilization", "0.92")

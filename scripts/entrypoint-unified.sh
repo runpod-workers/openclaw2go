@@ -117,6 +117,11 @@ LLAMA_API_KEY="${LLAMA_API_KEY:-changeme}"
 OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
 OPENCLAW_WEB_PROXY_PORT="${OPENCLAW_WEB_PROXY_PORT:-8080}"
+
+# Ensure flashinfer JIT cache dir exists on workspace volume (for any remaining runtime JIT)
+if [ -d "/workspace" ]; then
+    mkdir -p /workspace/.cache/flashinfer/jit
+fi
 OPENCLAW_WEB_PASSWORD="${OPENCLAW_WEB_PASSWORD:-changeme}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"

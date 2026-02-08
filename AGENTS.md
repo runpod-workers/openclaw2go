@@ -181,6 +181,19 @@ openclaw-image-gen --prompt "test" --width 512 --height 512 --output /tmp/test.p
 - Disable external image skills in `/workspace/.openclaw/openclaw.json` so the model
   never tries GPT/OpenAI image tools. The entrypoint handles this automatically.
 
+## Ports
+
+Only 3 HTTP ports need to be exposed on Runpod pods (plus SSH):
+
+| Port | Service | Description |
+|------|---------|-------------|
+| 8000/http | LLM server | llama.cpp or vLLM — OpenAI-compatible API |
+| 8080/http | Web proxy | OpenClaw media proxy + web UI |
+| 18789/http | OpenClaw gateway | OpenClaw control UI + chat |
+| 22/tcp | SSH | Remote access |
+
+Audio (8001) and Image (8002) servers are internal only — accessed by the LLM via localhost, not exposed externally.
+
 ## Runpod Pod Access
 
 ```bash
