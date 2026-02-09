@@ -14,7 +14,7 @@
 
 ARG CUDA_VERSION=12.8
 ARG UBUNTU_VERSION=24.04
-ARG CUDA_ARCHITECTURES="89;120"
+ARG CUDA_ARCHITECTURES="80;89;90;120"
 
 # ============================================================
 # Stage 1: Build llama.cpp LLM server (main branch)

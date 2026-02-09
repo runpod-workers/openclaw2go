@@ -119,7 +119,7 @@ openclaw2go/
 
 ## Key Decisions
 
-- **Unified image with multi-arch CUDA** — `DCMAKE_CUDA_ARCHITECTURES="89;120"` for 4090/L40/5090 (add more as tested)
+- **Unified image with multi-arch CUDA** — `DCMAKE_CUDA_ARCHITECTURES="80;89;90;120"` for A100/4090/L40/H100/5090
 - **Model-centric config** — users pick models (e.g., `unsloth/glm47-flash-gguf`, `unsloth/nemotron3-nano-gguf`), system computes VRAM fit + context length using per-model KV cache rates
 - **vLLM engine** — FP16/AWQ/NVFP4 models via vLLM in isolated Python venv. vLLM auto-manages KV cache via `--gpu-memory-utilization` (no manual computation). Models use `downloadMode: "repo"` for full HuggingFace repo downloads.
 - **RTX 5090 NVFP4 via vLLM is experimental** — GLM-4.7 MLA attention bugs on Blackwell being fixed in vLLM v0.15.x

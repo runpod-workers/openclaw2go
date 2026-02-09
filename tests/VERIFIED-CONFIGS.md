@@ -73,4 +73,4 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 - **Image**: `runpod/openclaw2go:<tag>`
 - **Engines**: `runpod/openclaw2go-engines:<tag>`
 - **Dockerfile**: `Dockerfile.unified` (runtime), `engines/Dockerfile` (llama.cpp builds)
-- **CUDA Architectures**: sm_89 (RTX 4090/L40), sm_120 (RTX 5090) — sm_80 (A100), sm_90 (H100), sm_100 (B200) not yet in engines build
+- **CUDA Architectures**: sm_80 (A100), sm_89 (RTX 4090/L40), sm_90 (H100), sm_120 (RTX 5090)

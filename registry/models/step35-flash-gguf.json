@@ -17,6 +17,5 @@
   "extraStartArgs": ["-fa", "on"],
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": false,
-  "status": "blocked",
-  "statusNote": "Needs sm_80 (A100/H100) in engine build. Model is 69.6 GB, only fits 80 GB GPUs."
+  "status": "experimental"
 }
