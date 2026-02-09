@@ -4,7 +4,7 @@
   "type": "llm",
   "engine": "llamacpp",
   "repo": "TeichAI/GLM-4.7-Flash-Claude-Opus-4.5-High-Reasoning-Distill-GGUF",
-  "files": ["GLM-4.7-Flash-Claude-Opus-4.5-High-Reasoning-Distill-Q4_K_M.gguf"],
+  "files": ["glm-4.7-flash-claude-4.5-opus.q4_k_m.gguf"],
   "downloadDir": "/workspace/models/GLM-4.7-Claude-Distill-GGUF",
   "servedAs": "glm-4.7-flash-claude-distill",
   "vram": { "model": 17300, "overhead": 500 },

@@ -1,21 +1,20 @@
 {
-  "id": "ubergarm/step35-flash-gguf",
-  "name": "Step-3.5-Flash GGUF smol-IQ2_KS",
+  "id": "bartowski/step35-flash-gguf",
+  "name": "Step-3.5-Flash GGUF Q2_K",
   "type": "llm",
   "engine": "llamacpp",
-  "repo": "ubergarm/Step-3.5-Flash-GGUF",
+  "repo": "bartowski/stepfun-ai_Step-3.5-Flash-GGUF",
   "files": [
-    "smol-IQ2_KS/Step-3.5-Flash-smol-IQ2_KS-00001-of-00003.gguf",
-    "smol-IQ2_KS/Step-3.5-Flash-smol-IQ2_KS-00002-of-00003.gguf",
-    "smol-IQ2_KS/Step-3.5-Flash-smol-IQ2_KS-00003-of-00003.gguf"
+    "stepfun-ai_Step-3.5-Flash-Q2_K/stepfun-ai_Step-3.5-Flash-Q2_K-00001-of-00002.gguf",
+    "stepfun-ai_Step-3.5-Flash-Q2_K/stepfun-ai_Step-3.5-Flash-Q2_K-00002-of-00002.gguf"
   ],
   "downloadDir": "/workspace/models/Step-3.5-Flash-GGUF",
   "servedAs": "step-3.5-flash",
-  "vram": { "model": 57800, "overhead": 2000 },
+  "vram": { "model": 69600, "overhead": 2000 },
   "kvCacheMbPer1kTokens": 10,
-  "defaults": { "contextLength": 65536, "port": 8000 },
+  "defaults": { "contextLength": 8192, "port": 8000 },
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
-  "extraStartArgs": ["-fa"],
+  "extraStartArgs": ["-fa", "on"],
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": false,
   "status": "experimental"

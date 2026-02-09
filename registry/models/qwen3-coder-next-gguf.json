@@ -11,7 +11,7 @@
   "kvCacheMbPer1kTokens": 4,
   "defaults": { "contextLength": 32768, "port": 8000 },
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
-  "extraStartArgs": ["-fa", "--no-context-shift"],
+  "extraStartArgs": ["-fa", "on", "--no-context-shift"],
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": false,
   "status": "experimental"
