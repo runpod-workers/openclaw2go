@@ -274,7 +274,7 @@ jobs:
           file: Dockerfile.unified
           push: ${{ env.PUSH_IMAGES == 'true' }}
           build-args: |
-            ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:openclaw-rename
+            ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:latest
           tags: |
             ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}
             ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw2go:latest', env.DOCKERHUB_REPO) || '' }}
