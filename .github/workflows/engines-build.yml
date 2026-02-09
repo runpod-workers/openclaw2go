@@ -8,7 +8,8 @@ on:
   push:
     paths:
       - 'engines/**'
-    branches: [main]
+      - '.github/workflows/engines-build.yml'
+    branches: [main, openclaw-rename]
   workflow_dispatch:
     inputs:
       cuda_architectures:
