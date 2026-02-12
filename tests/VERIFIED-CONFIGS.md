@@ -26,7 +26,9 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
 | `{"llm":true,"audio":true,"image":true}` | LLM+Audio+Image | 150k | 30331 / 32607 MiB | **PASS** | 2026-02-08 | Full stack, ~2.3GB free |
-| `{"llm":"teichai/glm47-claude-distill-gguf"}` | LLM (Claude Distill Q4_K_M) | 150k | 22347 / 32607 MiB | **PASS** | 2026-02-09 | Native reasoning_content support, ~168 tok/s |
+| `{"llm":"teichai/glm47-claude-distill-gguf"}` | LLM (Claude Distill Q4_K_M) | 150k | 22347 / 32607 MiB | **PASS** | 2026-02-12 | Native reasoning_content support, slim image |
+| `{"llm":"unsloth/Nemotron-3-Nano-30B-A3B-GGUF"}` | LLM (Nemotron-3-Nano Q4_K_XL) | auto | — | **PASS** | 2026-02-12 | MoE, reasoning + content, slim image |
+| `{"llm":"unsloth/gpt-oss-20b-GGUF"}` | LLM (GPT-OSS-20B Q8_0) | auto | — | **PASS** | 2026-02-12 | Generates output, slim image |
 | `{"llm":true,"audio":true}` | LLM+Audio | auto (~200k) | ~26 GB | PENDING | — | More context, no image |
 | `{"llm":true}` | LLM only | auto (~200k) | ~22 GB | PENDING | — | Maximum context |
 
@@ -44,29 +46,30 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
 | `{"llm":true,"audio":true,"image":true}` | LLM+Audio+Image | 150k | 30927 / 46068 MiB | **PASS** | 2026-02-08 | ~15GB free, plenty of headroom |
-| `{"llm":"unsloth/qwen3-coder-next-gguf"}` | LLM (Qwen3-Coder-Next Q3_K_M) | 32k | 37913 / 46068 MiB | **PASS** | 2026-02-09 | Hybrid DeltaNet+attention 80B MoE, 12/48 KV layers, ~92 tok/s |
+| `{"llm":"unsloth/Qwen3-Coder-Next-GGUF"}` | LLM (Qwen3-Coder-Next Q3_K_M) | 32k | 37913 / 46068 MiB | **PASS** | 2026-02-12 | Hybrid DeltaNet+attention 80B MoE, slim image |
 
-### A100 80GB (sm_80, Ampere) — vLLM
+### A100 80GB (sm_80, Ampere)
 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
-| `{"llm":"zai-org/glm47-flash-fp16"}` | vLLM FP16 | 65k | ~76 GB | **PASS** | 2026-02-08 | GLM-4.7-Flash FP16, chat works |
-| `{"llm":"cyankiwi/glm47-flash-awq-4bit"}` | vLLM AWQ 4-bit | 114k | ~76 GB | **PASS** | 2026-02-08 | AWQ quantization, large context |
-| `{"llm":"zai-org/glm47-flash-fp16","audio":true,"image":true}` | vLLM FP16+Audio+Image | 65k | 76/80 GB | **PASS** | 2026-02-08 | gpuMemoryUtilization 0.90, all services running |
-| `{"llm":"bartowski/step35-flash-gguf"}` | LLM (Step-3.5-Flash Q2_K) | 8k | — | **FAIL** | 2026-02-09 | CUDA "no kernel image" — engine build lacks sm_80 (A100). Model loads but crashes on MUL_MAT. |
+| `{"llm":"bartowski/step35-flash-gguf"}` | LLM (Step-3.5-Flash Q2_K) | 32k | 67183 / 81920 MiB | **PASS** | 2026-02-12 | 197B MoE Q2_K, custom chat template, reasoning works, ~15 GB free |
 | `{"llm":true,"audio":true,"image":true}` | LLM+Audio+Image (llama.cpp) | auto (~150k) | ~30 GB | PENDING | — | Needs sm_80 in engines build |
-
-### RTX 5090 (32GB, Blackwell sm_120) — vLLM
-
-| Config | Services | Context | VRAM Used | Status | Date | Notes |
-|--------|----------|---------|-----------|--------|------|-------|
-| `{"llm":"gadflyii/glm47-flash-nvfp4"}` | vLLM NVFP4 | 180k | — | **FAIL** | 2026-02-08 | GLM-4.7 MLA attention OOM during CUDA graph capture (known vLLM bug on Blackwell) |
 
 ### H100 80GB (sm_90, Hopper)
 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
 | `{"llm":true,"audio":true,"image":true}` | LLM+Audio+Image | auto (~150k) | ~30 GB | PENDING | — | Needs sm_90 in engines build |
+
+### Removed Configurations (vLLM)
+
+vLLM was removed from the default image in Feb 2025 to reduce image size (~5-6 GB savings). All models work via llama.cpp GGUF. The following configs were previously verified but are **no longer available** in the current image:
+
+| Config | GPU | Status | Last Verified | Notes |
+|--------|-----|--------|---------------|-------|
+| `{"llm":"zai-org/glm47-flash-fp16"}` | A100 | was PASS | 2026-02-08 | vLLM FP16 — use GGUF Q4_K_M instead |
+| `{"llm":"cyankiwi/glm47-flash-awq-4bit"}` | A100 | was PASS | 2026-02-08 | vLLM AWQ — use GGUF Q4_K_M instead |
+| `{"llm":"gadflyii/glm47-flash-nvfp4"}` | RTX 5090 | was FAIL | 2026-02-08 | vLLM NVFP4 — broken on Blackwell, use GGUF instead |
 
 ## Docker Image
 
