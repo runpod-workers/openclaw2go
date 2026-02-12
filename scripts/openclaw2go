@@ -40,7 +40,7 @@ DEFAULT_REGISTRY_URL = (
     "https://runpod-workers.github.io/openclaw2go-registry/v1/catalog.json"
 )
 FETCH_TIMEOUT = 5  # seconds
-CACHE_DIR = Path("/workspace/.openclaw/registry")
+CACHE_DIR = Path(os.environ.get("OPENCLAW_STATE_DIR", "/workspace/.openclaw")) / "registry"
 CACHE_META = CACHE_DIR / ".fetch-meta.json"
 
 ALLOWED_ENGINES = {"llamacpp", "llamacpp-audio", "image-gen", "vllm"}
@@ -242,7 +242,7 @@ def _merge_registry(catalog, baked_in_dir, cache_dir):
             gpus_dst.unlink()
         elif gpus_dst.exists():
             shutil.rmtree(gpus_dst)
-        gpus_dst.symlink_to(gpus_src)
+        gpus_dst.symlink_to(gpus_src.resolve())
 
     # Merge models: start with baked-in, override with external
     models_dst = cache_dir / "models"
@@ -255,12 +255,14 @@ def _merge_registry(catalog, baked_in_dir, cache_dir):
     baked_model_ids = set()
     if baked_models_dir.is_dir():
         for f in baked_models_dir.glob("*.json"):
-            (models_dst / f.name).write_text(f.read_text())
             try:
                 data = json.loads(f.read_text())
-                baked_model_ids.add(data.get("id", f.stem))
+                model_id = data.get("id", f.stem)
+                baked_model_ids.add(model_id)
+                safe_name = model_id.replace("/", "--") + ".json"
+                (models_dst / safe_name).write_text(f.read_text())
             except json.JSONDecodeError:
-                pass
+                (models_dst / f.name).write_text(f.read_text())
 
     external_models = catalog.get("models", [])
     valid_model_ids = set(baked_model_ids)
