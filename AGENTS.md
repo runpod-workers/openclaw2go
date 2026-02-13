@@ -21,7 +21,9 @@ OPENCLAW_CONFIG examples:
   {"llm": "unsloth/Qwen3-Coder-Next-GGUF"}                                      — Qwen3 Coder Next 80B MoE (L40/A100)
   {"llm": "ubergarm/Step-3.5-Flash-GGUF"}                                       — Step 3.5 Flash 197B MoE (A100, IQ2_KS)
   {"llm": "TeichAI/GLM-4.7-Flash-Claude-Opus-4.5-High-Reasoning-Distill-GGUF"} — GLM-4.7 Claude distill
-  {"llm": "unsloth/glm5-tq1-gguf"}                                               — GLM-5-754B TQ1_0 1-bit (B200 only, experimental)
+  {"llm": "unsloth/glm5-tq1-gguf"}                                               — GLM-5-754B TQ1_0 1-bit (B200, experimental)
+  {"llm": "unsloth/glm5-iq2xxs-gguf"}                                             — GLM-5-754B IQ2_XXS 2-bit (2x H200, experimental)
+  {"llm": "ubergarm/minimax-m25-iq4xs-gguf"}                                      — MiniMax M2.5 229B MoE IQ4_XS (B200, experimental)
   {"profile": "rtx5090-full-stack"}                                               — use a preset (optional shorthand)
   {}                                                                               — auto-detect GPU, use all defaults that fit
 ```
@@ -282,7 +284,8 @@ Context length is auto-computed by `resolve-profile.py` based on available VRAM 
 
 ### VRAM & Context
 
-- **Per-model KV cache rates** — Each LLM model declares `kvCacheMbPer1kTokens` in its JSON config. GLM-4.7 uses 40 MB/1k (dense attention), Nemotron-3-Nano uses 4 MB/1k (only 6 attention layers + Mamba-2 SSM, calibrated on RTX 5090: actual KV=467MB + RS=48MB for 150k ctx = ~3.4 MB/1k, rounded up to 4). The resolver reads this per-model rate and falls back to 40 MB/1k if not specified.
+- **Minimum 16k context length** — OpenClaw requires at least 16k tokens of context to function properly. All model configs MUST set `defaults.contextLength` to at least 16384. When computing whether a model fits on a GPU, ensure there's enough VRAM headroom for 16k context worth of KV cache at minimum.
+- **Per-model KV cache rates** — Each LLM model declares `kvCacheMbPer1kTokens` in its JSON config. GLM-4.7 uses 40 MB/1k (dense attention), Nemotron-3-Nano uses 4 MB/1k (only 6 attention layers + Mamba-2 SSM, calibrated on RTX 5090: actual KV=467MB + RS=48MB for 150k ctx = ~3.4 MB/1k, rounded up to 4). The resolver reads this per-model rate and falls back to 40 MB/1k if not specified. Note: `kvCacheMbPer1kTokens` values already account for q8_0 KV quantization (all models use `-ctk q8_0 -ctv q8_0`).
 
 ### External Registry
 

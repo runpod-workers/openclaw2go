@@ -1,6 +1,6 @@
 {
   "id": "unsloth/glm5-iq2xxs-gguf",
-  "name": "GLM-5-754B IQ2_XXS (2-bit, 241GB) - EXCEEDS B200",
+  "name": "GLM-5-754B IQ2_XXS (2-bit, 241GB)",
   "type": "llm",
   "engine": "llamacpp-glm-dsa",
   "repo": "unsloth/GLM-5-GGUF",
@@ -20,7 +20,7 @@
   },
   "kvCacheMbPer1kTokens": 10,
   "defaults": {
-    "contextLength": 8192,
+    "contextLength": 202752,
     "port": 8000
   },
   "startArgs": [

@@ -65,8 +65,13 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
-| `{"llm":"unsloth/glm5-tq1-gguf"}` | LLM (GLM-5 TQ1_0 1-bit) | 32k | 166902 / 183359 MiB | **PASS** | 2026-02-13 | PR #19460 engine, reasoning works, ~35 tok/s, indexer not supported |
-| `{"llm":"unsloth/glm5-iq2xxs-gguf"}` | LLM (GLM-5 IQ2_XXS 2-bit) | 8k | ~243 GB | SKIP | — | EXCEEDS B200 capacity (needs >240 GB), requires larger hardware |
+| `{"llm":"unsloth/glm5-tq1-gguf"}` | LLM (GLM-5 TQ1_0 1-bit) | 202k | 175030 / 183359 MiB | **PASS** | 2026-02-13 | PR #19460 engine, reasoning works, ~27 tok/s, ~8 GB free, max context |
+
+### 2x H200 SXM 282GB (sm_90, Hopper)
+
+| Config | Services | Context | VRAM Used | Status | Date | Notes |
+|--------|----------|---------|-----------|--------|------|-------|
+| `{"llm":"unsloth/glm5-iq2xxs-gguf"}` | LLM (GLM-5 IQ2_XXS 2-bit) | 202k | 119087+120553 / 287542 MiB | **PASS** | 2026-02-13 | 2-GPU auto-split works, reasoning works, ~34 tok/s, ~46 GB free, max context |
 
 ### Removed Configurations (vLLM)
 

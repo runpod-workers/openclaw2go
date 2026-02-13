@@ -13,7 +13,7 @@
   },
   "kvCacheMbPer1kTokens": 10,
   "defaults": {
-    "contextLength": 32768,
+    "contextLength": 202752,
     "port": 8000
   },
   "startArgs": [
