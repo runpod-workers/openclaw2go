@@ -17,7 +17,7 @@
   "downloadDir": "/workspace/models/Kimi-K2.5-GGUF",
   "servedAs": "kimi-k2.5",
   "vram": { "model": 375000, "overhead": 2000 },
-  "kvCacheMbPer1kTokens": 10,
+  "kvCacheMbPer1kTokens": 36,
   "defaults": { "contextLength": 98304, "port": 8000 },
   "startDefaults": { "gpuLayers": "auto", "parallel": "1" },
   "extraStartArgs": ["--fit", "on", "-fa", "on", "--kv-unified"],
