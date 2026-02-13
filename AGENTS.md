@@ -24,6 +24,8 @@ OPENCLAW_CONFIG examples:
   {"llm": "unsloth/glm5-tq1-gguf"}                                               — GLM-5-754B TQ1_0 1-bit (B200, experimental)
   {"llm": "unsloth/glm5-iq2xxs-gguf"}                                             — GLM-5-754B IQ2_XXS 2-bit (2x H200, experimental)
   {"llm": "ubergarm/minimax-m25-iq4xs-gguf"}                                      — MiniMax M2.5 229B MoE IQ4_XS (B200, experimental)
+  {"llm": "unsloth/kimi-k25-tq1-gguf"}                                             — Kimi K2.5 1T MoE TQ1_0 1-bit (B200 w/ offload, experimental)
+  {"llm": "unsloth/kimi-k25-q2kxl-gguf"}                                           — Kimi K2.5 1T MoE Q2_K_XL 2-bit (2x H200 w/ offload, experimental)
   {"profile": "rtx5090-full-stack"}                                               — use a preset (optional shorthand)
   {}                                                                               — auto-detect GPU, use all defaults that fit
 ```
@@ -42,6 +44,8 @@ registry/
 │   ├── glm47-flash-gguf.json       # LLM: GLM-4.7-Flash Q4_K_M (default: true, kvCache: 40 MB/1k)
 │   ├── nemotron3-nano-gguf.json    # LLM: Nemotron-3-Nano-30B MoE (kvCache: 4 MB/1k)
 │   ├── lfm25-audio.json            # Audio: LFM2.5-Audio-1.5B (default: true)
+│   ├── kimi-k25-tq1-gguf.json      # LLM: Kimi K2.5 1T MoE TQ1_0 (B200 w/ offload, kvCache: 10 MB/1k)
+│   ├── kimi-k25-q2kxl-gguf.json    # LLM: Kimi K2.5 1T MoE Q2_K_XL (2x H200 w/ offload, kvCache: 10 MB/1k)
 │   └── flux2-klein-sdnq.json       # Image: FLUX.2 Klein 4B SDNQ (default: true)
 ├── gpus/                           # GPU specs (VRAM, arch, CUDA requirements)
 │   ├── rtx-5090.json               # 32GB, SM120, Blackwell

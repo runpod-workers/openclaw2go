@@ -1,0 +1,25 @@
+{
+  "id": "unsloth/kimi-k25-tq1-gguf",
+  "name": "Kimi K2.5 UD-TQ1_0 (1-bit, 240GB, 5-split)",
+  "type": "llm",
+  "engine": "llamacpp",
+  "repo": "unsloth/Kimi-K2.5-GGUF",
+  "files": [
+    "UD-TQ1_0/Kimi-K2.5-UD-TQ1_0-00001-of-00005.gguf",
+    "UD-TQ1_0/Kimi-K2.5-UD-TQ1_0-00002-of-00005.gguf",
+    "UD-TQ1_0/Kimi-K2.5-UD-TQ1_0-00003-of-00005.gguf",
+    "UD-TQ1_0/Kimi-K2.5-UD-TQ1_0-00004-of-00005.gguf",
+    "UD-TQ1_0/Kimi-K2.5-UD-TQ1_0-00005-of-00005.gguf"
+  ],
+  "downloadDir": "/workspace/models/Kimi-K2.5-GGUF",
+  "servedAs": "kimi-k2.5",
+  "vram": { "model": 240000, "overhead": 2000 },
+  "kvCacheMbPer1kTokens": 10,
+  "defaults": { "contextLength": 98304, "port": 8000 },
+  "startDefaults": { "gpuLayers": "999", "parallel": "1" },
+  "extraStartArgs": ["--fit", "on", "-fa", "on", "--kv-unified"],
+  "extraEnvVars": { "LLAMA_SET_ROWS": "1" },
+  "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "default": false,
+  "status": "experimental"
+}

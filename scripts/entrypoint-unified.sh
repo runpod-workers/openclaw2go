@@ -319,12 +319,22 @@ print('  Done: $f')
                 # Parse extraStartArgs from model JSON (space-separated list)
                 EXTRA_START_ARGS="$(echo "$model_json" | python3 -c "import sys,json; args=json.load(sys.stdin).get('extraStartArgs',[]); print(' '.join(args))")"
 
+                # Parse extraEnvVars from model JSON (key=value pairs for env command)
+                EXTRA_ENV_VARS="$(echo "$model_json" | python3 -c "
+import sys,json
+env_vars = json.load(sys.stdin).get('extraEnvVars', {})
+print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
+")"
+
                 echo "Starting LLM server..."
                 echo "  Binary: $ENGINE_BINARY"
                 echo "  Model: $MODEL_DOWNLOAD_DIR/$FIRST_FILE"
                 echo "  Context: $CTX tokens, GPU layers: $LAYERS, Parallel: $PARALLEL"
                 if [ -n "$EXTRA_START_ARGS" ]; then
                     echo "  Extra args: $EXTRA_START_ARGS"
+                fi
+                if [ -n "$EXTRA_ENV_VARS" ]; then
+                    echo "  Extra env vars: $EXTRA_ENV_VARS"
                 fi
 
                 # Build args array
@@ -347,7 +357,14 @@ print('  Done: $f')
                     LLM_ARGS+=("${EXTRA_ARGS[@]}")
                 fi
 
-                env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
+                # Build env command with optional extra env vars
+                ENV_CMD=(env LD_LIBRARY_PATH="$ENGINE_LIB_PATH")
+                if [ -n "$EXTRA_ENV_VARS" ]; then
+                    read -ra ENV_PAIRS <<< "$EXTRA_ENV_VARS"
+                    ENV_CMD+=("${ENV_PAIRS[@]}")
+                fi
+
+                "${ENV_CMD[@]}" \
                     "$ENGINE_BINARY" "${LLM_ARGS[@]}" \
                     2>&1 &
 

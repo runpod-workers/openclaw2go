@@ -1,0 +1,28 @@
+{
+  "id": "unsloth/kimi-k25-q2kxl-gguf",
+  "name": "Kimi K2.5 UD-Q2_K_XL (2-bit, 375GB, 8-split)",
+  "type": "llm",
+  "engine": "llamacpp",
+  "repo": "unsloth/Kimi-K2.5-GGUF",
+  "files": [
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00001-of-00008.gguf",
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00002-of-00008.gguf",
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00003-of-00008.gguf",
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00004-of-00008.gguf",
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00005-of-00008.gguf",
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00006-of-00008.gguf",
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00007-of-00008.gguf",
+    "UD-Q2_K_XL/Kimi-K2.5-UD-Q2_K_XL-00008-of-00008.gguf"
+  ],
+  "downloadDir": "/workspace/models/Kimi-K2.5-GGUF",
+  "servedAs": "kimi-k2.5",
+  "vram": { "model": 375000, "overhead": 2000 },
+  "kvCacheMbPer1kTokens": 10,
+  "defaults": { "contextLength": 98304, "port": 8000 },
+  "startDefaults": { "gpuLayers": "999", "parallel": "1" },
+  "extraStartArgs": ["--fit", "on", "-fa", "on", "--kv-unified"],
+  "extraEnvVars": { "LLAMA_SET_ROWS": "1" },
+  "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "default": false,
+  "status": "experimental"
+}
