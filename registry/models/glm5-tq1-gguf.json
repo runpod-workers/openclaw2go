@@ -36,6 +36,7 @@
     "name": "local-llamacpp",
     "api": "openai-completions"
   },
+  "extraStartArgs": ["-fa", "on"],
   "default": false,
   "status": "experimental"
 }
