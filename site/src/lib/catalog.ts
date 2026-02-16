@@ -34,7 +34,7 @@ export interface GpuInfo {
 }
 
 const MAC_GPUS: GpuInfo[] = [
-  { id: 'apple-m3-pro-18gb', name: 'm3 pro 18gb', vramMb: 18432, os: ['mac'] },
+  { id: 'apple-m3-pro-18gb', name: 'm3 pro', vramMb: 18432, os: ['mac'] },
   { id: 'apple-m4-24gb', name: 'm4', vramMb: 24576, os: ['mac'] },
   { id: 'apple-m4-pro-48gb', name: 'm4 pro', vramMb: 49152, os: ['mac'] },
   { id: 'apple-m4-max-128gb', name: 'm4 max', vramMb: 131072, os: ['mac'] },
@@ -75,6 +75,10 @@ export function formatVram(mb: number): string {
 }
 
 export function formatContext(tokens: number): string {
+  if (tokens >= 1_000_000) {
+    const m = Math.round(tokens / 1_000_000)
+    return `${m}m`
+  }
   if (tokens >= 1000) {
     return `${Math.round(tokens / 1000)}k`
   }
@@ -127,24 +131,61 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
   if (!res.ok) throw new Error(`Failed to load catalog: ${res.status}`)
   const raw: RawCatalog = await res.json()
 
-  const models: CatalogModel[] = raw.models.map((m) => ({
-    id: m.id,
-    name: m.name.toLowerCase(),
-    type: m.type,
-    engine: m.engine,
-    status: m.status ?? 'stable',
-    repo: m.repo ?? m.id,
-    vram: m.vram,
-    kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
-    contextLength: m.defaults?.contextLength,
-    os: m.platform === 'mlx'
-      ? (['mac'] as OsPlatform[])
-      : (['linux', 'windows'] as OsPlatform[]),
-    isDefault: (m as Record<string, unknown>).default === true,
-    mlx: m.platform === 'mlx'
-      ? { engine: m.engine, repo: m.repo ?? m.id, memoryMb: m.vram.model }
-      : m.mlx && m.mlx.repo ? { engine: m.mlx.engine, repo: m.mlx.repo, memoryMb: m.mlx.memoryMb } : undefined,
-  }))
+  const models: CatalogModel[] = raw.models.flatMap((m) => {
+    // MLX-only models (platform: "mlx") → Mac tab only
+    if (m.platform === 'mlx') {
+      return [{
+        id: m.id,
+        name: m.name.toLowerCase(),
+        type: m.type,
+        engine: m.engine,
+        status: m.status ?? 'stable',
+        repo: m.repo ?? m.id,
+        vram: m.vram,
+        kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
+        contextLength: m.defaults?.contextLength,
+        os: ['mac'] as OsPlatform[],
+        isDefault: (m as Record<string, unknown>).default === true,
+        mlx: { engine: m.engine, repo: m.repo ?? m.id, memoryMb: m.vram.model },
+      }]
+    }
+
+    // GGUF model → Linux/Windows entry
+    const ggufEntry: CatalogModel = {
+      id: m.id,
+      name: m.name.toLowerCase(),
+      type: m.type,
+      engine: m.engine,
+      status: m.status ?? 'stable',
+      repo: m.repo ?? m.id,
+      vram: m.vram,
+      kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
+      contextLength: m.defaults?.contextLength,
+      os: ['linux', 'windows'] as OsPlatform[],
+      isDefault: (m as Record<string, unknown>).default === true,
+    }
+
+    // Models with embedded mlx config → additional Mac entry
+    if (m.mlx && m.mlx.repo) {
+      const mlxEntry: CatalogModel = {
+        id: m.id,
+        name: m.name.toLowerCase(),
+        type: m.type,
+        engine: m.mlx.engine,
+        status: m.status ?? 'stable',
+        repo: m.mlx.repo,
+        vram: { model: m.mlx.memoryMb, overhead: 0 },
+        kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
+        contextLength: m.defaults?.contextLength,
+        os: ['mac'] as OsPlatform[],
+        isDefault: (m as Record<string, unknown>).default === true,
+        mlx: { engine: m.mlx.engine, repo: m.mlx.repo, memoryMb: m.mlx.memoryMb },
+      }
+      return [ggufEntry, mlxEntry]
+    }
+
+    return [ggufEntry]
+  })
 
   const gpus: GpuInfo[] = [
     ...raw.gpus.map((g) => ({

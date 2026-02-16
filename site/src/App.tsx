@@ -113,6 +113,22 @@ function App() {
     setSelectedVramGb(null)
   }, [os, modelIdToGroup])
 
+  /** Switch all selected models to the given platform variant without changing global OS */
+  const handleVariantSwitch = useCallback((targetOs: OsPlatform) => {
+    setSelectedModelIds((prevIds) => {
+      if (prevIds.size === 0) return prevIds
+      const next = new Set<string>()
+      for (const id of prevIds) {
+        const group = modelIdToGroup.get(id)
+        if (group) {
+          const variant = getVariantForOs(group, targetOs)
+          next.add(variant.model.id)
+        }
+      }
+      return next
+    })
+  }, [modelIdToGroup])
+
   const effectiveVramGb = selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : 0)
   const effectiveVramMb = effectiveVramGb * 1024
   const remainingVramMb = effectiveVramMb > 0 ? effectiveVramMb - totalVramMb : 0
@@ -170,6 +186,7 @@ function App() {
         }}
         modelIdToGroup={modelIdToGroup}
         os={os}
+        onVariantSwitch={handleVariantSwitch}
       />
     </div>
   )

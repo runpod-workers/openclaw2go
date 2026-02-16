@@ -22,6 +22,7 @@ export default function ConfigPanel({
   onClearAll,
   modelIdToGroup,
   os,
+  onVariantSwitch,
 }: {
   selectedModels: CatalogModel[]
   totalVramGb: number
@@ -37,6 +38,7 @@ export default function ConfigPanel({
   onClearAll: () => void
   modelIdToGroup: Map<string, ModelGroup>
   os: OsPlatform | null
+  onVariantSwitch: (os: OsPlatform) => void
 }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -135,6 +137,7 @@ export default function ConfigPanel({
             models={selectedModels}
             onToggle={onToggleModel}
             modelIdToGroup={modelIdToGroup}
+            onVariantSwitch={onVariantSwitch}
           />
         </div>
 

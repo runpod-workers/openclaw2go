@@ -305,13 +305,12 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                     LLM_ARGS+=(-ngl "$LAYERS")
                 fi
 
-                # Vision-as-LLM: add --mmproj for multimodal models
-                if [ "$VISION_AS_LLM" = "true" ]; then
-                    MMPROJ_FILE="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('mmproj',''))")"
-                    if [ -n "$MMPROJ_FILE" ]; then
-                        echo "  Vision projection: $MODEL_DOWNLOAD_DIR/$MMPROJ_FILE"
-                        LLM_ARGS+=(--mmproj "$MODEL_DOWNLOAD_DIR/$MMPROJ_FILE")
-                    fi
+                # Add --mmproj for multimodal models (vision-as-LLM or LLM with built-in vision)
+                MMPROJ_FILE="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('mmproj',''))")"
+                if [ -n "$MMPROJ_FILE" ] && [ -f "$MODEL_DOWNLOAD_DIR/$MMPROJ_FILE" ]; then
+                    echo "  Vision projection: $MODEL_DOWNLOAD_DIR/$MMPROJ_FILE"
+                    LLM_ARGS+=(--mmproj "$MODEL_DOWNLOAD_DIR/$MMPROJ_FILE")
+                    VISION_AS_LLM="true"
                 fi
 
                 # Append extra start args if present

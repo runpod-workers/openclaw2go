@@ -78,7 +78,7 @@ registry/
 ```
 
 **External registry** (fetched at startup from GitHub Pages):
-- URL: `https://runpod-workers.github.io/openclaw2go/v1/catalog.json`
+- URL: `https://openclaw2go.io/v1/catalog.json`
 - Built from `site/` + `registry/` in this repo, deployed via GitHub Pages
 - Fetched by `openclaw2go registry fetch` before profile resolution
 - Cached at `/workspace/.openclaw/registry/` (1h TTL, survives pod restarts)

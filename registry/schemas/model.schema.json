@@ -16,7 +16,7 @@
     },
     "type": {
       "type": "string",
-      "enum": ["llm", "audio", "image"],
+      "enum": ["llm", "audio", "image", "vision"],
       "description": "Model type"
     },
     "engine": {
@@ -89,6 +89,10 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Additional CLI arguments appended to start command"
+    },
+    "mmproj": {
+      "type": "string",
+      "description": "Multimodal projection file for vision-capable models (downloaded from same repo)"
     },
     "provider": {
       "type": "object",
