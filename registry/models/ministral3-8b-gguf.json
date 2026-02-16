@@ -13,6 +13,7 @@
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": false,
-  "status": "experimental",
+  "status": "stable",
+  "verifiedOn": ["RTX 5090", "Apple M3 Pro"],
   "mlx": { "engine": "mlx-lm", "repo": "mlx-community/Ministral-3-8B-Instruct-2512-4bit", "memoryMb": 6000 }
 }
