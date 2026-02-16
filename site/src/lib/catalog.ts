@@ -139,11 +139,11 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
     contextLength: m.defaults?.contextLength,
     os: m.platform === 'mlx'
       ? (['mac'] as OsPlatform[])
-      : m.mlx
-        ? (['linux', 'windows', 'mac'] as OsPlatform[])
-        : (['linux', 'windows'] as OsPlatform[]),
+      : (['linux', 'windows'] as OsPlatform[]),
     isDefault: (m as Record<string, unknown>).default === true,
-    mlx: m.mlx && m.mlx.repo ? { engine: m.mlx.engine, repo: m.mlx.repo, memoryMb: m.mlx.memoryMb } : undefined,
+    mlx: m.platform === 'mlx'
+      ? { engine: m.engine, repo: m.repo ?? m.id, memoryMb: m.vram.model }
+      : m.mlx && m.mlx.repo ? { engine: m.mlx.engine, repo: m.mlx.repo, memoryMb: m.mlx.memoryMb } : undefined,
   }))
 
   const gpus: GpuInfo[] = [
