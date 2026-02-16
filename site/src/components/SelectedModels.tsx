@@ -102,9 +102,7 @@ function SegmentLabel({
       <div className="flex flex-col gap-0.5 px-2.5 py-2.5">
         <span className="font-mono text-[15px] font-bold tabular-nums text-foreground/80">{value}</span>
         <span className="font-mono text-[9px] uppercase tracking-widest text-foreground/35">{label}</span>
-        {detail && (
-          <span className="font-mono text-[9px] text-foreground/30">{detail}</span>
-        )}
+        <span className="font-mono text-[9px] text-foreground/30">{detail || '\u00A0'}</span>
       </div>
     </div>
   )
@@ -198,14 +196,14 @@ function FilledSlotCard({
   visibleVariants,
   accentColor,
   onRemove,
-  onSwitchVariant,
+  onVariantSwitch,
 }: {
   model: CatalogModel
   group: ModelGroup | undefined
   visibleVariants: ModelVariant[]
   accentColor: string
   onRemove: () => void
-  onSwitchVariant: (model: CatalogModel) => void
+  onVariantSwitch: (os: OsPlatform) => void
 }) {
   // Find which tab index matches the currently selected model
   const currentIndex = visibleVariants.findIndex((vt) => vt.model.id === model.id)
@@ -252,7 +250,12 @@ function FilledSlotCard({
         {showTabs && visibleVariants.map((vt, i) => (
           <button
             key={vt.model.id}
-            onClick={() => vt.model.id !== model.id && onSwitchVariant(vt.model)}
+            onClick={() => {
+              if (vt.model.id === model.id) return
+              // Switch global OS — the first OS in the variant's list is the primary one
+              const primaryOs = vt.os[0]
+              if (primaryOs) onVariantSwitch(primaryOs)
+            }}
             className={cn(
               "flex items-center gap-1.5 px-3 h-full font-mono text-[10px] uppercase tracking-wider transition-all",
               i === activeTab
@@ -273,8 +276,18 @@ function FilledSlotCard({
         ))}
       </div>
 
-      {/* Info table — fixed min-height for consistent VRAM alignment */}
-      <div className="min-h-[200px] flex flex-col overflow-hidden border border-foreground/[0.08]">
+      {/* VRAM breakdown bar */}
+      <VramBreakdownBar
+        modelMb={v.vram.model}
+        overheadMb={v.vram.overhead}
+        kvCacheMb={kvCacheMb}
+        contextLength={v.contextLength}
+        platformOs={activeVariant?.os ?? model.os}
+        engine={engine}
+      />
+
+      {/* Info table */}
+      <div className="flex flex-col overflow-hidden border border-foreground/[0.08]">
         <InfoBlock label="engine" value={engine} />
         <div className="h-px bg-foreground/[0.06]" />
 
@@ -291,25 +304,9 @@ function FilledSlotCard({
             <div className="h-px bg-foreground/[0.06]" />
           </>
         )}
-        {v.kvCacheMbPer1kTokens != null && (
-          <>
-            <InfoBlock label="kv rate" value={`${v.kvCacheMbPer1kTokens} mb / 1k tokens`} />
-            <div className="h-px bg-foreground/[0.06]" />
-          </>
-        )}
 
         <InfoBlockLink label="weights" url={`https://huggingface.co/${repo}`} text={repo} />
       </div>
-
-      {/* VRAM breakdown bar */}
-      <VramBreakdownBar
-        modelMb={v.vram.model}
-        overheadMb={v.vram.overhead}
-        kvCacheMb={kvCacheMb}
-        contextLength={v.contextLength}
-        platformOs={activeVariant?.os ?? model.os}
-        engine={engine}
-      />
     </div>
   )
 }
@@ -318,10 +315,12 @@ export default function SelectedModels({
   models,
   onToggle,
   modelIdToGroup,
+  onVariantSwitch,
 }: {
   models: CatalogModel[]
   onToggle: (model: CatalogModel) => void
   modelIdToGroup: Map<string, ModelGroup>
+  onVariantSwitch: (os: OsPlatform) => void
 }) {
   const byType = new Map(models.map((m) => [m.type, m]))
 
@@ -348,7 +347,7 @@ export default function SelectedModels({
                 visibleVariants={modelIdToGroup.get(m.id)?.variants ?? []}
                 accentColor={slot.color}
                 onRemove={() => onToggle(m)}
-                onSwitchVariant={onToggle}
+                onVariantSwitch={onVariantSwitch}
               />
             )}
           </div>
