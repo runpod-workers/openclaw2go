@@ -29,6 +29,7 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 | `{"llm":"teichai/glm47-claude-distill-gguf"}` | LLM (Claude Distill Q4_K_M) | 150k | 22347 / 32607 MiB | **PASS** | 2026-02-12 | Native reasoning_content support, slim image |
 | `{"llm":"unsloth/Nemotron-3-Nano-30B-A3B-GGUF"}` | LLM (Nemotron-3-Nano Q4_K_XL) | auto | — | **PASS** | 2026-02-12 | MoE, reasoning + content, slim image |
 | `{"llm":"unsloth/gpt-oss-20b-GGUF"}` | LLM (GPT-OSS-20B Q8_0) | auto | — | **PASS** | 2026-02-12 | Generates output, slim image |
+| `{"llm":"mistralai/ministral3-8b-gguf"}` | LLM (Ministral-3-8B Q8_0) | 131k | 18311 / 32607 MiB | **PASS** | 2026-02-16 | Tool calling works, kvCache=70 MB/1k, ~14 GB free, ~200 tok/s |
 | `{"llm":true,"audio":true}` | LLM+Audio | auto (~200k) | ~26 GB | PENDING | — | More context, no image |
 | `{"llm":true}` | LLM only | auto (~200k) | ~22 GB | PENDING | — | Maximum context |
 
