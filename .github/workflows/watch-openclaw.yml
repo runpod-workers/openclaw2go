@@ -1,0 +1,38 @@
+name: Watch OpenClaw Releases
+
+on:
+  schedule:
+    # Check every 6 hours for new OpenClaw releases
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-and-rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest OpenClaw version from npm
+        id: npm
+        run: |
+          LATEST=$(npm view openclaw version)
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Latest OpenClaw version on npm: $LATEST"
+
+      - name: Check if version is already built
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .openclaw-version
+          key: openclaw-version-${{ steps.npm.outputs.version }}
+
+      - name: Skip if already up to date
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: echo "OpenClaw ${{ steps.npm.outputs.version }} already built, skipping."
+
+      - name: Trigger unified image rebuild
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "New OpenClaw version detected: ${{ steps.npm.outputs.version }}"
+          echo "${{ steps.npm.outputs.version }}" > .openclaw-version
+          gh workflow run docker-build.yml --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
