@@ -24,5 +24,6 @@
   ],
   "startDefaults": {},
   "default": true,
-  "status": "stable"
+  "status": "stable",
+  "mlx": { "engine": "mlx-audio", "repo": "", "memoryMb": 500 }
 }

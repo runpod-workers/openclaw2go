@@ -32,6 +32,15 @@ const MAC_GPUS: GpuInfo[] = [
 ]
 
 export const VRAM_PRESETS = [8, 16, 24, 32, 48, 80, 128, 192]
+export const GPU_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8] as const
+export type GpuCount = (typeof GPU_COUNTS)[number]
+
+/** Minimum GPU count needed to fit the given VRAM (in MB) on a single GPU's VRAM */
+export function getMinGpuCount(totalVramMb: number, gpuVramMb: number): GpuCount {
+  if (gpuVramMb <= 0) return 1
+  const needed = Math.ceil(totalVramMb / gpuVramMb)
+  return Math.max(1, Math.min(needed, 8)) as GpuCount
+}
 
 // deterministic pastel color per model id
 const MODEL_PASTELS: Record<string, string> = {}
@@ -53,10 +62,7 @@ export function getModelColor(modelId: string): { bg: string; border: string; te
 }
 
 export function formatVram(mb: number): string {
-  if (mb >= 1024) {
-    return `${(mb / 1024).toFixed(1)} gb`
-  }
-  return `${Math.round(mb)} mb`
+  return `${(mb / 1024).toFixed(1)} gb`
 }
 
 export function formatContext(tokens: number): string {
@@ -91,6 +97,7 @@ interface RawModel {
   kvCacheMbPer1kTokens?: number
   defaults?: { contextLength?: number }
   platform?: 'nvidia' | 'mlx'
+  mlx?: { engine: string; repo: string; memoryMb: number }
   [key: string]: unknown
 }
 
@@ -121,7 +128,9 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
     vram: m.vram,
     kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
     contextLength: m.defaults?.contextLength,
-    os: m.platform === 'mlx' ? (['mac'] as OsPlatform[]) : (['linux', 'windows'] as OsPlatform[]),
+    os: m.platform === 'mlx'
+      ? (['mac'] as OsPlatform[])
+      : (['linux', 'windows'] as OsPlatform[]),
   }))
 
   const gpus: GpuInfo[] = [

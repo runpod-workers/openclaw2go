@@ -56,11 +56,6 @@ export default function ModelGroupCard({
         {group.displayName}
       </span>
 
-      {/* quant badge */}
-      <span className="shrink-0 bg-foreground/[0.06] px-1.5 py-0.5 font-mono text-[9px] font-semibold tabular-nums text-foreground/70">
-        {variant.shortLabel}
-      </span>
-
       {/* context */}
       <span className="w-[36px] shrink-0 text-right font-mono text-[10px] tabular-nums text-foreground/60">
         {group.contextLength ? formatContext(group.contextLength) : "--"}

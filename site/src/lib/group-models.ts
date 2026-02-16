@@ -31,11 +31,14 @@ function cleanBaseName(name: string): string {
 /**
  * Group key includes bit level so different quants stay separate.
  * Same model at same bit level but different platforms (GGUF 4-bit + MLX 4-bit) group together.
+ * Quant method prefixes (e.g. "sdnq") are stripped so "sdnq 4bit" and "4bit" produce the same key.
  */
 function getGroupKey(name: string): string {
   const { baseName, shortLabel } = parseQuant(name)
   const clean = cleanBaseName(baseName)
-  return shortLabel !== '--' ? `${clean}::${shortLabel}` : clean
+  // Normalize to just the bit level: "sdnq 4bit" → "4bit"
+  const bitOnly = shortLabel !== '--' ? (shortLabel.match(/(\d+bit)$/)?.[1] ?? shortLabel) : '--'
+  return bitOnly !== '--' ? `${clean}::${bitOnly}` : clean
 }
 
 /** Display name is just the clean model name without bit level */

@@ -3,6 +3,7 @@ import {
   fetchCatalog,
   getTotalVram,
   getGpusForOs,
+  getMinGpuCount,
   type CatalogModel,
   type GpuInfo,
   type OsPlatform,
@@ -37,7 +38,6 @@ function App() {
 
   const allGroups = useMemo(() => groupModels(allModels), [allModels])
 
-  // Map model ID → its group (for remapping on OS change)
   const modelIdToGroup = useMemo(() => {
     const map = new Map<string, ModelGroup>()
     for (const group of allGroups) {
@@ -58,6 +58,9 @@ function App() {
   const totalVramMb = useMemo(() => getTotalVram(selectedModels), [selectedModels])
   const totalVramGb = totalVramMb / 1024
 
+  // GPU count is fully derived — auto-calculated from selected GPU + total VRAM
+  const gpuCount = selectedGpu ? getMinGpuCount(totalVramMb, selectedGpu.vramMb) : 1
+
   const toggleModel = useCallback(
     (model: CatalogModel) => {
       setSelectedModelIds((prev) => {
@@ -65,7 +68,6 @@ function App() {
         if (next.has(model.id)) {
           next.delete(model.id)
         } else {
-          // Remove any existing model of the same type (one per category)
           const sameCategoryIds = allModels
             .filter((m) => m.type === model.type)
             .map((m) => m.id)
@@ -94,7 +96,6 @@ function App() {
     const nextOs = os === newOs ? null : newOs
     setOs(nextOs)
 
-    // Remap selected model IDs to the equivalent variant for the new OS
     setSelectedModelIds((prevIds) => {
       if (prevIds.size === 0) return prevIds
       const next = new Set<string>()
@@ -112,7 +113,7 @@ function App() {
     setSelectedVramGb(null)
   }, [os, modelIdToGroup])
 
-  const effectiveVramGb = selectedVramGb ?? (selectedGpu ? selectedGpu.vramMb / 1024 : 0)
+  const effectiveVramGb = selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : 0)
   const effectiveVramMb = effectiveVramGb * 1024
   const remainingVramMb = effectiveVramMb > 0 ? effectiveVramMb - totalVramMb : 0
 
@@ -157,6 +158,7 @@ function App() {
         selectedGpu={selectedGpu}
         gpus={filteredGpus}
         totalVramMb={totalVramMb}
+        gpuCount={gpuCount}
         onGpuSelect={handleGpuSelect}
         onVramPreset={handleVramPreset}
         onToggleModel={toggleModel}

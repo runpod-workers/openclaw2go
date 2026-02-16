@@ -25,5 +25,23 @@
     "binary": "/usr/local/bin/openclaw-image-server",
     "venvPath": "/opt/engines/image-gen/venv",
     "type": "python-venv"
+  },
+  "mlx-lm": {
+    "id": "mlx-lm",
+    "name": "MLX LM (Mac)",
+    "binary": "python -m mlx_lm.server",
+    "type": "python-venv"
+  },
+  "mlx-audio": {
+    "id": "mlx-audio",
+    "name": "MLX Audio (Mac)",
+    "binary": "python -m mlx_audio.server",
+    "type": "python-venv"
+  },
+  "mflux": {
+    "id": "mflux",
+    "name": "mflux Image Gen (Mac)",
+    "binary": "python mflux_server.py",
+    "type": "python-venv"
   }
 }

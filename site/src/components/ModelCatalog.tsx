@@ -119,9 +119,6 @@ export default function ModelCatalog({
         <span className="flex-1 font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
           Model
         </span>
-        <span className="shrink-0 font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
-          Quant
-        </span>
         <span className="w-[36px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
           Ctx
         </span>

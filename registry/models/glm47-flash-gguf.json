@@ -25,5 +25,6 @@
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": true,
-  "status": "stable"
+  "status": "stable",
+  "mlx": { "engine": "mlx-lm", "repo": "mlx-community/GLM-4.7-Flash-4bit", "memoryMb": 17000 }
 }

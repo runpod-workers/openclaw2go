@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { cn } from '../lib/utils'
-import type { CatalogModel, GpuInfo } from '../lib/catalog'
+import type { CatalogModel, GpuInfo, GpuCount, OsPlatform } from '../lib/catalog'
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -45,12 +45,19 @@ function TerminalIcon({ className }: { className?: string }) {
 export default function DeployCard({
   selectedModels,
   gpu,
+  gpuCount,
   vramGb,
+  os,
 }: {
   selectedModels: CatalogModel[]
   gpu: GpuInfo | null
+  gpuCount: GpuCount
   vramGb: number
+  os: OsPlatform | null
 }) {
+  const isMacOs = os === 'mac'
+  const isMacGpu = gpu?.os.includes('mac') ?? false
+
   const cliCommand = useMemo(() => {
     const lines: string[] = []
     lines.push("openclaw2go run \\")
@@ -59,24 +66,29 @@ export default function DeployCard({
       lines.push(`  --model ${m.repo}${isLast ? "" : " \\"}`)
     })
     if (gpu) {
+      const gpuArg = gpuCount > 1 ? `${gpuCount}x${gpu.id}` : gpu.id
       const isLast = vramGb <= 0
-      lines.push(`  --gpu ${gpu.id}${isLast ? "" : " \\"}`)
+      lines.push(`  --gpu ${gpuArg}${isLast ? "" : " \\"}`)
     }
     if (vramGb > 0) {
       lines.push(`  --vram ${vramGb}gb`)
     }
     return lines.join("\n")
-  }, [selectedModels, gpu, vramGb])
+  }, [selectedModels, gpu, gpuCount, vramGb])
 
   const runpodUrl = useMemo(() => {
     const params = new URLSearchParams()
     params.set("models", selectedModels.map((m) => m.repo).join(","))
-    if (gpu) params.set("gpu", gpu.id)
+    if (gpu) {
+      params.set("gpu", gpuCount > 1 ? `${gpuCount}x${gpu.id}` : gpu.id)
+    }
     if (vramGb > 0) params.set("vram", String(vramGb))
     return `https://runpod.io/deploy?${params.toString()}`
-  }, [selectedModels, gpu, vramGb])
+  }, [selectedModels, gpu, gpuCount, vramGb])
 
   const isEmpty = selectedModels.length === 0
+  // RunPod can only deploy Linux — if Mac is selected with a Mac GPU, cloud deploy is not available
+  const cloudUnavailable = isMacOs && isMacGpu
 
   return (
     <div className={cn("grid h-[140px] grid-cols-2 gap-3", isEmpty && "opacity-30 pointer-events-none")}>
@@ -117,20 +129,28 @@ export default function DeployCard({
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4">
-          <span className="text-center font-mono text-[10px] leading-relaxed text-foreground/60">
-            {isEmpty
-              ? "configure your box to enable cloud deployment."
-              : "deploy your current configuration to runpod with one click."}
-          </span>
-          <a
-            href={isEmpty ? undefined : runpodUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 bg-[#673AB7] px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-white transition-opacity hover:opacity-85"
-          >
-            <RunpodIcon className="h-3.5 w-3.5" />
-            Deploy to Runpod
-          </a>
+          {cloudUnavailable ? (
+            <span className="text-center font-mono text-[10px] leading-relaxed text-foreground/40">
+              cloud deploy requires a linux gpu. select a linux gpu or use the cli for local mac deployment.
+            </span>
+          ) : (
+            <>
+              <span className="text-center font-mono text-[10px] leading-relaxed text-foreground/60">
+                {isEmpty
+                  ? "configure your box to enable cloud deployment."
+                  : "deploy your current configuration to runpod with one click."}
+              </span>
+              <a
+                href={isEmpty ? undefined : runpodUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 bg-[#673AB7] px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-white transition-opacity hover:opacity-85"
+              >
+                <RunpodIcon className="h-3.5 w-3.5" />
+                Deploy to Runpod
+              </a>
+            </>
+          )}
         </div>
       </div>
     </div>

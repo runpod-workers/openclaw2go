@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { formatContext, formatVram, type CatalogModel, type OsPlatform } from '../lib/catalog'
 import type { ModelGroup, ModelVariant } from '../lib/group-models'
 import { PlatformIcon } from './PlatformSelector'
@@ -56,21 +55,50 @@ function InfoBlockLink({ label, url, text }: { label: string; url: string; text:
   )
 }
 
-/** Tall labeled segment — replaces the progress bar as the visual element */
+/** CSS pattern presets for VRAM segment bars */
+const SEGMENT_PATTERNS = {
+  /** Solid fill — model weights (the heaviest, most tangible chunk) */
+  solid: (color: string): React.CSSProperties => ({
+    backgroundColor: color,
+  }),
+  /** Diagonal stripes — KV cache (structured, repeating memory) */
+  stripes: (color: string): React.CSSProperties => ({
+    backgroundColor: `color-mix(in srgb, ${color} 40%, transparent)`,
+    backgroundImage: `repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      ${color} 3px,
+      ${color} 5px
+    )`,
+  }),
+  /** Dot grid — runtime overhead (small, scattered cost) */
+  dots: (color: string): React.CSSProperties => ({
+    backgroundColor: `color-mix(in srgb, ${color} 20%, transparent)`,
+    backgroundImage: `radial-gradient(circle, ${color} 1px, transparent 1px)`,
+    backgroundSize: '6px 6px',
+  }),
+} as const
+
+type SegmentPattern = keyof typeof SEGMENT_PATTERNS
+
+/** Tall labeled segment with patterned bar */
 function SegmentLabel({
   label,
   value,
   detail,
   color,
+  pattern = 'solid',
 }: {
   label: string
   value: string
   detail?: string
   color: string
+  pattern?: SegmentPattern
 }) {
   return (
     <div className="flex flex-col">
-      <span className="inline-block h-10 w-full" style={{ backgroundColor: color }} />
+      <span className="inline-block h-10 w-full" style={SEGMENT_PATTERNS[pattern](color)} />
       <div className="flex flex-col gap-0.5 px-2.5 py-2.5">
         <span className="font-mono text-[15px] font-bold tabular-nums text-foreground/80">{value}</span>
         <span className="font-mono text-[9px] uppercase tracking-widest text-foreground/35">{label}</span>
@@ -87,7 +115,6 @@ function VramBreakdownBar({
   overheadMb,
   kvCacheMb,
   contextLength,
-  accentColor,
   platformOs,
   engine,
 }: {
@@ -95,7 +122,6 @@ function VramBreakdownBar({
   overheadMb: number
   kvCacheMb: number
   contextLength?: number
-  accentColor: string
   platformOs?: OsPlatform[]
   engine?: string
 }) {
@@ -104,9 +130,7 @@ function VramBreakdownBar({
   const isMac = platformOs?.includes('mac')
   const memLabel = isMac ? 'memory' : 'vram'
 
-  const weightsColor = accentColor
-  const kvColor = '#ff2d55'
-  const runtimeColor = '#39ff14'
+  const segmentColor = 'rgba(255,255,255,0.18)'
 
   // Compute grid column fractions
   let cols: string
@@ -134,24 +158,25 @@ function VramBreakdownBar({
         <span className="font-mono text-[10px] uppercase tracking-widest text-foreground/35">
           {memLabel}
         </span>
-        <span className="font-mono text-lg font-bold tabular-nums text-foreground/80">
+        <span className="font-mono text-lg font-bold tabular-nums text-foreground/70">
           {formatVram(totalMb)}
         </span>
       </div>
 
       {/* Segment labels as proportional blocks — model → kv cache → runtime */}
       <div className="grid" style={{ gridTemplateColumns: cols }}>
-        <SegmentLabel label="weights" value={formatVram(modelMb)} color={weightsColor} />
+        <SegmentLabel label="weights" value={formatVram(modelMb)} color={segmentColor} pattern="solid" />
         {kvCacheMb > 0 && (
           <SegmentLabel
             label="kv cache"
             value={formatVram(kvCacheMb)}
             detail={contextLength ? `@ ${formatContext(contextLength)} ctx` : undefined}
-            color={kvColor}
+            color={segmentColor}
+            pattern="stripes"
           />
         )}
         {showRuntime && (
-          <SegmentLabel label="runtime" value={formatVram(overheadMb)} detail={engine} color={runtimeColor} />
+          <SegmentLabel label="runtime" value={formatVram(overheadMb)} detail={engine} color={segmentColor} pattern="dots" />
         )}
       </div>
     </div>
@@ -173,14 +198,18 @@ function FilledSlotCard({
   visibleVariants,
   accentColor,
   onRemove,
+  onSwitchVariant,
 }: {
   model: CatalogModel
   group: ModelGroup | undefined
   visibleVariants: ModelVariant[]
   accentColor: string
   onRemove: () => void
+  onSwitchVariant: (model: CatalogModel) => void
 }) {
-  const [activeTab, setActiveTab] = useState(0)
+  // Find which tab index matches the currently selected model
+  const currentIndex = visibleVariants.findIndex((vt) => vt.model.id === model.id)
+  const activeTab = currentIndex >= 0 ? currentIndex : 0
   const displayName = group?.displayName ?? model.name
 
   // Always show platform tab(s) so users can confirm which platform variant is active
@@ -203,7 +232,7 @@ function FilledSlotCard({
       {/* Model name + remove X */}
       <div className="flex items-start justify-between gap-2">
         <span
-          className="flex-1 font-mono text-xl font-bold leading-tight line-clamp-2 min-h-[3.25rem]"
+          className="flex-1 font-mono text-2xl font-bold leading-tight line-clamp-2 min-h-[3.75rem]"
           style={{ color: accentColor }}
           title={displayName}
         >
@@ -223,7 +252,7 @@ function FilledSlotCard({
         {showTabs && visibleVariants.map((vt, i) => (
           <button
             key={vt.model.id}
-            onClick={() => setActiveTab(i)}
+            onClick={() => vt.model.id !== model.id && onSwitchVariant(vt.model)}
             className={cn(
               "flex items-center gap-1.5 px-3 h-full font-mono text-[10px] uppercase tracking-wider transition-all",
               i === activeTab
@@ -278,7 +307,6 @@ function FilledSlotCard({
         overheadMb={v.vram.overhead}
         kvCacheMb={kvCacheMb}
         contextLength={v.contextLength}
-        accentColor={accentColor}
         platformOs={activeVariant?.os ?? model.os}
         engine={engine}
       />
@@ -290,12 +318,10 @@ export default function SelectedModels({
   models,
   onToggle,
   modelIdToGroup,
-  os,
 }: {
   models: CatalogModel[]
   onToggle: (model: CatalogModel) => void
   modelIdToGroup: Map<string, ModelGroup>
-  os: OsPlatform | null
 }) {
   const byType = new Map(models.map((m) => [m.type, m]))
 
@@ -319,14 +345,10 @@ export default function SelectedModels({
               <FilledSlotCard
                 model={m}
                 group={modelIdToGroup.get(m.id)}
-                visibleVariants={
-                  (() => {
-                    const variants = modelIdToGroup.get(m.id)?.variants ?? []
-                    return os ? variants.filter((v) => v.os.includes(os)) : variants
-                  })()
-                }
+                visibleVariants={modelIdToGroup.get(m.id)?.variants ?? []}
                 accentColor={slot.color}
                 onRemove={() => onToggle(m)}
+                onSwitchVariant={onToggle}
               />
             )}
           </div>

@@ -21,7 +21,7 @@
     },
     "engine": {
       "type": "string",
-      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "ik-llamacpp", "image-gen", "mlx", "openclaw2go-llamacpp", "vllm"],
+      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "ik-llamacpp", "image-gen", "mlx", "mlx-lm", "mlx-audio", "mflux", "openclaw2go-llamacpp", "vllm"],
       "description": "Engine to use for this model"
     },
     "repo": {
@@ -114,6 +114,16 @@
     "platform": {
       "type": "string",
       "description": "Target platform (e.g., mlx for Apple Silicon)"
+    },
+    "mlx": {
+      "type": "object",
+      "description": "MLX execution config for Apple Silicon (macOS)",
+      "properties": {
+        "engine": { "type": "string", "enum": ["mlx-lm", "mlx-audio", "mflux"] },
+        "repo": { "type": "string" },
+        "memoryMb": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["engine", "memoryMb"]
     }
   },
   "additionalProperties": false

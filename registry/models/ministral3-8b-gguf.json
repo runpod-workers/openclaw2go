@@ -1,0 +1,18 @@
+{
+  "id": "mistralai/ministral3-8b-gguf",
+  "name": "Ministral-3-8B-Instruct GGUF Q8_0 (Dec 2025)",
+  "type": "llm",
+  "engine": "openclaw2go-llamacpp",
+  "repo": "unsloth/Ministral-3-8B-Instruct-2512-GGUF",
+  "files": ["Ministral-3-8B-Instruct-2512-Q8_0.gguf"],
+  "downloadDir": "/workspace/models/Ministral-3-8B-GGUF",
+  "servedAs": "ministral-3-8b",
+  "vram": { "model": 9030, "overhead": 500 },
+  "kvCacheMbPer1kTokens": 45,
+  "defaults": { "contextLength": 131072, "port": 8000 },
+  "startDefaults": { "gpuLayers": "999", "parallel": "1" },
+  "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "default": false,
+  "status": "experimental",
+  "mlx": { "engine": "mlx-lm", "repo": "mlx-community/Ministral-3-8B-Instruct-2512-4bit", "memoryMb": 6000 }
+}
