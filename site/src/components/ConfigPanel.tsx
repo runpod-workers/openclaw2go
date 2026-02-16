@@ -70,7 +70,7 @@ export default function ConfigPanel({
                 Hardware
               </span>
             </SectionHeader>
-            <div className="p-5">
+            <div className="px-3 py-2.5">
               <GpuSelector
                 gpus={gpus}
                 selectedGpu={selectedGpu}

@@ -71,7 +71,8 @@ export function getModelColor(modelId: string): { bg: string; border: string; te
 }
 
 export function formatVram(mb: number): string {
-  return `${(mb / 1024).toFixed(1)} gb`
+  const gb = mb / 1024
+  return `${gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1)} gb`
 }
 
 export function formatContext(tokens: number): string {

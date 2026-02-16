@@ -23,18 +23,18 @@ function GpuButton({
       onClick={() => !disabled && onSelect()}
       disabled={disabled && !isSelected}
       className={cn(
-        "flex items-baseline px-3 py-1.5 font-mono text-[11px] transition-all duration-150",
+        "flex items-baseline px-1.5 py-0.5 font-mono text-[11px] transition-all duration-150",
         isSelected
           ? "bg-foreground/10 text-foreground"
           : "bg-foreground/[0.03] text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground",
         disabled && !isSelected && "opacity-20 pointer-events-none"
       )}
     >
-      <span className="w-[20px] text-[9px] font-normal text-foreground/40 tabular-nums">
+      <span className="text-[9px] font-normal text-foreground/40 tabular-nums">
         {count}x
       </span>
-      <span className="font-semibold uppercase tracking-wide">{gpu.name}</span>
-      <span className="ml-1.5 w-[52px] text-right text-[9px] text-foreground/60 tabular-nums">
+      <span className="ml-0.5 font-semibold uppercase tracking-wide">{gpu.name}</span>
+      <span className="ml-1 text-right text-[9px] text-foreground/60 tabular-nums">
         {formatVram(effectiveVram)}
       </span>
     </button>
@@ -91,13 +91,13 @@ export default function GpuSelector({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2.5">
       {nvidiaGpus.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-foreground/30">
             NVIDIA
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {nvidiaGpus.map(renderGpu)}
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function GpuSelector({
           <span className="font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-foreground/30">
             Apple Silicon
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {macGpus.map(renderGpu)}
           </div>
         </div>
