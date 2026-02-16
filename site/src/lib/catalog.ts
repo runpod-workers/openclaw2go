@@ -34,6 +34,7 @@ export interface GpuInfo {
 }
 
 const MAC_GPUS: GpuInfo[] = [
+  { id: 'apple-m3-pro-18gb', name: 'm3 pro 18gb', vramMb: 18432, os: ['mac'] },
   { id: 'apple-m4-24gb', name: 'm4', vramMb: 24576, os: ['mac'] },
   { id: 'apple-m4-pro-48gb', name: 'm4 pro', vramMb: 49152, os: ['mac'] },
   { id: 'apple-m4-max-128gb', name: 'm4 max', vramMb: 131072, os: ['mac'] },
