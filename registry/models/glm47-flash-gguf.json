@@ -24,6 +24,7 @@
   ],
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "tps": { "rtx-5090": 179 },
   "default": true,
   "status": "stable",
   "mlx": { "engine": "mlx-lm", "repo": "mlx-community/GLM-4.7-Flash-4bit", "memoryMb": 17000 }

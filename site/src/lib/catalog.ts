@@ -21,6 +21,7 @@ export interface CatalogModel {
   vram: ModelVram
   kvCacheMbPer1kTokens?: number
   contextLength?: number
+  tps?: Record<string, number>
   os: OsPlatform[]
   isDefault: boolean
   hasVision: boolean
@@ -111,6 +112,7 @@ interface RawModel {
   repo?: string
   vram: ModelVram
   kvCacheMbPer1kTokens?: number
+  tps?: Record<string, number>
   defaults?: { contextLength?: number }
   mmproj?: string
   platform?: 'nvidia' | 'mlx'
@@ -149,6 +151,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
         repo: m.repo ?? m.id,
         vram: m.vram,
         kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
+        tps: m.tps,
         contextLength: m.defaults?.contextLength,
         os: ['mac'] as OsPlatform[],
         isDefault: (m as Record<string, unknown>).default === true,
@@ -167,6 +170,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
       repo: m.repo ?? m.id,
       vram: m.vram,
       kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
+      tps: m.tps,
       contextLength: m.defaults?.contextLength,
       os: ['linux', 'windows'] as OsPlatform[],
       isDefault: (m as Record<string, unknown>).default === true,
@@ -184,6 +188,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
         repo: m.mlx.repo,
         vram: { model: m.mlx.memoryMb, overhead: 0 },
         kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
+        tps: m.tps,
         contextLength: m.defaults?.contextLength,
         os: ['mac'] as OsPlatform[],
         isDefault: (m as Record<string, unknown>).default === true,

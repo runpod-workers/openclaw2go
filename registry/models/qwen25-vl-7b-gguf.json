@@ -4,16 +4,33 @@
   "type": "vision",
   "engine": "openclaw2go-llamacpp",
   "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
-  "files": ["Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"],
+  "files": [
+    "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
+  ],
   "mmproj": "mmproj-Qwen2.5-VL-7B-Instruct-f16.gguf",
   "downloadDir": "/workspace/models/Qwen2.5-VL-7B-Instruct-GGUF",
   "servedAs": "qwen2.5-vl-7b",
-  "vram": { "model": 5500, "overhead": 1500 },
+  "vram": {
+    "model": 5500,
+    "overhead": 1500
+  },
   "kvCacheMbPer1kTokens": 20,
-  "defaults": { "contextLength": 32768, "port": 8003 },
-  "startDefaults": { "gpuLayers": "999", "parallel": "1" },
+  "defaults": {
+    "contextLength": 32768,
+    "port": 8003
+  },
+  "startDefaults": {
+    "gpuLayers": "999",
+    "parallel": "1"
+  },
   "extraStartArgs": [],
-  "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-completions"
+  },
+  "tps": {
+    "rtx-4090": 119
+  },
   "default": true,
   "status": "stable"
 }

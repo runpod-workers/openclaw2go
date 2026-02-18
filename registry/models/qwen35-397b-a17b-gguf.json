@@ -22,5 +22,6 @@
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": false,
   "status": "experimental",
+  "tps": { "b200-180gb": 43 },
   "verifiedOn": ["b200-180gb"]
 }

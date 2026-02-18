@@ -75,6 +75,13 @@ export default function ModelGroupCard({
         {group.contextLength ? formatContext(group.contextLength) : "--"}
       </span>
 
+      {/* tps */}
+      <span className="w-[30px] shrink-0 text-right font-mono text-[10px] tabular-nums text-foreground/60">
+        {variant.tps && Object.keys(variant.tps).length > 0
+          ? Math.max(...Object.values(variant.tps))
+          : "--"}
+      </span>
+
       {/* vram */}
       <span className={cn(
         "w-[48px] shrink-0 text-right font-mono text-[10px] tabular-nums",

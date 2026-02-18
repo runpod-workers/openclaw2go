@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatContext, formatVram, type CatalogModel, type OsPlatform } from '../lib/catalog'
+import { formatContext, formatVram, type CatalogModel, type GpuInfo, type OsPlatform } from '../lib/catalog'
 import type { ModelGroup, ModelVariant } from '../lib/group-models'
 import { PlatformIcon } from './PlatformSelector'
 import { X, ExternalLink } from 'lucide-react'
@@ -196,12 +196,14 @@ function FilledSlotCard({
   group,
   visibleVariants,
   accentColor,
+  gpus,
   onRemove,
 }: {
   model: CatalogModel
   group: ModelGroup | undefined
   visibleVariants: ModelVariant[]
   accentColor: string
+  gpus: GpuInfo[]
   onRemove: () => void
 }) {
   // Local tab state — doesn't affect global OS
@@ -222,6 +224,11 @@ function FilledSlotCard({
   const kvCacheMb = (v.kvCacheMbPer1kTokens && v.contextLength)
     ? (v.contextLength / 1000) * v.kvCacheMbPer1kTokens
     : 0
+
+  // TPS: pick the first entry and resolve GPU display name
+  const tpsEntries = v.tps ? Object.entries(v.tps) : []
+  const tpsEntry = tpsEntries.length > 0 ? tpsEntries[0] : null
+  const tpsGpuName = tpsEntry ? (gpus.find((g) => g.id === tpsEntry[0])?.name ?? tpsEntry[0]) : null
 
   return (
     <div
@@ -284,8 +291,12 @@ function FilledSlotCard({
 
       {/* Info table */}
       <div className="flex flex-col overflow-hidden border border-foreground/[0.08]">
-        <InfoBlock label="engine" value={engine} />
-        <div className="h-px bg-foreground/[0.06]" />
+        {tpsEntry && (
+          <>
+            <InfoBlock label="tps" value={`${tpsEntry[1]} tok/s · ${tpsGpuName}`} />
+            <div className="h-px bg-foreground/[0.06]" />
+          </>
+        )}
 
         {quant && quant !== '--' && (
           <>
@@ -293,6 +304,9 @@ function FilledSlotCard({
             <div className="h-px bg-foreground/[0.06]" />
           </>
         )}
+
+        <InfoBlock label="engine" value={engine} />
+        <div className="h-px bg-foreground/[0.06]" />
 
         {v.contextLength && (
           <>
@@ -311,10 +325,12 @@ export default function SelectedModels({
   models,
   onToggle,
   modelIdToGroup,
+  gpus,
 }: {
   models: CatalogModel[]
   onToggle: (model: CatalogModel) => void
   modelIdToGroup: Map<string, ModelGroup>
+  gpus: GpuInfo[]
 }) {
   const byType = new Map(models.map((m) => [m.type, m]))
 
@@ -340,6 +356,7 @@ export default function SelectedModels({
                 group={modelIdToGroup.get(m.id)}
                 visibleVariants={modelIdToGroup.get(m.id)?.variants ?? []}
                 accentColor={slot.color}
+                gpus={gpus}
                 onRemove={() => onToggle(m)}
               />
             )}

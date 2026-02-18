@@ -159,6 +159,9 @@ export default function ModelCatalog({
         <span className="w-[36px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
           Ctx
         </span>
+        <span className="w-[30px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
+          TPS
+        </span>
         <span className="w-[48px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
           Memory
         </span>

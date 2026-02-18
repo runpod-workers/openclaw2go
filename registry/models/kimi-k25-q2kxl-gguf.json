@@ -23,6 +23,7 @@
   "extraStartArgs": ["--fit", "on", "-fa", "on", "--kv-unified"],
   "extraEnvVars": { "LLAMA_SET_ROWS": "1" },
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "tps": { "2x-h200-sxm": 19 },
   "default": false,
   "status": "experimental"
 }

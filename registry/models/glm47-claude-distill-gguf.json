@@ -13,6 +13,7 @@
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "extraStartArgs": [],
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "tps": { "rtx-5090": 182 },
   "default": false,
   "status": "experimental"
 }

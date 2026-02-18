@@ -7,6 +7,7 @@ export interface ModelVariant {
   quant: string
   shortLabel: string
   vramTotal: number
+  tps?: Record<string, number>
   repo: string
 }
 
@@ -61,6 +62,7 @@ export function groupModels(models: CatalogModel[]): ModelGroup[] {
       quant: fullQuant,
       shortLabel,
       vramTotal: model.vram.model + model.vram.overhead,
+      tps: model.tps,
       repo: model.repo,
     }
 

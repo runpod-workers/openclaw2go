@@ -12,6 +12,7 @@
   "defaults": { "contextLength": 131072, "port": 8000 },
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "extraStartArgs": ["-fa", "on", "--reasoning-format", "none"],
+  "tps": { "rtx-4090": 92 },
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": false,
   "status": "experimental"

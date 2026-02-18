@@ -4,15 +4,35 @@
   "type": "llm",
   "engine": "openclaw2go-llamacpp",
   "repo": "unsloth/Olmo-3.1-32B-Think-GGUF",
-  "files": ["Olmo-3.1-32B-Think-Q4_K_M.gguf"],
+  "files": [
+    "Olmo-3.1-32B-Think-Q4_K_M.gguf"
+  ],
   "downloadDir": "/workspace/models/Olmo-3.1-32B-Think-GGUF",
   "servedAs": "olmo-3.1-think-32b",
-  "vram": { "model": 18500, "overhead": 1000 },
+  "vram": {
+    "model": 18500,
+    "overhead": 1000
+  },
   "kvCacheMbPer1kTokens": 40,
-  "defaults": { "contextLength": 32768, "port": 8000 },
-  "startDefaults": { "gpuLayers": "999", "parallel": "1" },
-  "extraStartArgs": ["-fa", "on"],
-  "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "defaults": {
+    "contextLength": 32768,
+    "port": 8000
+  },
+  "startDefaults": {
+    "gpuLayers": "999",
+    "parallel": "1"
+  },
+  "extraStartArgs": [
+    "-fa",
+    "on"
+  ],
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-completions"
+  },
+  "tps": {
+    "rtx-4090": 43
+  },
   "default": false,
   "status": "stable"
 }
