@@ -16,6 +16,7 @@
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "extraStartArgs": ["-fa", "on", "--chat-template-file", "/opt/openclaw/templates/step35-flash.jinja"],
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "tps": { "a100-80gb": 69 },
   "default": false,
   "status": "experimental"
 }

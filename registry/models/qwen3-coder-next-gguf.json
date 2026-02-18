@@ -13,6 +13,7 @@
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "extraStartArgs": ["-fa", "on", "--no-context-shift"],
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "tps": { "l40": 118 },
   "default": false,
   "status": "experimental",
   "mlx": { "engine": "mlx-lm", "repo": "mlx-community/Qwen3-Coder-Next-4bit", "memoryMb": 45000 }

@@ -5,10 +5,11 @@
   "engine": "openclaw2go-llamacpp",
   "repo": "unsloth/GLM-4.7-GGUF",
   "files": [
-    "GLM-4.7-Q4_K_M-00001-of-00004.gguf",
-    "GLM-4.7-Q4_K_M-00002-of-00004.gguf",
-    "GLM-4.7-Q4_K_M-00003-of-00004.gguf",
-    "GLM-4.7-Q4_K_M-00004-of-00004.gguf"
+    "Q4_K_M/GLM-4.7-Q4_K_M-00001-of-00005.gguf",
+    "Q4_K_M/GLM-4.7-Q4_K_M-00002-of-00005.gguf",
+    "Q4_K_M/GLM-4.7-Q4_K_M-00003-of-00005.gguf",
+    "Q4_K_M/GLM-4.7-Q4_K_M-00004-of-00005.gguf",
+    "Q4_K_M/GLM-4.7-Q4_K_M-00005-of-00005.gguf"
   ],
   "downloadDir": "/workspace/models/GLM-4.7-GGUF",
   "servedAs": "glm-4.7",
