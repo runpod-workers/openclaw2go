@@ -168,7 +168,7 @@ export default function ModelCatalog({
       </div>
 
       {/* scrollable model list */}
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto py-1" data-model-list>
         {modelSections.length === 0 && (
           <div className="flex items-center justify-center py-12">
             <span className="font-mono text-[10px] text-foreground/30">no models match</span>

@@ -35,6 +35,28 @@ export default function ModelGroupCard({
           e.preventDefault()
           onToggle()
         }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault()
+          const list = (e.currentTarget as HTMLElement).closest('[data-model-list]')
+          if (!list) return
+          const rows = Array.from(list.querySelectorAll<HTMLElement>('[role="button"]'))
+          const idx = rows.indexOf(e.currentTarget as HTMLElement)
+          if (idx < 0) return
+          const next = e.key === "ArrowDown" ? rows[idx + 1] : rows[idx - 1]
+          if (next) {
+            next.focus()
+            next.scrollIntoView({ block: 'nearest' })
+            // Auto-swap only if the target's type already has a selected model
+            const targetType = next.dataset.modelType
+            if (
+              targetType &&
+              !next.hasAttribute('data-selected') &&
+              list.querySelector(`[data-model-type="${targetType}"][data-selected]`)
+            ) {
+              next.click()
+            }
+          }
+        }
       }}
       className={cn(
         "group flex w-full cursor-pointer items-center text-left transition-all duration-150",
@@ -45,6 +67,8 @@ export default function ModelGroupCard({
         wouldExceed && !selected && "pointer-events-none opacity-20",
         dimmed && !selected && "opacity-35"
       )}
+      data-model-type={group.type}
+      data-selected={selected || undefined}
       style={selected ? { boxShadow: `inset 3px 0 0 ${accentColor}` } : undefined}
     >
       {/* model name */}
