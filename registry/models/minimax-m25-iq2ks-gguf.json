@@ -16,6 +16,7 @@
   "defaults": { "contextLength": 65536, "port": 8000 },
   "startDefaults": { "gpuLayers": "999", "parallel": "1" },
   "extraStartArgs": ["-fa", "on"],
+  "tps": { "h100-80gb": 97 },
   "provider": { "name": "local-llamacpp", "api": "openai-completions" },
   "default": false,
   "status": "experimental"
