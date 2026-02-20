@@ -15,12 +15,12 @@ export function parseQuant(name: string): {
   for (let i = 0; i < parts.length; i++) {
     const p = parts[i].toLowerCase()
 
-    // "sdnq 4-bit" style -- keep "sdnq" prefix in the short label
+    // "sdnq 4-bit" style -- show just the bit depth in the short label
     if (p === "sdnq" && i + 1 < parts.length) {
       quantIdx = i
       const nextBit = parts[i + 1].match(/^(\d+)/)
       if (nextBit) {
-        shortLabel = `sdnq ${nextBit[1]}bit`
+        shortLabel = `${nextBit[1]}bit`
       } else {
         shortLabel = "sdnq"
       }

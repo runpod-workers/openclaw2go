@@ -23,7 +23,14 @@
     "id": "image-gen",
     "name": "Image Generation (Diffusers + SDNQ)",
     "binary": "/usr/local/bin/openclaw-image-server",
-    "venvPath": "/opt/engines/image-gen/venv",
+    "venvPath": "/opt/engines/pytorch/venv",
+    "type": "python-venv"
+  },
+  "qwen3-tts": {
+    "id": "qwen3-tts",
+    "name": "Qwen3-TTS (PyTorch)",
+    "binary": "/usr/local/bin/openclaw-tts-server",
+    "venvPath": "/opt/engines/pytorch/venv",
     "type": "python-venv"
   },
   "mlx-lm": {

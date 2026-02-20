@@ -13,6 +13,7 @@ export default function ModelGroupCard({
   os,
   accentColor,
   hasVision,
+  capabilities,
 }: {
   group: ModelGroup
   selected: boolean
@@ -22,6 +23,7 @@ export default function ModelGroupCard({
   os: OsPlatform | null
   accentColor: string
   hasVision?: boolean
+  capabilities?: string[]
 }) {
   const variant = getVariantForOs(group, os)
 
@@ -88,6 +90,13 @@ export default function ModelGroupCard({
           vision
         </span>
       )}
+
+      {/* capability badges (tts, stt) */}
+      {capabilities?.map((cap) => (
+        <span key={cap} className="shrink-0 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[8px] font-medium text-foreground/50">
+          {cap}
+        </span>
+      ))}
 
       {/* quant badge */}
       <span className="shrink-0 bg-foreground/[0.06] px-1.5 py-0.5 font-mono text-[9px] font-semibold tabular-nums text-foreground/70">

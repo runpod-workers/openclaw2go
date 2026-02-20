@@ -14,7 +14,7 @@ export interface ModelMlx {
 export interface CatalogModel {
   id: string
   name: string
-  type: 'llm' | 'image' | 'audio' | 'tts'
+  type: 'llm' | 'image' | 'audio'
   engine: string
   status: string
   repo: string
@@ -25,6 +25,7 @@ export interface CatalogModel {
   os: OsPlatform[]
   isDefault: boolean
   hasVision: boolean
+  capabilities?: string[]
   mlx?: ModelMlx
 }
 
@@ -106,11 +107,12 @@ export function getGpusForOs(os: OsPlatform | null, allGpus: GpuInfo[]): GpuInfo
 interface RawModel {
   id: string
   name: string
-  type: 'llm' | 'audio' | 'image' | 'tts'
+  type: 'llm' | 'audio' | 'image'
   engine: string
   status?: string
   repo?: string
   vram: ModelVram
+  capabilities?: string[]
   kvCacheMbPer1kTokens?: number
   tps?: Record<string, number>
   defaults?: { contextLength?: number }
@@ -156,6 +158,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
         os: ['mac'] as OsPlatform[],
         isDefault: (m as Record<string, unknown>).default === true,
         hasVision: false,
+        capabilities: m.capabilities,
         mlx: { engine: m.engine, repo: m.repo ?? m.id, memoryMb: m.vram.model },
       }]
     }
@@ -175,6 +178,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
       os: ['linux', 'windows'] as OsPlatform[],
       isDefault: (m as Record<string, unknown>).default === true,
       hasVision,
+      capabilities: m.capabilities,
     }
 
     // Models with embedded mlx config → additional Mac entry
@@ -193,6 +197,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
         os: ['mac'] as OsPlatform[],
         isDefault: (m as Record<string, unknown>).default === true,
         hasVision: false,
+        capabilities: m.capabilities,
         mlx: { engine: m.mlx.engine, repo: m.mlx.repo, memoryMb: m.mlx.memoryMb },
       }
       return [ggufEntry, mlxEntry]

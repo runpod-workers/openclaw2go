@@ -1,7 +1,8 @@
 {
   "id": "outeai/outetss-02-500m-gguf",
   "name": "OuteTTS 0.2-500M GGUF Q8_0",
-  "type": "tts",
+  "type": "audio",
+  "capabilities": ["tts"],
   "engine": "openclaw2go-llamacpp",
   "repo": "OuteAI/OuteTTS-0.2-500M-GGUF",
   "files": ["OuteTTS-0.2-500M-Q8_0.gguf"],

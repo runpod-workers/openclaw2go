@@ -1,6 +1,6 @@
 import { cn } from '../lib/utils'
 
-export type TaskChip = 'llm' | 'vision' | 'image' | 'audio' | 'tts' | 'stt'
+export type TaskChip = 'llm' | 'vision' | 'image' | 'audio'
 
 export interface FilterState {
   contextMin: number | null
@@ -19,7 +19,7 @@ export const CONTEXT_TIERS = [
   { label: '1m+', value: 1_000_000 },
 ]
 
-const TASK_CHIPS: TaskChip[] = ['llm', 'vision', 'image', 'audio', 'tts', 'stt']
+const TASK_CHIPS: TaskChip[] = ['llm', 'vision', 'image', 'audio']
 
 /** Context tiers only make sense when LLM models are visible */
 function showContextTiers(task: TaskChip | null): boolean {

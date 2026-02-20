@@ -11,21 +11,18 @@ const SECTION_COLORS: Record<string, string> = {
   llm: '#00e5ff',
   image: '#ec407a',
   audio: '#b388ff',
-  tts: '#ffab40',
 }
 
-type SectionKey = 'llm' | 'image' | 'audio' | 'tts'
+type SectionKey = 'llm' | 'image' | 'audio'
 
 /** Which section keys are visible for a given task chip */
 function getVisibleTypes(task: TaskChip | null): Set<SectionKey> {
   switch (task) {
-    case null:      return new Set(['llm', 'image', 'audio', 'tts'])
+    case null:      return new Set(['llm', 'image', 'audio'])
     case 'llm':     return new Set(['llm'])
     case 'vision':  return new Set(['llm'])
     case 'image':   return new Set(['image'])
     case 'audio':   return new Set(['audio'])
-    case 'tts':     return new Set(['tts', 'audio'])
-    case 'stt':     return new Set(['audio'])
   }
 }
 
@@ -62,12 +59,10 @@ export default function ModelCatalog({
   const llmModels = useMemo(() => models.filter((m) => m.type === "llm"), [models])
   const imageModels = useMemo(() => models.filter((m) => m.type === "image"), [models])
   const audioModels = useMemo(() => models.filter((m) => m.type === "audio"), [models])
-  const ttsModels = useMemo(() => models.filter((m) => m.type === "tts"), [models])
 
   const llmGroups = useMemo(() => groupModels(llmModels), [llmModels])
   const imageGroups = useMemo(() => groupModels(imageModels), [imageModels])
   const audioGroups = useMemo(() => groupModels(audioModels), [audioModels])
-  const ttsGroups = useMemo(() => groupModels(ttsModels), [ttsModels])
 
   const visibleTypes = useMemo(() => getVisibleTypes(filters.task), [filters.task])
 
@@ -105,9 +100,8 @@ export default function ModelCatalog({
         { key: "llm" as SectionKey, label: "LLM", items: filterGroups(llmGroups, 'llm'), color: SECTION_COLORS.llm },
         { key: "image" as SectionKey, label: "Image", items: filterGroups(imageGroups, 'image'), color: SECTION_COLORS.image },
         { key: "audio" as SectionKey, label: "Audio", items: filterGroups(audioGroups, 'audio'), color: SECTION_COLORS.audio },
-        { key: "tts" as SectionKey, label: "TTS", items: filterGroups(ttsGroups, 'tts'), color: SECTION_COLORS.tts },
       ].filter((s) => s.items.length > 0),
-    [filterGroups, llmGroups, imageGroups, audioGroups, ttsGroups]
+    [filterGroups, llmGroups, imageGroups, audioGroups]
   )
 
   /** Click a group → resolve to best variant for current OS, then toggle */
@@ -206,6 +200,7 @@ export default function ModelCatalog({
                   os={os}
                   accentColor={section.color}
                   hasVision={group.hasVision}
+                  capabilities={group.capabilities}
                 />
               )
             })}

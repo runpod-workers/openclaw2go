@@ -38,7 +38,9 @@ OPENCLAW_CONFIG examples:
   {"llm": true, "vision": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF"}              — LLM + standalone vision
   {"llm": true, "embedding": true}                                                — LLM + embeddings (Qwen3-Embedding-0.6B)
   {"llm": true, "reranking": true}                                                — LLM + reranking (Jina v3, experimental)
-  {"llm": true, "tts": true}                                                      — LLM + native TTS (OuteTTS 0.2, experimental)
+  {"llm": true, "tts": true}                                                      — LLM + TTS (Qwen3-TTS 0.6B, default)
+  {"llm": true, "tts": "qwen/qwen3-tts-17b"}                                      — LLM + TTS (Qwen3-TTS 1.7B, higher quality)
+  {"llm": true, "tts": "outeai/outetss-02-500m-gguf"}                             — LLM + TTS (OuteTTS 0.2, experimental)
   {"profile": "rtx5090-full-stack"}                                               — use a preset (optional shorthand)
   {}                                                                               — auto-detect GPU, use all defaults that fit
 ```
@@ -52,7 +54,7 @@ JSON-based configuration registry. Models declare their VRAM cost; the system co
 **Baked-in registry** (fallback, always available):
 ```
 registry/
-├── engines.json                    # Engine definitions (openclaw2go-llamacpp, ik-llamacpp, image-gen)
+├── engines.json                    # Engine definitions (openclaw2go-llamacpp, ik-llamacpp, image-gen, qwen3-tts)
 ├── models/                         # Model specs (VRAM, repo, start args, KV cache rates)
 │   ├── glm47-flash-gguf.json       # LLM: GLM-4.7-Flash Q4_K_M (default: true, kvCache: 40 MB/1k)
 │   ├── nemotron3-nano-gguf.json    # LLM: Nemotron-3-Nano-30B MoE (kvCache: 4 MB/1k)
@@ -63,7 +65,9 @@ registry/
 │   ├── qwen25-vl-7b-gguf.json     # Vision: Qwen2.5-VL-7B + mmproj (default: true)
 │   ├── qwen3-embedding-06b-gguf.json # Embedding: Qwen3-Embedding-0.6B (default: true)
 │   ├── jina-reranker-v3-gguf.json  # Reranking: Jina Reranker v3 (default: true, experimental)
-│   ├── outetss-02-500m-gguf.json   # TTS: OuteTTS 0.2-500M (default: true, experimental)
+│   ├── outetss-02-500m-gguf.json   # TTS: OuteTTS 0.2-500M (experimental, native llama-tts)
+│   ├── qwen3-tts-06b.json          # TTS: Qwen3-TTS 0.6B Base (default: true, PyTorch)
+│   ├── qwen3-tts-17b.json          # TTS: Qwen3-TTS 1.7B Base (higher quality, PyTorch)
 │   └── flux2-klein-sdnq.json       # Image: FLUX.2 Klein 4B SDNQ (default: true)
 ├── gpus/                           # GPU specs (VRAM, arch, CUDA requirements)
 │   ├── rtx-5090.json               # 32GB, SM120, Blackwell
@@ -89,7 +93,7 @@ Each model has `"default": true` marking it as the recommended/most-capable choi
 
 ### Engine Architecture
 
-Two llama.cpp engines cover all tasks. Image-gen uses a separate Python venv:
+Two llama.cpp engines cover all tasks. A shared PyTorch venv serves both image-gen and Qwen3-TTS:
 
 ```
 /opt/engines/
@@ -104,8 +108,8 @@ Two llama.cpp engines cover all tasks. Image-gen uses a separate Python venv:
 │   ├── bin/llama-server
 │   ├── bin/llama-cli
 │   └── lib/*.so
-└── image-gen/          # Image: Python venv (torch cu128 + diffusers + sdnq)
-    └── venv/
+└── pytorch/            # Shared PyTorch venv (torch cu128 + diffusers + sdnq + qwen-tts)
+    └── venv/           # Used by image-gen and qwen3-tts engines
 ```
 
 **Why two llama.cpp engines?**
@@ -126,7 +130,7 @@ Two llama.cpp engines cover all tasks. Image-gen uses a separate Python venv:
 
 ```
 openclaw2go/
-├── Dockerfile.unified              # Multi-stage build: engines + image-gen venv
+├── Dockerfile.unified              # Multi-stage build: engines + shared PyTorch venv (image-gen + Qwen3-TTS)
 ├── engines/
 │   └── Dockerfile                  # Engine builder: openclaw2go-llamacpp + ik-llamacpp
 ├── fork/                           # Scaffolding for openclaw2go-llamacpp fork repo
@@ -150,6 +154,7 @@ openclaw2go/
 │   ├── openclaw-image-gen           # Image generation CLI
 │   ├── openclaw-image-server        # FLUX.2 persistent server
 │   ├── openclaw-tts                 # Text-to-speech CLI
+│   ├── openclaw-tts-server          # Qwen3-TTS persistent server
 │   ├── openclaw-stt                 # Speech-to-text CLI
 │   └── openclaw-web-proxy           # Reverse proxy + media UI
 ├── skills/                          # Agent capabilities
@@ -169,7 +174,7 @@ openclaw2go/
 - **Model-centric config** — users pick models (e.g., `unsloth/glm47-flash-gguf`, `unsloth/nemotron3-nano-gguf`), system computes VRAM fit + context length using per-model KV cache rates
 - **All models via llama.cpp** — All current models work with llama.cpp (including FP16 via GGUF). llama.cpp handles concurrent sub-agent requests via `--parallel`.
 - **Vision as LLM replacement** — A vision model (e.g., Qwen2.5-VL-7B) can replace the base LLM. Uses `--mmproj` flag. No extra VRAM, vision is a bonus capability.
-- **Lightweight auxiliary services** — Embedding (0.6B), Reranking (0.6B), TTS (0.5B) models are small enough to run alongside the LLM.
+- **Lightweight auxiliary services** — Embedding (0.6B), Reranking (0.6B), TTS (Qwen3-TTS 0.6B ~3GB or 1.7B ~5GB) models are small enough to run alongside the LLM.
 - **PyTorch cu128** — required for RTX 5090 Blackwell sm_120, works on all other GPUs too
 - **Diffusers from git** — stable release lacks `Flux2KleinPipeline`
 - **Persistent servers for low latency** — Audio (8001) and Image (8002) run with models pre-loaded. CLI scripts call via HTTP.
@@ -299,7 +304,7 @@ Internal ports (accessed via localhost only, not exposed):
 | 8003 | Vision | Standalone vision model (if enabled) |
 | 8004 | Embedding | Qwen3-Embedding-0.6B (if enabled) |
 | 8005 | Reranking | Jina Reranker v3 (if enabled, experimental) |
-| 8006 | Native TTS | OuteTTS 0.2 (if enabled, experimental) |
+| 8006 | TTS | Qwen3-TTS (default) or OuteTTS 0.2 (if enabled) |
 
 ## Runpod Pod Access
 
@@ -342,7 +347,9 @@ curl http://localhost:8000/v1/models
 |---------|------|-------|
 | Embedding (Qwen3-0.6B) | ~0.8 GB | Can run alongside any LLM |
 | Reranking (Jina v3) | ~0.8 GB | Experimental, can run alongside any LLM |
-| Native TTS (OuteTTS 0.2) | ~0.8 GB | Alternative to LFM2.5 audio |
+| TTS (Qwen3-TTS 0.6B) | ~3 GB | Default TTS, PyTorch venv |
+| TTS (Qwen3-TTS 1.7B) | ~5 GB | Higher quality TTS, PyTorch venv |
+| Native TTS (OuteTTS 0.2) | ~0.8 GB | Legacy, native llama-tts binary |
 | Vision (Qwen2.5-VL-7B) | ~7 GB | As standalone; 0 extra if replacing LLM |
 
 Context length is auto-computed by `resolve-profile.py` based on available VRAM after accounting for all selected models.

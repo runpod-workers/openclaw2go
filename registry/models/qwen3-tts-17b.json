@@ -1,0 +1,19 @@
+{
+  "id": "qwen/qwen3-tts-17b",
+  "name": "Qwen3-TTS 1.7B CustomVoice (12Hz)",
+  "type": "tts",
+  "engine": "qwen3-tts",
+  "repo": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "files": [],
+  "downloadDir": "/workspace/models/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "downloadMode": "repo",
+  "servedAs": "qwen3-tts-1.7b",
+  "vram": { "model": 4500, "overhead": 600 },
+  "defaults": { "port": 8006 },
+  "startDefaults": {},
+  "extraStartArgs": [],
+  "provider": { "name": "local-llamacpp", "api": "openai-tts" },
+  "default": false,
+  "status": "stable",
+  "mlx": { "engine": "mlx-audio", "repo": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-4bit", "memoryMb": 6000 }
+}

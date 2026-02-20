@@ -14,9 +14,10 @@ export interface ModelVariant {
 export interface ModelGroup {
   key: string
   displayName: string
-  type: 'llm' | 'image' | 'audio' | 'tts'
+  type: 'llm' | 'image' | 'audio'
   contextLength: number | undefined
   hasVision: boolean
+  capabilities: string[]
   variants: ModelVariant[]
 }
 
@@ -80,6 +81,9 @@ export function groupModels(models: CatalogModel[]): ModelGroup[] {
         existing.contextLength = model.contextLength
       }
       if (model.hasVision) existing.hasVision = true
+      for (const cap of model.capabilities ?? []) {
+        if (!existing.capabilities.includes(cap)) existing.capabilities.push(cap)
+      }
     } else {
       map.set(key, {
         key,
@@ -87,6 +91,7 @@ export function groupModels(models: CatalogModel[]): ModelGroup[] {
         type: model.type,
         contextLength: model.contextLength,
         hasVision: model.hasVision,
+        capabilities: [...(model.capabilities ?? [])],
         variants: [variant],
       })
     }

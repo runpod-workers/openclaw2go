@@ -483,37 +483,57 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             ;;
 
         tts)
-            # ── Native TTS via llama-tts binary (OuteTTS) ──
-            FIRST_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f1)"
-            VOCODER_FILE="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('vocoder',''))")"
+            if [ "$ENGINE_TYPE" = "python-venv" ]; then
+                # ── Qwen3-TTS via shared pytorch venv ──
+                echo "Starting TTS server (Qwen3-TTS)..."
+                echo "  Binary: $ENGINE_BINARY"
+                echo "  Model dir: $MODEL_DOWNLOAD_DIR"
+                echo "  Port: $port"
 
-            # Use TTS-specific binary from engine
-            TTS_BINARY="${ENGINE_BINARY_TTS:-$ENGINE_BINARY}"
+                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
+                    source "$ENGINE_VENV/bin/activate"
+                fi
 
-            echo "Starting Native TTS server..."
-            echo "  Binary: $TTS_BINARY"
-            echo "  Model: $MODEL_DOWNLOAD_DIR/$FIRST_FILE"
-            if [ -n "$VOCODER_FILE" ]; then
-                echo "  Vocoder: $MODEL_DOWNLOAD_DIR/$VOCODER_FILE"
+                "$ENGINE_BINARY" --model-dir "$MODEL_DOWNLOAD_DIR" --port "$port" \
+                    > /tmp/tts-server.log 2>&1 &
+                echo "$!" > /tmp/oc_tts_pid
+
+                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
+                    deactivate 2>/dev/null || true
+                fi
+            else
+                # ── Native TTS via llama-tts binary (OuteTTS) ──
+                FIRST_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f1)"
+                VOCODER_FILE="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('vocoder',''))")"
+
+                # Use TTS-specific binary from engine
+                TTS_BINARY="${ENGINE_BINARY_TTS:-$ENGINE_BINARY}"
+
+                echo "Starting Native TTS server (OuteTTS)..."
+                echo "  Binary: $TTS_BINARY"
+                echo "  Model: $MODEL_DOWNLOAD_DIR/$FIRST_FILE"
+                if [ -n "$VOCODER_FILE" ]; then
+                    echo "  Vocoder: $MODEL_DOWNLOAD_DIR/$VOCODER_FILE"
+                fi
+                echo "  Port: $port"
+
+                TTS_ARGS=(
+                    -m "$MODEL_DOWNLOAD_DIR/$FIRST_FILE"
+                    --host 0.0.0.0
+                    --port "$port"
+                    -ngl 99
+                )
+
+                if [ -n "$VOCODER_FILE" ]; then
+                    TTS_ARGS+=(--vocoder "$MODEL_DOWNLOAD_DIR/$VOCODER_FILE")
+                fi
+
+                env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
+                    "$TTS_BINARY" "${TTS_ARGS[@]}" \
+                    2>&1 &
+
+                echo "$!" > /tmp/oc_tts_pid
             fi
-            echo "  Port: $port"
-
-            TTS_ARGS=(
-                -m "$MODEL_DOWNLOAD_DIR/$FIRST_FILE"
-                --host 0.0.0.0
-                --port "$port"
-                -ngl 99
-            )
-
-            if [ -n "$VOCODER_FILE" ]; then
-                TTS_ARGS+=(--vocoder "$MODEL_DOWNLOAD_DIR/$VOCODER_FILE")
-            fi
-
-            env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
-                "$TTS_BINARY" "${TTS_ARGS[@]}" \
-                2>&1 &
-
-            echo "$!" > /tmp/oc_tts_pid
             ;;
     esac
 

@@ -16,12 +16,12 @@
     },
     "type": {
       "type": "string",
-      "enum": ["llm", "audio", "image", "vision"],
+      "enum": ["llm", "audio", "image", "vision", "tts"],
       "description": "Model type"
     },
     "engine": {
       "type": "string",
-      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "ik-llamacpp", "image-gen", "mlx", "mlx-lm", "mlx-audio", "mflux", "openclaw2go-llamacpp", "vllm"],
+      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "ik-llamacpp", "image-gen", "qwen3-tts", "mlx", "mlx-lm", "mlx-audio", "mflux", "openclaw2go-llamacpp", "vllm"],
       "description": "Engine to use for this model"
     },
     "repo": {
