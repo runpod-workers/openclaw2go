@@ -1,6 +1,6 @@
 {
   "id": "unsloth/qwen35-27b-gguf",
-  "name": "Qwen3.5-27B Q4_K_M (4-bit, 16.7GB, 1M context, multimodal)",
+  "name": "Qwen3.5-27B Q4_K_M (4-bit, 16.7GB, 409K context, multimodal)",
   "type": "llm",
   "engine": "openclaw2go-llamacpp",
   "bits": 4,
@@ -47,7 +47,7 @@
   "default": false,
   "status": "experimental",
   "tps": {
-    "rtx-5090": 50
+    "rtx-5090": 47
   },
   "verifiedOn": [
     "rtx-5090"

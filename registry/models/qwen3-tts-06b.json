@@ -6,6 +6,7 @@
     "tts"
   ],
   "engine": "qwen3-tts",
+  "bits": 16,
   "repo": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
   "files": [],
   "downloadDir": "/workspace/models/Qwen3-TTS-12Hz-0.6B-CustomVoice",

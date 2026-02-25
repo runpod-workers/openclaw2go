@@ -34,6 +34,11 @@ OPENCLAW_CONFIG examples:
   {"llm": "unsloth/kimi-k25-tq1-gguf"}                                             — Kimi K2.5 1T MoE TQ1_0 1-bit (B200 w/ offload, experimental)
   {"llm": "unsloth/kimi-k25-q2kxl-gguf"}                                           — Kimi K2.5 1T MoE Q2_K_XL 2-bit (2x H200 w/ offload, experimental)
   {"llm": "unsloth/Qwen3.5-397B-A17B-GGUF"}                                       — Qwen3.5 397B/17B MoE Q2_K_XL (B200, experimental)
+  {"llm": "unsloth/Qwen3.5-122B-A10B-GGUF"}                                      — Qwen3.5 122B/10B MoE Q2_K_XL (A100/H100)
+  {"llm": "unsloth/qwen35-122b-a10b-q4km-gguf"}                                  — Qwen3.5 122B/10B MoE Q4_K_M (B200)
+  {"llm": "unsloth/Qwen3.5-35B-A3B-GGUF"}                                        — Qwen3.5 35B/3B MoE Q4_K_M (RTX 5090+)
+  {"llm": "unsloth/Qwen3.5-27B-GGUF"}                                            — Qwen3.5 27B hybrid Q4_K_M (RTX 5090+)
+  {"llm": "LiquidAI/LFM2-24B-A2B-GGUF"}                                         — LFM2 24B/2B MoE Q4_K_M (any GPU)
   {"vision": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF"}                             — vision model as LLM (multimodal)
   {"llm": true, "vision": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF"}              — LLM + standalone vision
   {"llm": true, "embedding": true}                                                — LLM + embeddings (Qwen3-Embedding-0.6B)
@@ -62,6 +67,11 @@ registry/
 │   ├── olmo31-think-32b-gguf.json  # LLM: OLMo 3.1 Think 32B dense
 │   ├── lfm25-audio.json            # Audio: LFM2.5-Audio-1.5B (default: true)
 │   ├── qwen35-397b-a17b-gguf.json  # LLM: Qwen3.5 397B/17B MoE Q2_K_XL (B200)
+│   ├── qwen35-122b-a10b-gguf.json # LLM: Qwen3.5 122B/10B MoE Q2_K_XL (A100/H100)
+│   ├── qwen35-122b-a10b-q4km-gguf.json # LLM: Qwen3.5 122B/10B MoE Q4_K_M (B200)
+│   ├── qwen35-35b-a3b-gguf.json   # LLM: Qwen3.5 35B/3B MoE Q4_K_M (RTX 5090+)
+│   ├── qwen35-27b-gguf.json       # LLM: Qwen3.5 27B hybrid Q4_K_M (RTX 5090+)
+│   ├── lfm2-24b-a2b-gguf.json     # LLM: LFM2 24B/2B MoE Q4_K_M (any GPU)
 │   ├── qwen25-vl-7b-gguf.json     # Vision: Qwen2.5-VL-7B + mmproj (default: true)
 │   ├── qwen3-embedding-06b-gguf.json # Embedding: Qwen3-Embedding-0.6B (default: true)
 │   ├── jina-reranker-v3-gguf.json  # Reranking: Jina Reranker v3 (default: true, experimental)
