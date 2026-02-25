@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { cn } from '../lib/utils'
-import type { CatalogModel, GpuInfo, GpuCount, OsPlatform } from '../lib/catalog'
+import type { CatalogModel, OsPlatform } from '../lib/catalog'
 
-type DeployTab = 'cli-local' | 'cli-cloud' | 'docker' | 'mlx'
+type DeployTab = 'docker' | 'mlx'
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -42,24 +42,6 @@ function CodeBlock({ code, hint }: { code: string; hint?: string }) {
   )
 }
 
-function TerminalIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" className={className}>
-      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
-      <path d="M4.5 6 7 8l-2.5 2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.5 10h3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function CloudIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" className={className}>
-      <path d="M12.5 6.2A4.5 4.5 0 0 0 4 5.5 3.5 3.5 0 0 0 3.5 12.5h9a3 3 0 0 0 0-6.3Z" />
-    </svg>
-  )
-}
-
 function DockerIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" className={className}>
@@ -77,8 +59,6 @@ function MlxIcon({ className }: { className?: string }) {
 }
 
 const TAB_CONFIG: { id: DeployTab; label: string; Icon: React.FC<{ className?: string }> }[] = [
-  { id: 'cli-local', label: 'local', Icon: TerminalIcon },
-  { id: 'cli-cloud', label: 'cloud', Icon: CloudIcon },
   { id: 'docker', label: 'docker', Icon: DockerIcon },
   { id: 'mlx', label: 'mlx', Icon: MlxIcon },
 ]
@@ -89,51 +69,21 @@ function isTabVisible(tab: DeployTab, os: OsPlatform | null): boolean {
   return true
 }
 
-function buildCliLocalCommand(models: CatalogModel[]): string {
-  if (models.length === 0) return 'openclaw2go start'
-  const parts: string[] = ['openclaw2go start']
-  for (const m of models) {
-    if (m.type === 'llm') {
-      parts.push(m.isDefault ? '--llm' : `--llm=${m.id}`)
-    } else if (m.type === 'audio') {
-      parts.push(m.isDefault ? '--audio' : `--audio=${m.id}`)
-    } else if (m.type === 'image') {
-      parts.push(m.isDefault ? '--image' : `--image=${m.id}`)
-    }
-  }
-  if (parts.length === 1) return parts[0]
-  return parts.join(' \\\n  ')
+/** Resolve each selected model to its Linux/Windows variant for Docker */
+function resolveDockerModels(selectedModels: CatalogModel[], allModels: CatalogModel[]): CatalogModel[] {
+  return selectedModels.map((m) => {
+    const linuxVariant = allModels.find((v) => v.id === m.id && v.os.includes('linux'))
+    return linuxVariant ?? m
+  })
 }
 
-function buildCliCloudCommand(
-  models: CatalogModel[],
-  gpu: GpuInfo | null,
-  gpuCount: GpuCount,
-  isMacGpu: boolean,
-): { command: string; error?: string } {
-  if (isMacGpu && gpu) {
-    return { command: '', error: 'cloud deploy requires a linux gpu — select a linux gpu or use local.' }
-  }
-
-  const parts: string[] = ['openclaw2go deploy']
-  for (const m of models) {
-    if (m.type === 'llm') {
-      parts.push(m.isDefault ? '--llm' : `--llm=${m.id}`)
-    } else if (m.type === 'audio') {
-      parts.push(m.isDefault ? '--audio' : `--audio=${m.id}`)
-    } else if (m.type === 'image') {
-      parts.push(m.isDefault ? '--image' : `--image=${m.id}`)
-    }
-  }
-  if (gpu) {
-    parts.push(`--gpu="${gpu.name}"`)
-  }
-  if (gpuCount > 1) {
-    parts.push(`--gpu-count=${gpuCount}`)
-  }
-
-  if (parts.length === 1) return { command: parts[0] }
-  return { command: parts.join(' \\\n  ') }
+/** Resolve each selected model to its Mac variant (with mlx field) for MLX */
+function resolveMlxModels(selectedModels: CatalogModel[], allModels: CatalogModel[]): CatalogModel[] {
+  return selectedModels.map((m) => {
+    if (m.mlx) return m
+    const macVariant = allModels.find((v) => v.id === m.id && v.mlx != null)
+    return macVariant ?? m
+  })
 }
 
 function buildDockerCommand(models: CatalogModel[]): string {
@@ -155,15 +105,16 @@ function buildDockerCommand(models: CatalogModel[]): string {
   return [
     'docker run --gpus all \\',
     `  -e OPENCLAW_CONFIG='${configStr}' \\`,
+    '  -e OPENCLAW_WEB_PASSWORD=changeme \\',
+    '  -e LLAMA_API_KEY=changeme \\',
     '  -p 8000:8000 -p 8080:8080 -p 18789:18789 \\',
-    '  -v openclaw-data:/workspace \\',
+    '  -v openclaw2go-models:/workspace \\',
     '  runpod/openclaw2go:latest',
   ].join('\n')
 }
 
 function buildMlxCommand(models: CatalogModel[]): { command: string; missing: string[] } {
   const missing: string[] = []
-  const sections: string[] = []
 
   const mlxModels = models.filter((m) => {
     if (!m.mlx) {
@@ -173,12 +124,16 @@ function buildMlxCommand(models: CatalogModel[]): { command: string; missing: st
     return true
   })
 
-  if (mlxModels.length === 0 && models.length === 0) {
-    return {
-      command: 'pip install mlx-lm\nmlx_lm.server --model <model-repo> --port 8000',
-      missing,
-    }
+  if (mlxModels.length === 0) {
+    return { command: '', missing }
   }
+
+  const sections: string[] = []
+
+  // Venv setup
+  sections.push(
+    '# setup\npython3 -m venv ~/.openclaw2go/venv\nsource ~/.openclaw2go/venv/bin/activate'
+  )
 
   // Group by engine to show pip installs
   const engines = new Set(mlxModels.map((m) => m.mlx!.engine))
@@ -190,13 +145,12 @@ function buildMlxCommand(models: CatalogModel[]): { command: string; missing: st
 
   for (const m of mlxModels) {
     const port = m.type === 'llm' ? 8000 : m.type === 'audio' ? 8001 : 8002
-    const comment = `# ${m.type}`
     if (m.mlx!.engine === 'mlx-lm') {
-      sections.push(`${comment}\nmlx_lm.server --model ${m.mlx!.repo} --port ${port}`)
+      sections.push(`# llm (run in separate terminal)\npython -m mlx_lm.server --model ${m.mlx!.repo} --host 0.0.0.0 --port ${port}`)
     } else if (m.mlx!.engine === 'mlx-audio') {
-      sections.push(`${comment}\n# mlx-audio requires separate setup — see docs`)
+      sections.push(`# audio (run in separate terminal)\npython -m mlx_audio.server --host 0.0.0.0 --port ${port}`)
     } else if (m.mlx!.engine === 'mflux') {
-      sections.push(`${comment}\nmflux-generate --model ${m.mlx!.repo} --prompt "test"`)
+      sections.push(`# image (one-shot generation)\nmflux-generate --prompt "your prompt" --model ${m.mlx!.repo} --steps 4`)
     }
   }
 
@@ -205,43 +159,42 @@ function buildMlxCommand(models: CatalogModel[]): { command: string; missing: st
 
 export default function DeployCard({
   selectedModels,
-  gpu,
-  gpuCount,
-  vramGb: _vramGb,
+  allModels,
   os,
 }: {
   selectedModels: CatalogModel[]
-  gpu: GpuInfo | null
-  gpuCount: GpuCount
-  vramGb: number
+  allModels: CatalogModel[]
   os: OsPlatform | null
 }) {
-  const [activeTab, setActiveTab] = useState<DeployTab>('cli-local')
+  const [activeTab, setActiveTab] = useState<DeployTab>('docker')
 
   const visibleTabs = useMemo(
     () => TAB_CONFIG.filter((t) => isTabVisible(t.id, os)),
     [os]
   )
 
-  // Reset to cli-local when active tab becomes hidden
+  // Reset to first visible tab when active tab becomes hidden
   useEffect(() => {
     if (!visibleTabs.some((t) => t.id === activeTab)) {
-      setActiveTab('cli-local')
+      setActiveTab(visibleTabs[0]?.id ?? 'docker')
     }
   }, [visibleTabs, activeTab])
 
-  const isMacGpu = gpu?.os.includes('mac') ?? false
-
-  const cliLocal = useMemo(() => buildCliLocalCommand(selectedModels), [selectedModels])
-
-  const cliCloud = useMemo(
-    () => buildCliCloudCommand(selectedModels, gpu, gpuCount, isMacGpu),
-    [selectedModels, gpu, gpuCount, isMacGpu]
+  const dockerModels = useMemo(
+    () => resolveDockerModels(selectedModels, allModels),
+    [selectedModels, allModels]
   )
 
-  const docker = useMemo(() => buildDockerCommand(selectedModels), [selectedModels])
+  const mlxResolvedModels = useMemo(
+    () => resolveMlxModels(selectedModels, allModels),
+    [selectedModels, allModels]
+  )
 
-  const mlx = useMemo(() => buildMlxCommand(selectedModels), [selectedModels])
+  const docker = useMemo(() => buildDockerCommand(dockerModels), [dockerModels])
+
+  const mlx = useMemo(() => buildMlxCommand(mlxResolvedModels), [mlxResolvedModels])
+
+  const hasModels = selectedModels.length > 0
 
   return (
     <div className="flex flex-col" style={{ minHeight: '140px' }}>
@@ -266,44 +219,32 @@ export default function DeployCard({
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-3">
-        {activeTab === 'cli-local' && (
-          <CodeBlock
-            code={cliLocal}
-            hint={
-              selectedModels.length === 0
-                ? 'uses all defaults that fit your gpu'
-                : undefined
-            }
-          />
+        {!hasModels && (
+          <span className="font-mono text-[10px] text-foreground/30">
+            select models above to generate deploy command
+          </span>
         )}
 
-        {activeTab === 'cli-cloud' && (
-          cliCloud.error ? (
-            <span className="font-mono text-[10px] leading-relaxed text-foreground/40">
-              {cliCloud.error}
-            </span>
-          ) : (
-            <CodeBlock
-              code={cliCloud.command}
-              hint="requires RUNPOD_API_KEY env var"
-            />
-          )
-        )}
-
-        {activeTab === 'docker' && (
+        {hasModels && activeTab === 'docker' && (
           <CodeBlock
             code={docker}
             hint="requires nvidia gpu + nvidia-container-toolkit"
           />
         )}
 
-        {activeTab === 'mlx' && (
+        {hasModels && activeTab === 'mlx' && (
           <div className="flex flex-col gap-2">
-            <CodeBlock
-              code={mlx.command}
-              hint="requires apple silicon (m1+) and python 3.10+"
-            />
-            {mlx.missing.length > 0 && (
+            {mlx.command ? (
+              <CodeBlock
+                code={mlx.command}
+                hint="requires apple silicon (m1+) and python 3.10+"
+              />
+            ) : (
+              <span className="font-mono text-[10px] text-foreground/30">
+                no mlx variant available for selected models
+              </span>
+            )}
+            {mlx.missing.length > 0 && mlx.command && (
               <span className="font-mono text-[9px] text-foreground/30">
                 no mlx variant: {mlx.missing.join(', ')}
               </span>

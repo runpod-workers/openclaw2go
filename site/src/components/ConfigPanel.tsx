@@ -9,8 +9,9 @@ import type { ModelGroup } from '../lib/group-models'
 
 export default function ConfigPanel({
   selectedModels,
+  allModels,
   totalVramGb,
-  effectiveVramGb,
+  effectiveVramGb: _effectiveVramGb,
   selectedVramGb,
   selectedGpu,
   gpus,
@@ -24,6 +25,7 @@ export default function ConfigPanel({
   os,
 }: {
   selectedModels: CatalogModel[]
+  allModels: CatalogModel[]
   totalVramGb: number
   effectiveVramGb: number
   selectedVramGb: number | null
@@ -149,9 +151,7 @@ export default function ConfigPanel({
           <div className="p-4">
             <DeployCard
               selectedModels={selectedModels}
-              gpu={selectedGpu}
-              gpuCount={gpuCount}
-              vramGb={effectiveVramGb}
+              allModels={allModels}
               os={os}
             />
           </div>

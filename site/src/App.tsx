@@ -163,6 +163,7 @@ function App() {
       />
       <ConfigPanel
         selectedModels={selectedModels}
+        allModels={allModels}
         totalVramGb={totalVramGb}
         effectiveVramGb={effectiveVramGb}
         selectedVramGb={selectedVramGb}
@@ -181,7 +182,6 @@ function App() {
         }}
         modelIdToGroup={modelIdToGroup}
         os={os}
-
       />
     </div>
   )
