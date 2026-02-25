@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { cn } from '../lib/utils'
 import type { CatalogModel, OsPlatform } from '../lib/catalog'
+import type { ModelGroup } from '../lib/group-models'
 
 type DeployTab = 'docker' | 'mlx'
 
@@ -70,19 +71,44 @@ function isTabVisible(tab: DeployTab, os: OsPlatform | null): boolean {
 }
 
 /** Resolve each selected model to its Linux/Windows variant for Docker */
-function resolveDockerModels(selectedModels: CatalogModel[], allModels: CatalogModel[]): CatalogModel[] {
+function resolveDockerModels(
+  selectedModels: CatalogModel[],
+  allModels: CatalogModel[],
+  modelIdToGroup: Map<string, ModelGroup>,
+): CatalogModel[] {
   return selectedModels.map((m) => {
-    const linuxVariant = allModels.find((v) => v.id === m.id && v.os.includes('linux'))
-    return linuxVariant ?? m
+    if (m.os.includes('linux')) return m
+    // Same ID, different OS variant
+    const sameId = allModels.find((v) => v.id === m.id && v.os.includes('linux'))
+    if (sameId) return sameId
+    // Different ID, same group (e.g. mlx-only model → find its GGUF sibling)
+    const group = modelIdToGroup.get(m.id)
+    if (group) {
+      const groupVariant = group.variants.find((v) => v.os.includes('linux'))
+      if (groupVariant) return groupVariant.model
+    }
+    return m
   })
 }
 
 /** Resolve each selected model to its Mac variant (with mlx field) for MLX */
-function resolveMlxModels(selectedModels: CatalogModel[], allModels: CatalogModel[]): CatalogModel[] {
+function resolveMlxModels(
+  selectedModels: CatalogModel[],
+  allModels: CatalogModel[],
+  modelIdToGroup: Map<string, ModelGroup>,
+): CatalogModel[] {
   return selectedModels.map((m) => {
     if (m.mlx) return m
-    const macVariant = allModels.find((v) => v.id === m.id && v.mlx != null)
-    return macVariant ?? m
+    // Same ID, different OS variant
+    const sameId = allModels.find((v) => v.id === m.id && v.mlx != null)
+    if (sameId) return sameId
+    // Different ID, same group (e.g. GGUF model → find its MLX sibling)
+    const group = modelIdToGroup.get(m.id)
+    if (group) {
+      const groupVariant = group.variants.find((v) => v.model.mlx != null)
+      if (groupVariant) return groupVariant.model
+    }
+    return m
   })
 }
 
@@ -160,10 +186,12 @@ function buildMlxCommand(models: CatalogModel[]): { command: string; missing: st
 export default function DeployCard({
   selectedModels,
   allModels,
+  modelIdToGroup,
   os,
 }: {
   selectedModels: CatalogModel[]
   allModels: CatalogModel[]
+  modelIdToGroup: Map<string, ModelGroup>
   os: OsPlatform | null
 }) {
   const [activeTab, setActiveTab] = useState<DeployTab>('docker')
@@ -181,13 +209,13 @@ export default function DeployCard({
   }, [visibleTabs, activeTab])
 
   const dockerModels = useMemo(
-    () => resolveDockerModels(selectedModels, allModels),
-    [selectedModels, allModels]
+    () => resolveDockerModels(selectedModels, allModels, modelIdToGroup),
+    [selectedModels, allModels, modelIdToGroup]
   )
 
   const mlxResolvedModels = useMemo(
-    () => resolveMlxModels(selectedModels, allModels),
-    [selectedModels, allModels]
+    () => resolveMlxModels(selectedModels, allModels, modelIdToGroup),
+    [selectedModels, allModels, modelIdToGroup]
   )
 
   const docker = useMemo(() => buildDockerCommand(dockerModels), [dockerModels])

@@ -152,6 +152,7 @@ export default function ConfigPanel({
             <DeployCard
               selectedModels={selectedModels}
               allModels={allModels}
+              modelIdToGroup={modelIdToGroup}
               os={os}
             />
           </div>
