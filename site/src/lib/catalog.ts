@@ -18,6 +18,7 @@ export interface CatalogModel {
   type: 'llm' | 'image' | 'audio'
   engine: string
   bits?: number
+  primaryBits?: number
   status: string
   repo: string
   vram: ModelVram
@@ -153,6 +154,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
         type: m.type,
         engine: m.engine,
         bits: m.bits,
+        primaryBits: m.bits,
         status: m.status ?? 'stable',
         repo: m.repo ?? m.id,
         vram: m.vram,
@@ -174,6 +176,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
       type: m.type,
       engine: m.engine,
       bits: m.bits,
+      primaryBits: m.bits,
       status: m.status ?? 'stable',
       repo: m.repo ?? m.id,
       vram: m.vram,
@@ -194,6 +197,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
         type: m.type,
         engine: m.mlx.engine,
         bits: m.mlx.bits ?? m.bits,
+        primaryBits: m.bits,
         status: m.status ?? 'stable',
         repo: m.mlx.repo,
         vram: { model: m.mlx.memoryMb, overhead: 0 },

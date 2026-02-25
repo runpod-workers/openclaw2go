@@ -219,7 +219,7 @@ function FilledSlotCard({
   const v = activeVariant?.model ?? model
 
   const engine = ENGINE_DISPLAY[v.engine] ?? v.engine
-  const quant = activeVariant?.shortLabel
+  const quant = v.bits != null ? `${v.bits}bit` : '--'
   const repo = activeVariant?.repo ?? model.repo
   const kvCacheMb = (v.kvCacheMbPer1kTokens && v.contextLength)
     ? (v.contextLength / 1000) * v.kvCacheMbPer1kTokens

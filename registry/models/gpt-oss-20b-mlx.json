@@ -3,7 +3,7 @@
   "name": "GPT-OSS-20B MLX 8-bit",
   "type": "llm",
   "engine": "mlx",
-  "bits": 4,
+  "bits": 8,
   "repo": "mlx-community/gpt-oss-20b-MXFP4-Q8",
   "vram": {
     "model": 12100,

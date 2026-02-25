@@ -33,10 +33,10 @@ function cleanBaseName(name: string): string {
     .trim()
 }
 
-/** Group key includes bit level so different quants stay separate */
+/** Group key uses primaryBits so cross-platform variants of the same model stay together */
 function getGroupKey(model: CatalogModel): string {
   const clean = cleanBaseName(model.name)
-  return `${clean}::${model.bits ?? '--'}`
+  return `${clean}::${model.primaryBits ?? '--'}`
 }
 
 /** Display name is just the clean model name without bit level */
@@ -49,12 +49,13 @@ export function groupModels(models: CatalogModel[]): ModelGroup[] {
 
   for (const model of models) {
     const key = getGroupKey(model)
-    const shortLabel = model.bits != null ? `${model.bits}bit` : '--'
+    const effectiveBits = model.primaryBits ?? model.bits
+    const shortLabel = effectiveBits != null ? `${effectiveBits}bit` : '--'
 
     const variant: ModelVariant = {
       model,
       os: model.os,
-      bits: model.bits,
+      bits: effectiveBits,
       shortLabel,
       vramTotal: model.vram.model + model.vram.overhead,
       tps: model.tps,
@@ -105,7 +106,7 @@ export function groupModels(models: CatalogModel[]): ModelGroup[] {
   groups.sort((a, b) => {
     const nameCmp = a.displayName.localeCompare(b.displayName)
     if (nameCmp !== 0) return nameCmp
-    return (a.variants[0]?.model.bits ?? 999) - (b.variants[0]?.model.bits ?? 999)
+    return (a.variants[0]?.model.primaryBits ?? 999) - (b.variants[0]?.model.primaryBits ?? 999)
   })
 
   return groups

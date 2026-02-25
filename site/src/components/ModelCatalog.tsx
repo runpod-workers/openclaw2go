@@ -77,9 +77,8 @@ export default function ModelCatalog({
             g.variants.some((v) => v.repo.toLowerCase().includes(searchLower))
         )
       }
-      if (os) {
-        result = result.filter((g) => groupHasOs(g, os))
-      }
+      // Default to Linux when no OS selected — Mac-only groups only show on macOS tab
+      result = result.filter((g) => groupHasOs(g, os ?? 'linux'))
       // Apply LLM-specific filters
       if (type === 'llm') {
         if (filters.contextMin !== null) {
