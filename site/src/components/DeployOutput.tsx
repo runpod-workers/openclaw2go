@@ -5,6 +5,9 @@ import { getVariantForOs, type ModelGroup } from '../lib/group-models'
 
 type DeployTab = 'docker' | 'mlx'
 
+const DOCKER_REQUIREMENTS = ['nvidia gpu', 'nvidia-container-toolkit', 'docker']
+const MLX_REQUIREMENTS = ['apple silicon (m1+)', 'python 3.10+', 'pip']
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   const handleCopy = () => {
@@ -16,10 +19,10 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className={cn(
-        "shrink-0 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider transition-all duration-150",
+        "shrink-0 rounded px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wider transition-all duration-150",
         copied
           ? "text-primary"
-          : "bg-foreground/[0.05] text-foreground/60 hover:bg-foreground/[0.08] hover:text-foreground"
+          : "bg-foreground/[0.08] text-foreground/60 hover:bg-foreground/[0.12] hover:text-foreground"
       )}
     >
       {copied ? "copied" : "copy"}
@@ -27,18 +30,35 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function CodeBlock({ code, hint }: { code: string; hint?: string }) {
+function CodeBlock({ code, requirements }: { code: string; requirements: string[] }) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-2">
-        <pre className="flex-1 overflow-x-auto font-mono text-[10px] leading-relaxed text-foreground/90">
-          <code>{code}</code>
-        </pre>
-        <CopyButton text={code} />
+    <div className="flex h-full gap-3">
+      {/* Requirements column */}
+      <div className="flex w-[140px] shrink-0 flex-col gap-1.5 py-1">
+        <span className="font-mono text-[8px] font-semibold uppercase tracking-widest text-foreground/30">
+          requires
+        </span>
+        <ul className="flex flex-col gap-1">
+          {requirements.map((req) => (
+            <li key={req} className="flex items-start gap-1.5">
+              <span className="mt-[3px] h-1 w-1 shrink-0 rounded-full bg-foreground/20" />
+              <span className="font-mono text-[9px] leading-tight text-foreground/40">{req}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-      {hint && (
-        <span className="font-mono text-[9px] text-foreground/30">{hint}</span>
-      )}
+
+      {/* Code column */}
+      <div className="flex min-w-0 flex-1 max-w-[620px] flex-col overflow-hidden rounded border border-foreground/[0.06] bg-[#080706]">
+        <div className="flex-1 overflow-auto p-3">
+          <div className="float-right sticky top-0 ml-2 mb-1">
+            <CopyButton text={code} />
+          </div>
+          <pre className="font-mono text-[10px] leading-relaxed text-foreground/90">
+            <code>{code}</code>
+          </pre>
+        </div>
+      </div>
     </div>
   )
 }
@@ -187,7 +207,7 @@ export default function DeployCard({
   const hasModels = selectedModels.length > 0
 
   return (
-    <div className="flex flex-col" style={{ minHeight: '140px' }}>
+    <div className="flex flex-col">
       {/* Tab bar */}
       <div className="flex items-center gap-1">
         {visibleTabs.map(({ id, label, Icon }) => (
@@ -207,37 +227,41 @@ export default function DeployCard({
         ))}
       </div>
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-y-auto p-3">
+      {/* Tab content — fixed height, never changes */}
+      <div className="flex h-[200px] flex-col">
         {!hasModels && (
-          <span className="font-mono text-[10px] text-foreground/30">
-            select models above to generate deploy command
-          </span>
+          <div className="flex flex-1 items-center justify-center">
+            <span className="font-mono text-[10px] text-foreground/30">
+              select models above to generate deploy command
+            </span>
+          </div>
         )}
 
         {hasModels && activeTab === 'docker' && (
-          <CodeBlock
-            code={docker}
-            hint="requires nvidia gpu + nvidia-container-toolkit"
-          />
+          <div className="flex-1 min-h-0 p-3">
+            <CodeBlock code={docker} requirements={DOCKER_REQUIREMENTS} />
+          </div>
         )}
 
         {hasModels && activeTab === 'mlx' && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-1 min-h-0 flex-col p-3">
             {mlx.command ? (
-              <CodeBlock
-                code={mlx.command}
-                hint="requires apple silicon (m1+) and python 3.10+"
-              />
+              <>
+                <div className="flex-1 min-h-0">
+                  <CodeBlock code={mlx.command} requirements={MLX_REQUIREMENTS} />
+                </div>
+                {mlx.missing.length > 0 && (
+                  <span className="shrink-0 pt-2 font-mono text-[9px] text-foreground/30">
+                    no mlx variant: {mlx.missing.join(', ')}
+                  </span>
+                )}
+              </>
             ) : (
-              <span className="font-mono text-[10px] text-foreground/30">
-                no mlx variant available for selected models
-              </span>
-            )}
-            {mlx.missing.length > 0 && mlx.command && (
-              <span className="font-mono text-[9px] text-foreground/30">
-                no mlx variant: {mlx.missing.join(', ')}
-              </span>
+              <div className="flex flex-1 items-center justify-center">
+                <span className="font-mono text-[10px] text-foreground/30">
+                  no mlx variant available for selected models
+                </span>
+              </div>
             )}
           </div>
         )}
