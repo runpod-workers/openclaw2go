@@ -99,7 +99,7 @@ export default function ConfigPanel({
             openclaw2go
           </span>
           <span className="font-mono text-[9px] text-foreground/30">
-            v0.1
+            v{__APP_VERSION__}
           </span>
         </a>
       </div>

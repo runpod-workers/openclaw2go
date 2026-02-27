@@ -1,8 +1,13 @@
 import { resolve } from 'path'
+import { readFileSync } from 'fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { buildCatalog, MODELS_DIR, GPUS_DIR } from './scripts/build-catalog'
+
+const rootPkg = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, '..', 'package.json'), 'utf-8'),
+)
 
 const CATALOG_OUTPUT = resolve(import.meta.dirname, 'public', 'v1')
 
@@ -43,6 +48,9 @@ function catalogWatch(): import('vite').Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), catalogWatch()],
   base: '/',
+  define: {
+    __APP_VERSION__: JSON.stringify(rootPkg.version),
+  },
   build: {
     outDir: '../dist',
     emptyOutDir: false,
