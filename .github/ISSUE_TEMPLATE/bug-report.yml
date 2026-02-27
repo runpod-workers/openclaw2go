@@ -26,7 +26,7 @@ body:
       label: Steps to Reproduce
       description: "How can we reproduce this?"
       placeholder: |
-        1. Set OPENCLAW_CONFIG to '...'
+        1. Set OPENCLAW2GO_CONFIG to '...'
         2. Start the pod
         3. Run '...'
         4. See error
@@ -67,10 +67,10 @@ body:
   - type: textarea
     id: config
     attributes:
-      label: OPENCLAW_CONFIG
-      description: "Paste your OPENCLAW_CONFIG value"
+      label: OPENCLAW2GO_CONFIG
+      description: "Paste your OPENCLAW2GO_CONFIG value"
       render: json
-      placeholder: '{"llm": true, "audio": true}'
+      placeholder: '{"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio"}'
 
   - type: textarea
     id: logs

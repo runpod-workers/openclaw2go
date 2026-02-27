@@ -7,10 +7,10 @@
 #   Stage 1 (build-pytorch): Build shared PyTorch venv (image-gen + Qwen3-TTS) in devel image
 #   Stage 2 (runtime):       Slim runtime with only pre-built artifacts
 #
-# Configuration at runtime via OPENCLAW_CONFIG env var:
-#   {"llm": true, "audio": true, "image": true}                  — all defaults
-#   {"llm": true, "audio": true}                                   — LLM + audio only
-#   {"llm": "unsloth/GLM-4.7-Flash-GGUF", "contextLength": 200000} — HuggingFace name
+# Configuration at runtime via OPENCLAW2GO_CONFIG env var:
+#   {"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio", "image": "disty0/flux2-klein-sdnq"}
+#   {"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio"}
+#   {"llm": "unsloth/GLM-4.7-Flash-GGUF", "contextLength": 200000}
 #   {"profile": "rtx5090-full-stack"}                              — use a preset
 #
 # Model names are case-insensitive. Use HuggingFace repo names or short IDs.

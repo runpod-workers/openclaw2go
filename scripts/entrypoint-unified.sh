@@ -1,6 +1,6 @@
 #!/bin/bash
 # Unified OpenClaw2Go entrypoint.
-# Reads OPENCLAW_CONFIG, resolves a profile from the registry, and starts
+# Reads OPENCLAW2GO_CONFIG, resolves a profile from the registry, and starts
 # all services (LLM, Audio, Image, Vision, Embedding, Reranking, TTS,
 # Web Proxy, OpenClaw Gateway) dynamically.
 #
@@ -106,14 +106,14 @@ else
 fi
 
 # ============================================================
-# Resolve profile from OPENCLAW_CONFIG
+# Resolve profile from OPENCLAW2GO_CONFIG
 # ============================================================
 echo ""
 echo "Resolving profile..."
 
 RESOLVED_JSON="$(python3 /opt/openclaw/scripts/resolve-profile.py)" || {
     echo "ERROR: Profile resolution failed."
-    echo "Container staying alive for debugging. SSH in and check OPENCLAW_CONFIG."
+    echo "Container staying alive for debugging. SSH in and check OPENCLAW2GO_CONFIG."
     sleep infinity
 }
 

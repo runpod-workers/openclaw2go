@@ -5,7 +5,7 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 ## Test Procedure
 
 1. Create pod with target GPU and unified image
-2. Set `OPENCLAW_CONFIG` env var to the test config
+2. Set `OPENCLAW2GO_CONFIG` env var to the test config
 3. Verify services start:
    - LLM: `curl http://localhost:8000/health` + `curl http://localhost:8000/v1/models`
    - Audio: `openclaw-tts "Hello" --output /tmp/test.wav` (if audio enabled)

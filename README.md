@@ -23,29 +23,29 @@ All models download on first start and persist on the volume.
 3. Volume: 100 GB at `/workspace`
 4. Ports: `8000/http`, `8080/http`, `18789/http`, `22/tcp`
 5. Set env vars:
-   - `OPENCLAW_CONFIG` — what to run (see below)
+   - `OPENCLAW2GO_CONFIG` — what to run (see below)
    - `OPENCLAW_WEB_PASSWORD` — web UI token
    - `LLAMA_API_KEY` — LLM API key (default: `changeme`)
 
 ## Configuration
 
-Everything is controlled via the `OPENCLAW_CONFIG` env var (JSON):
+Everything is controlled via the `OPENCLAW2GO_CONFIG` env var (JSON):
 
 ```bash
-# Full stack — LLM + Audio + Image (default models)
-OPENCLAW_CONFIG='{"llm":true,"audio":true,"image":true}'
+# Full stack — LLM + Audio + Image
+OPENCLAW2GO_CONFIG='{"llm":"unsloth/glm47-flash-gguf","audio":"liquidai/lfm25-audio","image":"disty0/flux2-klein-sdnq"}'
 
 # LLM + Audio only (more VRAM for context)
-OPENCLAW_CONFIG='{"llm":true,"audio":true}'
+OPENCLAW2GO_CONFIG='{"llm":"unsloth/glm47-flash-gguf","audio":"liquidai/lfm25-audio"}'
 
 # Specific model
-OPENCLAW_CONFIG='{"llm":"unsloth/Nemotron-3-Nano-30B-A3B-GGUF"}'
+OPENCLAW2GO_CONFIG='{"llm":"unsloth/Nemotron-3-Nano-30B-A3B-GGUF"}'
 
 # Specific model + context override
-OPENCLAW_CONFIG='{"llm":"unsloth/GLM-4.7-Flash-GGUF","contextLength":200000}'
+OPENCLAW2GO_CONFIG='{"llm":"unsloth/GLM-4.7-Flash-GGUF","contextLength":200000}'
 
 # Auto-detect GPU, use defaults that fit
-OPENCLAW_CONFIG='{}'
+OPENCLAW2GO_CONFIG='{}'
 ```
 
 Model names are case-insensitive. Use HuggingFace repo names or short IDs.
@@ -102,7 +102,7 @@ First time: approve device pairing when prompted (SSH into pod, run `openclaw de
 ## Architecture
 
 ```
-OPENCLAW_CONFIG (env var)
+OPENCLAW2GO_CONFIG (env var)
         |
         v
   resolve-profile.py  -->  detect GPU (nvidia-smi)

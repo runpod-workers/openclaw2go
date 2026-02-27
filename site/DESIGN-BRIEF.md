@@ -157,7 +157,7 @@ logo → platform → vram → model → preview → legend → services → dep
 ### 9. Deploy Card (`area-deploy`, full width)
 - Tabs: docker / config / runpod (nvidia) or mlx (mac)
 - Docker tab: full `docker run` command with copy button
-- Config tab: `OPENCLAW_CONFIG` JSON with copy button
+- Config tab: `OPENCLAW2GO_CONFIG` JSON with copy button
 - Runpod tab: 3-step visual guide (create pod → set image → expose ports)
 - MLX tab: `pip install mlx-lm` + `mlx_lm.server` command with copy button
 - Label: "deploy" in green

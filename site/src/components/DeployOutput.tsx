@@ -91,14 +91,14 @@ function isTabVisible(tab: DeployTab, os: OsPlatform | null): boolean {
 }
 
 function buildDockerCommand(models: CatalogModel[]): string {
-  const config: Record<string, string | boolean> = {}
+  const config: Record<string, string> = {}
   for (const m of models) {
     if (m.type === 'llm') {
-      config.llm = m.isDefault ? true : m.repo
+      config.llm = m.repo
     } else if (m.type === 'audio') {
-      config.audio = m.isDefault ? true : m.repo
+      config.audio = m.repo
     } else if (m.type === 'image') {
-      config.image = m.isDefault ? true : m.repo
+      config.image = m.repo
     }
   }
 
@@ -108,7 +108,7 @@ function buildDockerCommand(models: CatalogModel[]): string {
 
   return [
     'docker run --gpus all \\',
-    `  -e OPENCLAW_CONFIG='${configStr}' \\`,
+    `  -e OPENCLAW2GO_CONFIG='${configStr}' \\`,
     '  -e OPENCLAW_WEB_PASSWORD=changeme \\',
     '  -e LLAMA_API_KEY=changeme \\',
     '  -p 8000:8000 -p 8080:8080 -p 18789:18789 \\',

@@ -2,23 +2,24 @@
 """
 resolve-profile.py - Resolve OpenClaw2Go configuration to a runnable service set.
 
-Reads OPENCLAW_CONFIG env var (JSON), resolves against registry files,
+Reads OPENCLAW2GO_CONFIG env var (JSON), resolves against registry files,
 detects GPU via nvidia-smi, validates VRAM budget, auto-computes optimal
 context length, and outputs resolved config JSON to stdout.
 
-Config format (OPENCLAW_CONFIG env var):
+Config format (OPENCLAW2GO_CONFIG env var):
 
   Model-based (primary approach):
-    {"llm": true, "audio": true, "image": true}                — use default models
-    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": true}      — HuggingFace repo name
-    {"llm": "unsloth/glm47-flash-gguf", "audio": true}        — short model ID (also works)
-    {"llm": true}                                               — LLM only
-    {"llm": true, "audio": true}                                — LLM + audio
-    {"llm": true, "contextLength": 200000}                      — override context length
-    {"vision": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF"}        — vision-capable LLM
-    {"llm": true, "embedding": true}                            — LLM + embeddings
-    {"llm": true, "reranking": true}                            — LLM + reranking
-    {"llm": true, "tts": true}                                  — LLM + native TTS
+    {"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio", "image": "disty0/flux2-klein-sdnq"}
+    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "liquidai/lfm25-audio"}
+    {"llm": "unsloth/glm47-flash-gguf"}
+    {"llm": "unsloth/glm47-flash-gguf", "contextLength": 200000}
+    {"vision": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF"}
+    {"llm": "unsloth/glm47-flash-gguf", "embedding": true}
+    {"llm": "unsloth/glm47-flash-gguf", "reranking": true}
+    {"llm": "unsloth/glm47-flash-gguf", "tts": true}
+
+  Boolean `true` is still accepted for backwards compatibility (resolves to
+  the default model for that role), but explicit model IDs are preferred.
 
   Model names are case-insensitive. You can use the HuggingFace repo name
   (e.g., "unsloth/GLM-4.7-Flash-GGUF") or the short model ID
@@ -54,7 +55,7 @@ ROLE_PORTS = {
     "tts": 8006,
 }
 
-# Roles that support OPENCLAW_CONFIG keys
+# Roles that support OPENCLAW2GO_CONFIG keys
 CONFIG_ROLES = ("llm", "audio", "image", "vision", "embedding", "reranking", "tts")
 
 
@@ -304,12 +305,12 @@ def build_from_profile(profile, models, engines):
 
 
 def main():
-    raw_config = os.environ.get("OPENCLAW_CONFIG", "").strip()
+    raw_config = os.environ.get("OPENCLAW2GO_CONFIG", "").strip()
     if raw_config:
         try:
             config = json.loads(raw_config)
         except json.JSONDecodeError as e:
-            print(f"ERROR: invalid OPENCLAW_CONFIG JSON: {e}", file=sys.stderr)
+            print(f"ERROR: invalid OPENCLAW2GO_CONFIG JSON: {e}", file=sys.stderr)
             sys.exit(1)
     else:
         config = {}
@@ -356,7 +357,11 @@ def main():
     else:
         # Auto — default to LLM only (slim). Users opt-in to audio/image explicitly.
         print("No config specified, defaulting to LLM only.", file=sys.stderr)
-        auto_config = {"llm": True}
+        default_llm = get_default_model(models, "llm")
+        if not default_llm:
+            print("ERROR: no default LLM model found", file=sys.stderr)
+            sys.exit(1)
+        auto_config = {"llm": default_llm["id"]}
 
         services, vram_total, computed_context = build_from_models(auto_config, models, engines, gpu_vram_mb)
         roles = [s["role"] for s in services]
