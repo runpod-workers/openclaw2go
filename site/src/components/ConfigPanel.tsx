@@ -80,7 +80,6 @@ export default function ConfigPanel({
                 onSelect={onGpuSelect}
                 totalVramNeeded={totalVramMb}
                 selectedVramGb={selectedVramGb}
-                selectedModels={selectedModels}
               />
             </div>
           </div>

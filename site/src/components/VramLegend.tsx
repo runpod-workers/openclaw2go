@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { cn } from '../lib/utils'
-import type { GpuInfo, CatalogModel } from '../lib/catalog'
+import type { GpuInfo } from '../lib/catalog'
 import { formatVram, getMinGpuCount } from '../lib/catalog'
 
 function GpuButton({
@@ -47,14 +47,12 @@ export default function GpuSelector({
   onSelect,
   totalVramNeeded,
   selectedVramGb,
-  selectedModels,
 }: {
   gpus: GpuInfo[]
   selectedGpu: GpuInfo | null
   onSelect: (gpu: GpuInfo) => void
   totalVramNeeded: number
   selectedVramGb: number | null
-  selectedModels: CatalogModel[]
 }) {
   const { nvidiaGpus, macGpus } = useMemo(() => {
     const nvidia = gpus.filter((g) => !g.os.includes('mac')).sort((a, b) => a.vramMb - b.vramMb)
@@ -70,12 +68,7 @@ export default function GpuSelector({
     const cantFit = totalVramNeeded > 0 && gpu.vramMb * 8 < totalVramNeeded
     const fitsPreset = selectedVramGb ? effectiveVram >= selectedVramGb * 1024 : true
 
-    const gpuOsSet = new Set(gpu.os)
-    const osIncompatible = selectedModels.length > 0 && selectedModels.some(
-      (m) => !m.os.some((modelOs) => gpuOsSet.has(modelOs))
-    )
-
-    const disabled = cantFit || !fitsPreset || osIncompatible
+    const disabled = cantFit || !fitsPreset
 
     return (
       <GpuButton
