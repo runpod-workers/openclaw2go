@@ -32,7 +32,7 @@ Each model is a JSON file in `registry/models/` with these fields:
 | `id` | Yes | Unique ID in `provider/name` format (lowercase) |
 | `name` | Yes | Human-readable model name |
 | `type` | Yes | `llm`, `audio`, or `image` |
-| `engine` | Yes | `openclaw2go-llamacpp`, `ik-llamacpp`, `llamacpp`, `llamacpp-audio`, `image-gen`, `mlx`, or `vllm` |
+| `engine` | Yes | `openclaw2go-llamacpp`, `ik-llamacpp`, `llamacpp`, `llamacpp-audio`, `image-gen`, `mlx-lm`, `mlx-audio`, `mflux`, or `vllm` |
 | `repo` | Yes | HuggingFace repository name |
 | `files` | Yes | Array of files to download from the repo |
 | `downloadDir` | Yes | Must start with `/workspace/models/` |
@@ -45,7 +45,8 @@ Each model is a JSON file in `registry/models/` with these fields:
 | `provider` | Yes (LLM) | Provider config with `name` and `api` |
 | `default` | Yes | Whether this is the default for its type (usually `false`) |
 | `status` | Yes | `stable`, `experimental`, or `deprecated` |
-| `verifiedOn` | Optional | Array of GPU names verified on |
+| `verifiedOn` | Optional | Array of GPU IDs verified on |
+| `verifiedContext` | Optional | Context length (tokens) used during TPS benchmarking |
 
 ## VRAM Estimation
 

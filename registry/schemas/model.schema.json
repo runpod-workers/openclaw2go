@@ -126,20 +126,14 @@
       "items": { "type": "string" },
       "description": "List of GPUs this model has been verified on"
     },
+    "verifiedContext": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Context length (tokens) used during TPS verification — documents the exact context the benchmarks were measured at"
+    },
     "platform": {
       "type": "string",
       "description": "Target platform (e.g., mlx for Apple Silicon)"
-    },
-    "mlx": {
-      "type": "object",
-      "description": "MLX execution config for Apple Silicon (macOS)",
-      "properties": {
-        "engine": { "type": "string", "enum": ["mlx-lm", "mlx-audio", "mflux"] },
-        "repo": { "type": "string" },
-        "memoryMb": { "type": "integer", "minimum": 0 },
-        "bits": { "type": "integer", "minimum": 1, "maximum": 16 }
-      },
-      "required": ["engine", "memoryMb"]
     }
   },
   "additionalProperties": false
