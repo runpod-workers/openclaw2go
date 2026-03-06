@@ -1,0 +1,23 @@
+{
+  "id": "mlx-community/lfm2-24b-a2b-mlx",
+  "name": "LFM2-24B-A2B MLX 4-bit",
+  "type": "llm",
+  "engine": "mlx-lm",
+  "bits": 4,
+  "repo": "LiquidAI/LFM2-24B-A2B-MLX-4bit",
+  "vram": {
+    "model": 13400,
+    "overhead": 0
+  },
+  "kvCacheMbPer1kTokens": 4,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
+  "platform": "mlx",
+  "default": false,
+  "status": "experimental"
+}
