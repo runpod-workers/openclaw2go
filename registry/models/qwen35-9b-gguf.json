@@ -53,10 +53,5 @@
   "verifiedOn": [
     "rtx-5090",
     "m3-pro"
-  ],
-  "mlx": {
-    "engine": "mlx-lm",
-    "repo": "mlx-community/Qwen3.5-9B-8bit",
-    "memoryMb": 9600
-  }
+  ]
 }

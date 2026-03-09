@@ -35,10 +35,5 @@
     "rtx-4090": 43
   },
   "default": false,
-  "status": "stable",
-  "mlx": {
-    "engine": "mlx-lm",
-    "repo": "mlx-community/Olmo-3.1-32B-Think-4bit",
-    "memoryMb": 18100
-  }
+  "status": "stable"
 }

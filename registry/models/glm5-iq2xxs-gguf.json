@@ -61,11 +61,5 @@
     "2x-h200-sxm": 34
   },
   "default": false,
-  "status": "experimental",
-  "mlx": {
-    "engine": "mlx-lm",
-    "repo": "mlx-community/GLM-5-4bit",
-    "memoryMb": 419000,
-    "bits": 4
-  }
+  "status": "experimental"
 }

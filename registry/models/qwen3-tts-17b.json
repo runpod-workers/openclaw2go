@@ -26,11 +26,5 @@
     "api": "openai-tts"
   },
   "default": false,
-  "status": "stable",
-  "mlx": {
-    "engine": "mlx-audio",
-    "repo": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-4bit",
-    "memoryMb": 6000,
-    "bits": 4
-  }
+  "status": "stable"
 }

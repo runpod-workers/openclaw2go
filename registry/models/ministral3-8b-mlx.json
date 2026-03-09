@@ -1,0 +1,23 @@
+{
+  "id": "mlx-community/ministral3-8b-mlx",
+  "name": "Ministral-3-8B MLX 4-bit",
+  "type": "llm",
+  "engine": "mlx-lm",
+  "bits": 4,
+  "repo": "mlx-community/Ministral-3-8B-Instruct-2512-4bit",
+  "vram": {
+    "model": 6000,
+    "overhead": 0
+  },
+  "kvCacheMbPer1kTokens": 70,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
+  "platform": "mlx",
+  "default": false,
+  "status": "experimental"
+}

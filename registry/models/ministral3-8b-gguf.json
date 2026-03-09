@@ -35,11 +35,5 @@
   "verifiedOn": [
     "RTX 5090",
     "Apple M3 Pro"
-  ],
-  "mlx": {
-    "engine": "mlx-lm",
-    "repo": "mlx-community/Ministral-3-8B-Instruct-2512-4bit",
-    "memoryMb": 6000,
-    "bits": 4
-  }
+  ]
 }

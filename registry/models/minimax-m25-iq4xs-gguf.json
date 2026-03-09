@@ -38,10 +38,5 @@
     "api": "openai-completions"
   },
   "default": false,
-  "status": "experimental",
-  "mlx": {
-    "engine": "mlx-lm",
-    "repo": "mlx-community/MiniMax-M2.5-4bit",
-    "memoryMb": 129000
-  }
+  "status": "experimental"
 }

@@ -53,10 +53,5 @@
   },
   "verifiedOn": [
     "b200-180gb"
-  ],
-  "mlx": {
-    "engine": "mlx-lm",
-    "repo": "mlx-community/Qwen3.5-122B-A10B-4bit",
-    "memoryMb": 72000
-  }
+  ]
 }
