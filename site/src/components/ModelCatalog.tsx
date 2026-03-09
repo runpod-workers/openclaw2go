@@ -35,6 +35,8 @@ export default function ModelCatalog({
   onToggleModel,
   remainingVramMb,
   effectiveVramMb,
+  onClearAll,
+  hasSelections,
 }: {
   models: CatalogModel[]
   os: OsPlatform | null
@@ -44,6 +46,8 @@ export default function ModelCatalog({
   onToggleModel: (model: CatalogModel) => void
   remainingVramMb: number
   effectiveVramMb: number
+  onClearAll: () => void
+  hasSelections: boolean
 }) {
   const [search, setSearch] = useState("")
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
@@ -124,10 +128,18 @@ export default function ModelCatalog({
 
   return (
     <div className="flex w-[480px] shrink-0 flex-col overflow-hidden border-r border-foreground/[0.06]">
-      <SectionHeader>
+      <SectionHeader className="justify-between">
         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
           Operating System
         </span>
+        {hasSelections && (
+          <button
+            onClick={onClearAll}
+            className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/50 transition-colors hover:text-foreground/80"
+          >
+            reset all
+          </button>
+        )}
       </SectionHeader>
 
       <PlatformSelector os={os} onChange={onOsChange} />

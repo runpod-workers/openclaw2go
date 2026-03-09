@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   fetchCatalog,
   getTotalVram,
@@ -9,6 +9,7 @@ import {
   type OsPlatform,
 } from './lib/catalog'
 import { groupModels, getVariantForOs, type ModelGroup } from './lib/group-models'
+import { parseUrlState, syncUrlState, clearUrlState } from './lib/url-state'
 import ModelCatalog from './components/ModelCatalog'
 import ConfigPanel from './components/ConfigPanel'
 
@@ -23,11 +24,36 @@ function App() {
   const [selectedGpu, setSelectedGpu] = useState<GpuInfo | null>(null)
   const [selectedVramGb, setSelectedVramGb] = useState<number | null>(null)
 
+  // Track whether URL state has been hydrated to avoid syncing before load
+  const hydrated = useRef(false)
+
   useEffect(() => {
     fetchCatalog()
       .then(({ models, gpus }) => {
         setAllModels(models)
         setAllGpus(gpus)
+
+        // Hydrate state from URL after catalog is available
+        const url = parseUrlState()
+        if (url.os) setOs(url.os)
+
+        const ids = new Set<string>()
+        for (const type of ['llm', 'image', 'audio'] as const) {
+          const urlId = url[type]
+          if (urlId) {
+            const match = models.find((m) => m.id === urlId)
+            if (match) ids.add(match.id)
+          }
+        }
+        if (ids.size > 0) setSelectedModelIds(ids)
+
+        if (url.gpu) {
+          const match = gpus.find((g) => g.id === url.gpu)
+          if (match) setSelectedGpu(match)
+        }
+        if (url.vram != null) setSelectedVramGb(url.vram)
+
+        hydrated.current = true
         setLoading(false)
       })
       .catch((e) => {
@@ -69,6 +95,22 @@ function App() {
 
   // GPU count is fully derived — auto-calculated from selected GPU + total VRAM
   const gpuCount = selectedGpu ? getMinGpuCount(totalVramMb, selectedGpu.vramMb) : 1
+
+  // Sync state to URL whenever selections change (after initial hydration)
+  useEffect(() => {
+    if (!hydrated.current) return
+    const llm = selectedModels.find((m) => m.type === 'llm')
+    const image = selectedModels.find((m) => m.type === 'image')
+    const audio = selectedModels.find((m) => m.type === 'audio')
+    syncUrlState({
+      os,
+      llm: llm?.id ?? null,
+      image: image?.id ?? null,
+      audio: audio?.id ?? null,
+      gpu: selectedGpu?.id ?? null,
+      vram: selectedVramGb,
+    })
+  }, [os, selectedModels, selectedGpu, selectedVramGb])
 
   const toggleModel = useCallback(
     (model: CatalogModel) => {
@@ -122,11 +164,19 @@ function App() {
     setSelectedVramGb(null)
   }, [os, modelIdToGroup])
 
-
+  const handleClearAll = useCallback(() => {
+    setSelectedModelIds(new Set())
+    setOs(null)
+    setSelectedGpu(null)
+    setSelectedVramGb(null)
+    clearUrlState()
+  }, [])
 
   const effectiveVramGb = selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : 0)
   const effectiveVramMb = effectiveVramGb * 1024
   const remainingVramMb = effectiveVramMb > 0 ? effectiveVramMb - totalVramMb : 0
+
+  const hasSelections = selectedModels.length > 0 || os !== null || selectedGpu !== null || selectedVramGb !== null
 
   if (error) {
     return (
@@ -160,6 +210,8 @@ function App() {
         onToggleModel={toggleModel}
         remainingVramMb={remainingVramMb}
         effectiveVramMb={effectiveVramMb}
+        onClearAll={handleClearAll}
+        hasSelections={hasSelections}
       />
       <ConfigPanel
         selectedModels={selectedModels}
@@ -173,14 +225,10 @@ function App() {
         onGpuSelect={handleGpuSelect}
         onVramPreset={handleVramPreset}
         onToggleModel={toggleModel}
-        onClearAll={() => {
-          setSelectedModelIds(new Set())
-          setOs(null)
-          setSelectedGpu(null)
-          setSelectedVramGb(null)
-        }}
+        onClearAll={handleClearAll}
         modelIdToGroup={modelIdToGroup}
         os={os}
+        hasSelections={hasSelections}
       />
     </div>
   )

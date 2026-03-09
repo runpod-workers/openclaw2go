@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import SectionHeader from './SectionHeader'
 import GpuSelector from './VramLegend'
 import VramGauge from './VramSelector'
@@ -7,6 +8,25 @@ import SecurityGuide from './SecurityGuide'
 import type { CatalogModel, GpuInfo, GpuCount, OsPlatform } from '../lib/catalog'
 import { VRAM_PRESETS } from '../lib/catalog'
 import type { ModelGroup } from '../lib/group-models'
+import { Link } from 'lucide-react'
+
+function CopyLinkButton() {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    navigator.clipboard.writeText(window.location.href)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1 font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/50 transition-colors hover:text-foreground/80"
+    >
+      <Link size={10} />
+      {copied ? 'copied' : 'copy link'}
+    </button>
+  )
+}
 
 export default function ConfigPanel({
   selectedModels,
@@ -23,6 +43,7 @@ export default function ConfigPanel({
   onClearAll,
   modelIdToGroup,
   os,
+  hasSelections,
 }: {
   selectedModels: CatalogModel[]
   totalVramGb: number
@@ -38,6 +59,7 @@ export default function ConfigPanel({
   onClearAll: () => void
   modelIdToGroup: Map<string, ModelGroup>
   os: OsPlatform | null
+  hasSelections: boolean
 }) {
   const hasModels = selectedModels.length > 0
 
@@ -124,13 +146,17 @@ export default function ConfigPanel({
               </span>
             )}
           </div>
-          {selectedModels.length > 0 && (
-            <button
-              onClick={onClearAll}
-              className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/50 transition-colors hover:text-foreground/80"
-            >
-              clear all
-            </button>
+          {hasSelections && (
+            <div className="flex items-center gap-3">
+              <CopyLinkButton />
+              <span className="h-3 w-px bg-foreground/10" />
+              <button
+                onClick={onClearAll}
+                className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/50 transition-colors hover:text-foreground/80"
+              >
+                clear all
+              </button>
+            </div>
           )}
         </SectionHeader>
       </div>
