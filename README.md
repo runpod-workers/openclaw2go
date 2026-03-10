@@ -4,82 +4,79 @@ A self-contained AI assistant stack for GPU pods. One Docker image, any GPU — 
 
 **Image**: `runpod/openclaw2go:latest` (~7 GB compressed)
 
-## What's inside
-
-| Component | Details |
-|-----------|---------|
-| LLM | [GLM-4.7-Flash](https://huggingface.co/unsloth/GLM-4.7-Flash-GGUF) Q4_K_M via llama.cpp (default) |
-| Audio | [LFM2.5-Audio-1.5B](https://huggingface.co/LiquidAI/LFM2.5-Audio-1.5B-GGUF) — TTS + STT |
-| Image | [FLUX.2 Klein 4B](https://huggingface.co/Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic) — SDNQ 4-bit |
-| UI | [OpenClaw](https://github.com/openclaw/openclaw) gateway + control UI |
-| Coding | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI |
-
-All models download on first start and persist on the volume.
-
 ## Quick start
 
-1. Create a pod on [Runpod](https://runpod.io) (or any GPU host)
-2. Image: `runpod/openclaw2go:latest`
-3. Volume: 100 GB at `/workspace`
-4. Ports: `8000/http`, `8080/http`, `18789/http`, `22/tcp`
-5. Set env vars:
-   - `OPENCLAW2GO_CONFIG` — what to run (see below)
-   - `OPENCLAW_WEB_PASSWORD` — web UI token
-   - `LLAMA_API_KEY` — LLM API key (default: `changeme`)
+1. **Pick models** at [openclaw2go.io](https://openclaw2go.io) — select your GPU and the site shows what fits
+2. **Deploy** — the site generates a ready-to-use command (Docker or MLX)
+3. **Access the UI** — `http://localhost:18789/?token=<OPENCLAW_WEB_PASSWORD>`
+
+On Runpod the URL is `https://<pod-id>-18789.proxy.runpod.net/?token=<OPENCLAW_WEB_PASSWORD>`.
+
+First time: approve device pairing when prompted (SSH into the machine, run `openclaw devices list` then `openclaw devices approve <requestId>`).
+
+### Docker (Linux / Windows / Runpod)
+
+The site generates this — or run it directly:
+
+```bash
+docker run --gpus all \
+  -e OPENCLAW2GO_CONFIG='{"llm":"unsloth/glm47-flash-gguf","audio":"liquidai/lfm25-audio"}' \
+  -e OPENCLAW_WEB_PASSWORD=changeme \
+  -e LLAMA_API_KEY=changeme \
+  -p 8000:8000 -p 8080:8080 -p 18789:18789 \
+  -v openclaw2go-models:/workspace \
+  runpod/openclaw2go:latest
+```
+
+Models download on first start and persist on the volume. Use `OPENCLAW2GO_CONFIG='{}'` to auto-detect your GPU and pick defaults that fit.
+
+### MLX (macOS / Apple Silicon)
+
+Select macOS on [openclaw2go.io](https://openclaw2go.io) and the site generates MLX commands for your selected models. The flow:
+
+```bash
+# 1. Setup
+python3 -m venv ~/.openclaw2go/venv
+source ~/.openclaw2go/venv/bin/activate
+
+# 2. Install engines (depends on your model selection)
+pip install mlx-lm        # for LLM models
+pip install mlx-audio      # for audio models
+
+# 3. Start servers (each in a separate terminal)
+python -m mlx_lm.server --model <repo> --host 0.0.0.0 --port 8000
+python -m mlx_audio.server --host 0.0.0.0 --port 8001
+```
+
+For the agent framework (OpenClaw gateway + UI), see the [OpenClaw install docs](https://github.com/openclaw/openclaw).
+
+MLX models are experimental — not all models have MLX variants. The site will tell you which ones do.
 
 ## Configuration
 
-Everything is controlled via the `OPENCLAW2GO_CONFIG` env var (JSON):
+### Environment variables
 
-```bash
-# Full stack — LLM + Audio + Image
-OPENCLAW2GO_CONFIG='{"llm":"unsloth/glm47-flash-gguf","audio":"liquidai/lfm25-audio","image":"disty0/flux2-klein-sdnq"}'
-
-# LLM + Audio only (more VRAM for context)
-OPENCLAW2GO_CONFIG='{"llm":"unsloth/glm47-flash-gguf","audio":"liquidai/lfm25-audio"}'
-
-# Specific model
-OPENCLAW2GO_CONFIG='{"llm":"unsloth/Nemotron-3-Nano-30B-A3B-GGUF"}'
-
-# Specific model + context override
-OPENCLAW2GO_CONFIG='{"llm":"unsloth/GLM-4.7-Flash-GGUF","contextLength":200000}'
-
-# Auto-detect GPU, use defaults that fit
-OPENCLAW2GO_CONFIG='{}'
-```
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENCLAW2GO_CONFIG` | JSON config — models to load (see above) | `{}` |
+| `OPENCLAW_WEB_PASSWORD` | Web UI auth token | `changeme` |
+| `LLAMA_API_KEY` | LLM API key (OpenAI-compatible endpoint) | `changeme` |
+| `TELEGRAM_BOT_TOKEN` | Enable Telegram bot integration | — |
+| `GITHUB_TOKEN` | GitHub auth for Claude Code | — |
 
 Model names are case-insensitive. Use HuggingFace repo names or short IDs.
 
-## Available models
+## Customize agent behavior
 
-| Model | Type | Size | Best for |
-|-------|------|------|----------|
-| [GLM-4.7-Flash](https://huggingface.co/unsloth/GLM-4.7-Flash-GGUF) Q4_K_M | LLM (default) | ~17 GB | General purpose, tool calling |
-| [Nemotron-3-Nano](https://huggingface.co/unsloth/Nemotron-3-Nano-30B-A3B-GGUF) Q4_K_XL | LLM | ~22 GB | MoE, reasoning + content |
-| [GPT-OSS-20B](https://huggingface.co/unsloth/gpt-oss-20b-GGUF) Q8_0 | LLM | ~13 GB | Fits any GPU |
-| [GLM-4.7 Claude Distill](https://huggingface.co/TeichAI/GLM-4.7-Flash-Claude-Opus-4.5-High-Reasoning-Distill-GGUF) Q4_K_M | LLM | ~17 GB | Reasoning with `reasoning_content` |
-| [Qwen3-Coder-Next](https://huggingface.co/unsloth/Qwen3-Coder-Next-GGUF) Q3_K_M | LLM | ~38 GB | 80B MoE, coding (L40/A100) |
-| [Step-3.5-Flash](https://huggingface.co/bartowski/stepfun-ai_Step-3.5-Flash-GGUF) Q2_K | LLM | ~67 GB | 197B MoE, reasoning (A100 80GB) |
-| [LFM2.5-Audio-1.5B](https://huggingface.co/LiquidAI/LFM2.5-Audio-1.5B-GGUF) | Audio (default) | ~2 GB | TTS + STT |
-| [FLUX.2 Klein 4B](https://huggingface.co/Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic) SDNQ | Image (default) | ~4 GB | Image generation |
+`/workspace/` is persistent storage that survives pod restarts. All models and config live here.
 
-New models can be added via the [external registry](https://github.com/runpod-workers/openclaw2go-registry) without rebuilding the image.
+| Path | Purpose |
+|------|---------|
+| `/workspace/.openclaw/openclaw.json` | Main config — auto-generated on first boot, editable |
+| `/workspace/openclaw/IDENTITY.md` | Agent identity — create your own to customize personality |
+| `/workspace/openclaw/AGENTS.md` | Agent instructions & skills — create your own to add capabilities |
 
-## Verified GPU configs
-
-| GPU | Config | Status |
-|-----|--------|--------|
-| RTX 5090 (32 GB) | Full stack (LLM + Audio + Image, 150k ctx) | PASS |
-| RTX 5090 | GLM-4.7 Claude Distill | PASS |
-| RTX 5090 | Nemotron-3-Nano | PASS |
-| RTX 5090 | GPT-OSS-20B | PASS |
-| RTX 4090 (24 GB) | Auto-detect (LLM + Audio, 16.6k ctx) | PASS |
-| RTX 4090 | GPT-OSS-20B (131k ctx) | PASS |
-| L40 (48 GB) | Full stack (LLM + Audio + Image, 150k ctx) | PASS |
-| L40 | Qwen3-Coder-Next (32k ctx) | PASS |
-| A100 80 GB | Step-3.5-Flash (32k ctx) | PASS |
-
-See [`tests/VERIFIED-CONFIGS.md`](tests/VERIFIED-CONFIGS.md) for full details.
+The entrypoint only generates `openclaw.json` if it doesn't exist, so your edits are safe across restarts.
 
 ## Ports
 
@@ -91,43 +88,6 @@ See [`tests/VERIFIED-CONFIGS.md`](tests/VERIFIED-CONFIGS.md) for full details.
 | 22/tcp | SSH |
 
 Audio (8001) and Image (8002) are internal only.
-
-## Access the UI
-
-- **Control UI**: `https://<pod-id>-18789.proxy.runpod.net/?token=<OPENCLAW_WEB_PASSWORD>`
-- **Media UI**: `https://<pod-id>-8080.proxy.runpod.net`
-
-First time: approve device pairing when prompted (SSH into pod, run `openclaw devices list` then `openclaw devices approve <requestId>`).
-
-## Architecture
-
-```
-OPENCLAW2GO_CONFIG (env var)
-        |
-        v
-  resolve-profile.py  -->  detect GPU (nvidia-smi)
-        |                   compute VRAM budget
-        v                   auto-adjust context length
-  entrypoint-unified.sh
-        |
-        +-- llama-server (LLM)         port 8000
-        +-- llama-audio-server (Audio)  port 8001 (internal)
-        +-- openclaw-image-server       port 8002 (internal)
-        +-- openclaw-web-proxy          port 8080
-        +-- openclaw gateway            port 18789
-```
-
-All engines are llama.cpp. LLM and Audio use separate builds with isolated shared libraries (incompatible `.so` files).
-
-## Build
-
-```bash
-# Engines (llama.cpp binaries) — only needed when updating llama.cpp
-docker build -f engines/Dockerfile -t openclaw2go-engines .
-
-# Runtime image
-docker build -f Dockerfile.unified -t openclaw2go .
-```
 
 ## CLI tools (inside container)
 
@@ -143,7 +103,9 @@ openclaw-stt audio.wav                # Speech to text
 
 ## Resources
 
+- [openclaw2go.io](https://openclaw2go.io) — model configurator
 - [OpenClaw2Go](https://github.com/runpod-workers/openclaw2go) — this repo
 - [OpenClaw2Go Registry](https://github.com/runpod-workers/openclaw2go-registry) — external model registry
 - [OpenClaw](https://github.com/openclaw/openclaw) — the agent framework
 - [Runpod](https://runpod.io) — GPU cloud
+- [Contributing models](docs/contributing-models.md)
