@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { formatContext, formatVram, type CatalogModel, type GpuInfo, type OsPlatform } from '../lib/catalog'
 import type { ModelGroup, ModelVariant } from '../lib/group-models'
+import { findSiblingsWithOs } from '../lib/group-models'
 import { PlatformIcon } from './PlatformSelector'
 import { X, ExternalLink, HelpCircle } from 'lucide-react'
 import { cn } from '../lib/utils'
@@ -237,6 +238,10 @@ function FilledSlotCard({
   accentColor,
   gpus,
   onRemove,
+  macUnavailable,
+  isMacTabActive,
+  macSiblings,
+  onSwapToSibling,
 }: {
   model: CatalogModel
   group: ModelGroup | undefined
@@ -246,6 +251,10 @@ function FilledSlotCard({
   accentColor: string
   gpus: GpuInfo[]
   onRemove: () => void
+  macUnavailable: boolean
+  isMacTabActive: boolean
+  macSiblings: ModelGroup[]
+  onSwapToSibling: (group: ModelGroup) => void
 }) {
   const activeTab = activeTabIndex
   const displayName = group?.displayName ?? model.name
@@ -265,6 +274,8 @@ function FilledSlotCard({
   const tpsEntries = v.tps ? Object.entries(v.tps) : []
   const tpsEntry = tpsEntries.length > 0 ? tpsEntries[0] : null
   const tpsGpuName = tpsEntry ? (gpus.find((g) => g.id === tpsEntry[0])?.name ?? tpsEntry[0]) : null
+
+  const singleTab = visibleVariants.length <= 1 && !macUnavailable
 
   return (
     <div
@@ -297,12 +308,12 @@ function FilledSlotCard({
             onClick={() => onTabSelect(vt.os[0])}
             className={cn(
               "flex items-center gap-1.5 px-3 h-full font-mono text-[10px] uppercase tracking-wider transition-all",
-              i === activeTab
+              i === activeTab && !isMacTabActive
                 ? "text-foreground/80 border-b-2"
                 : "text-foreground/30 hover:text-foreground/50",
-              visibleVariants.length === 1 && "cursor-default"
+              singleTab && "cursor-default"
             )}
-            style={i === activeTab ? { borderBottomColor: accentColor } : undefined}
+            style={i === activeTab && !isMacTabActive ? { borderBottomColor: accentColor } : undefined}
           >
             {vt.os.map((o, idx) => (
               <span key={o} className="inline-flex items-center gap-1">
@@ -313,40 +324,91 @@ function FilledSlotCard({
             ))}
           </button>
         ))}
+
+        {/* Synthetic macOS tab when no MLX variant exists */}
+        {macUnavailable && (
+          <button
+            key="mac-unavailable"
+            onClick={() => onTabSelect('mac')}
+            className={cn(
+              "flex items-center gap-1.5 px-3 h-full font-mono text-[10px] uppercase tracking-wider transition-all",
+              isMacTabActive
+                ? "text-foreground/80 border-b-2"
+                : "text-foreground/30 hover:text-foreground/50",
+            )}
+            style={isMacTabActive ? { borderBottomColor: accentColor } : undefined}
+          >
+            <PlatformIcon os="mac" className="h-3.5 w-3.5" />
+            <span>macOS</span>
+          </button>
+        )}
       </div>
 
-      {/* VRAM breakdown bar */}
-      <VramBreakdownBar
-        modelMb={v.vram.model}
-        overheadMb={v.vram.overhead}
-        kvCacheMb={kvCacheMb}
-        platformOs={activeVariant?.os ?? model.os}
-      />
+      {isMacTabActive ? (
+        /* No Mac variant message */
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-10">
+          <span className="font-mono text-[11px] text-foreground/40">
+            no macOS variant available for this quant
+          </span>
+          {macSiblings.length > 0 && (
+            <div className="flex flex-col items-center gap-3">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-foreground/25">
+                available as
+              </span>
+              <div className="flex flex-wrap justify-center gap-2">
+                {macSiblings.map((s) => {
+                  const macV = s.variants.find((v) => v.os.includes('mac'))
+                  if (!macV) return null
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => onSwapToSibling(s)}
+                      className="font-mono text-[11px] px-3 py-1.5 border border-foreground/10 text-foreground/60 hover:text-foreground/90 hover:border-foreground/30 transition-colors"
+                    >
+                      {macV.shortLabel} · {formatVram(macV.vramTotal)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* VRAM breakdown bar */}
+          <VramBreakdownBar
+            modelMb={v.vram.model}
+            overheadMb={v.vram.overhead}
+            kvCacheMb={kvCacheMb}
+            platformOs={activeVariant?.os ?? model.os}
+          />
 
-      {/* Info table */}
-      <div className="flex flex-col overflow-hidden border border-foreground/[0.08]">
-        <InfoBlockTps tpsValue={tpsEntry ? tpsEntry[1] : null} gpuName={tpsGpuName} />
-        <div className="h-px bg-foreground/[0.06]" />
-
-        {quant && quant !== '--' && (
-          <>
-            <InfoBlock label="quant" value={quant} />
+          {/* Info table */}
+          <div className="flex flex-col overflow-hidden border border-foreground/[0.08]">
+            <InfoBlockTps tpsValue={tpsEntry ? tpsEntry[1] : null} gpuName={tpsGpuName} />
             <div className="h-px bg-foreground/[0.06]" />
-          </>
-        )}
 
-        <InfoBlock label="engine" value={engine} />
-        <div className="h-px bg-foreground/[0.06]" />
+            {quant && quant !== '--' && (
+              <>
+                <InfoBlock label="quant" value={quant} />
+                <div className="h-px bg-foreground/[0.06]" />
+              </>
+            )}
 
-        {v.contextLength && (
-          <>
-            <InfoBlock label="context" value={`${formatContext(v.contextLength)} tokens`} />
+            <InfoBlock label="engine" value={engine} />
             <div className="h-px bg-foreground/[0.06]" />
-          </>
-        )}
 
-        <InfoBlockLink label="weights" url={`https://huggingface.co/${repo}`} text={repo} />
-      </div>
+            {v.contextLength && (
+              <>
+                <InfoBlock label="context" value={`${formatContext(v.contextLength)} tokens`} />
+                <div className="h-px bg-foreground/[0.06]" />
+              </>
+            )}
+
+            <InfoBlockLink label="weights" url={`https://huggingface.co/${repo}`} text={repo} />
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -372,6 +434,12 @@ export default function SelectedModels({
     setSharedOs(os)
   }, [os])
 
+  // Deduplicated list of all groups for sibling lookup
+  const allGroups = useMemo(
+    () => [...new Map([...modelIdToGroup.values()].map((g) => [g.key, g])).values()],
+    [modelIdToGroup],
+  )
+
   if (models.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -391,16 +459,33 @@ export default function SelectedModels({
         const m = models.find((model) => model.type === slot.type)
         if (!m) return []
 
-        const allVariants = modelIdToGroup.get(m.id)?.variants ?? []
+        const group = modelIdToGroup.get(m.id)
+        const allVariants = group?.variants ?? []
         // Filter variants by global OS if set
         const filtered = os
           ? allVariants.filter((vt) => vt.os.includes(os))
           : allVariants
 
-        // Derive active tab index from sharedOs
-        const activeIdx = sharedOs
-          ? Math.max(0, filtered.findIndex((vt) => vt.os.includes(sharedOs)))
-          : 0
+        // Check if this group has no Mac variant at all
+        const macUnavailable = !allVariants.some((vt) => vt.os.includes('mac'))
+        const isMacTabActive = sharedOs === 'mac' && macUnavailable
+        const macSiblings = macUnavailable && group
+          ? findSiblingsWithOs(group, allGroups, 'mac')
+          : []
+
+        // When the mac tab is active but unavailable, deselect real variant tabs
+        const activeIdx = isMacTabActive
+          ? -1
+          : sharedOs
+            ? Math.max(0, filtered.findIndex((vt) => vt.os.includes(sharedOs)))
+            : 0
+
+        const handleSwapToSibling = (siblingGroup: ModelGroup) => {
+          const macVariant = siblingGroup.variants.find((v) => v.os.includes('mac'))
+          if (!macVariant) return
+          onToggle(m) // remove current
+          onToggle(macVariant.model) // add sibling's mac variant
+        }
 
         return [(
           <div key={slot.type} className="flex flex-col gap-2">
@@ -413,13 +498,17 @@ export default function SelectedModels({
 
             <FilledSlotCard
               model={m}
-              group={modelIdToGroup.get(m.id)}
+              group={group}
               visibleVariants={filtered}
               activeTabIndex={activeIdx}
               onTabSelect={setSharedOs}
               accentColor={slot.color}
               gpus={gpus}
               onRemove={() => onToggle(m)}
+              macUnavailable={macUnavailable}
+              isMacTabActive={isMacTabActive}
+              macSiblings={macSiblings}
+              onSwapToSibling={handleSwapToSibling}
             />
           </div>
         )]

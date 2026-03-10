@@ -127,3 +127,27 @@ export function groupHasOs(group: ModelGroup, os: OsPlatform | null): boolean {
   if (!os) return true
   return group.variants.some((v) => v.os.includes(os))
 }
+
+/** Strip parameter-count suffixes (e.g. "-754B", "-229B") for fuzzy model family matching */
+function familyName(displayName: string): string {
+  return displayName
+    .replace(/-?\d+B\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+/** Find sibling groups (same model family, different bits) that have a variant for the given OS */
+export function findSiblingsWithOs(
+  group: ModelGroup,
+  allGroups: ModelGroup[],
+  os: OsPlatform,
+): ModelGroup[] {
+  const family = familyName(group.displayName)
+  return allGroups.filter(
+    (g) =>
+      g.key !== group.key &&
+      familyName(g.displayName) === family &&
+      g.variants.some((v) => v.os.includes(os)),
+  )
+}
