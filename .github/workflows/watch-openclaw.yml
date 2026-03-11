@@ -28,6 +28,45 @@ jobs:
         if: steps.cache.outputs.cache-hit == 'true'
         run: echo "OpenClaw ${{ steps.npm.outputs.version }} already built, skipping."
 
+      - name: Checkout
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate openclaw.json config
+        if: steps.cache.outputs.cache-hit != 'true'
+        id: validate
+        continue-on-error: true
+        run: |
+          npm install -g openclaw@${{ steps.npm.outputs.version }}
+          node scripts/validate-openclaw-config.mjs
+
+      - name: Open issue if config is stale
+        if: steps.validate.outcome == 'failure'
+        run: |
+          gh issue create \
+            --title "openclaw.json config stale for OpenClaw v${{ steps.npm.outputs.version }}" \
+            --body "$(cat <<'EOF'
+          The \`openclaw doctor\` command modified our generated config, which means the config template is out of date.
+
+          **Action needed:**
+          1. Run \`node scripts/validate-openclaw-config.mjs\` locally with OpenClaw v${{ steps.npm.outputs.version }}
+          2. Update \`site/src/lib/openclaw-config.ts\` (shared config generator)
+          3. Update \`scripts/entrypoint-unified.sh\` (Docker config) if needed
+          4. Re-run validation to confirm
+
+          See the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for the diff.
+          EOF
+          )" \
+            --label "bug"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Trigger unified image rebuild
         if: steps.cache.outputs.cache-hit != 'true'
         run: |

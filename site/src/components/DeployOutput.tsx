@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { cn } from '../lib/utils'
 import type { CatalogModel, OsPlatform } from '../lib/catalog'
 import { getVariantForOs, type ModelGroup } from '../lib/group-models'
+import { generateOpenClawConfig } from '../lib/openclaw-config'
 
 type DeployTab = 'docker' | 'mlx'
 
@@ -117,7 +118,7 @@ function buildDockerCommand(models: CatalogModel[]): string {
   ].join('\n')
 }
 
-function buildMlxCommand(models: CatalogModel[]): { command: string; missing: string[] } {
+function buildMlxCommand(models: CatalogModel[]): { command: string; config: string; missing: string[] } {
   const missing: string[] = []
 
   const mlxModels = models.filter((m) => {
@@ -129,7 +130,7 @@ function buildMlxCommand(models: CatalogModel[]): { command: string; missing: st
   })
 
   if (mlxModels.length === 0) {
-    return { command: '', missing }
+    return { command: '', config: '', missing }
   }
 
   const sections: string[] = []
@@ -158,7 +159,28 @@ function buildMlxCommand(models: CatalogModel[]): { command: string; missing: st
     }
   }
 
-  return { command: sections.join('\n\n'), missing }
+  // Generate openclaw.json config
+  const config = buildMlxConfig(mlxModels)
+
+  return { command: sections.join('\n\n'), config, missing }
+}
+
+function buildMlxConfig(models: CatalogModel[]): string {
+  const llm = models.find((m) => m.type === 'llm')
+  if (!llm) return ''
+
+  const config = generateOpenClawConfig({
+    provider: 'mlx-local',
+    baseUrl: 'http://localhost:8000/v1',
+    apiKey: 'local',
+    modelId: llm.repo.split('/').pop() ?? llm.repo,
+    modelName: llm.name,
+    contextWindow: llm.contextLength ?? 32768,
+    hasVision: llm.hasVision,
+    authToken: 'changeme',
+  })
+
+  return JSON.stringify(config, null, 2)
 }
 
 export default function DeployCard({
@@ -244,14 +266,36 @@ export default function DeployCard({
         )}
 
         {hasModels && activeTab === 'mlx' && (
-          <div className="flex flex-1 min-h-0 flex-col p-3">
+          <div className="flex flex-1 min-h-0 flex-col p-3 gap-4">
             {mlx.command ? (
               <>
                 <div className="flex-1 min-h-0">
                   <CodeBlock code={mlx.command} requirements={MLX_REQUIREMENTS} />
                 </div>
+                {mlx.config && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[8px] font-semibold uppercase tracking-widest text-foreground/30">
+                        openclaw config
+                      </span>
+                      <span className="font-mono text-[8px] text-foreground/20">
+                        save as ~/.openclaw/openclaw.json
+                      </span>
+                    </div>
+                    <div className="relative flex min-w-0 max-w-[620px] flex-col overflow-hidden rounded border border-foreground/[0.06] bg-[#080706]">
+                      <div className="absolute top-3 right-3 z-10">
+                        <CopyButton text={mlx.config} />
+                      </div>
+                      <div className="overflow-auto p-3">
+                        <pre className="font-mono text-[10px] leading-relaxed text-foreground/90">
+                          <code>{mlx.config}</code>
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {mlx.missing.length > 0 && (
-                  <span className="shrink-0 pt-2 font-mono text-[9px] text-foreground/30">
+                  <span className="shrink-0 font-mono text-[9px] text-foreground/30">
                     no mlx variant: {mlx.missing.join(', ')}
                   </span>
                 )}

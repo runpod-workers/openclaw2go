@@ -102,7 +102,9 @@ python -m mlx_lm.server --model <repo> --host 0.0.0.0 --port 8000
 python -m mlx_audio.server --host 0.0.0.0 --port 8001
 ```
 
-This only starts the model servers. For the agent framework (OpenClaw gateway + UI), see the [OpenClaw install docs](https://github.com/openclaw/openclaw).
+This only starts the model servers. To connect OpenClaw, you need a config file that tells the agent framework where to find them. The site generates this for you — save it as `~/.openclaw/openclaw.json`.
+
+For installing the agent framework itself (OpenClaw gateway + UI), see the [OpenClaw install docs](https://github.com/openclaw/openclaw).
 
 Not all models have MLX variants — the site will tell you which ones do.
 

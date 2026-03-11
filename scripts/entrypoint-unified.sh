@@ -610,6 +610,8 @@ if [ "$LLM_HAS_VISION" = "true" ]; then
 fi
 
 if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
+    # Config structure must stay in sync with site/src/lib/openclaw-config.ts
+    # CI validates both via scripts/validate-openclaw-config.mjs
     echo "Creating OpenClaw config from resolved profile..."
 
     if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
