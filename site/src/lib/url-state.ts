@@ -9,8 +9,6 @@ export interface UrlState {
   vram: number | null
 }
 
-const PARAM_KEYS = ['os', 'llm', 'image', 'audio', 'gpu', 'vram'] as const
-
 const VALID_OS: Set<string> = new Set(['linux', 'windows', 'mac'])
 
 /** Parse current URL search params into typed state */
