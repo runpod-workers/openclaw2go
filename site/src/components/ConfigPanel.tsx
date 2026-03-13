@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import SectionHeader from './SectionHeader'
 import CollapsibleSection from './CollapsibleSection'
 import GpuSelector from './VramLegend'
-import VramGauge from './VramSelector'
+import VramGauge, { type VramSegment } from './VramSelector'
 import SelectedModels from './SelectedModels'
 import DeployCard from './DeployOutput'
 import SecurityGuide from './SecurityGuide'
@@ -10,6 +10,13 @@ import type { CatalogModel, GpuInfo, GpuCount, OsPlatform } from '../lib/catalog
 import { VRAM_PRESETS } from '../lib/catalog'
 import type { ModelGroup } from '../lib/group-models'
 import { Link, TriangleAlert } from 'lucide-react'
+
+/** Slot order + colors — must match SLOTS in SelectedModels.tsx */
+const SLOT_ORDER: { type: 'llm' | 'image' | 'audio'; color: string }[] = [
+  { type: 'llm', color: '#00e5ff' },
+  { type: 'image', color: '#ec407a' },
+  { type: 'audio', color: '#b388ff' },
+]
 
 function CopyLinkButton() {
   const [copied, setCopied] = useState(false)
@@ -64,6 +71,28 @@ export default function ConfigPanel({
 }) {
   const hasModels = selectedModels.length > 0
 
+  // Per-type VRAM segments for the gauge bar — ordered llm → image → audio (matches selected model cards)
+  const vramSegments: VramSegment[] = useMemo(() => {
+    const byType: Record<string, number> = {}
+    for (const m of selectedModels) {
+      byType[m.type] = (byType[m.type] ?? 0) + m.vram.model + m.vram.overhead
+    }
+    return SLOT_ORDER
+      .filter((slot) => (byType[slot.type] ?? 0) > 0)
+      .map((slot) => ({
+        type: slot.type,
+        gb: byType[slot.type] / 1024,
+        color: slot.color,
+      }))
+  }, [selectedModels])
+
+  // When models are selected but no GPU/VRAM preset chosen, suggest the smallest fitting preset
+  const suggestedGb = useMemo(() => {
+    if (selectedVramGb != null || selectedGpu != null) return null
+    if (totalVramGb <= 0) return null
+    return VRAM_PRESETS.find((p) => p >= totalVramGb) ?? VRAM_PRESETS[VRAM_PRESETS.length - 1]
+  }, [selectedVramGb, selectedGpu, totalVramGb])
+
   const memoryBadge = totalVramGb > 0 ? (
     <span className="font-mono text-[9px] tabular-nums text-foreground/40">
       {totalVramGb.toFixed(1)} GB
@@ -94,10 +123,11 @@ export default function ConfigPanel({
                 <div className="p-5">
                   <VramGauge
                     usedGb={totalVramGb}
-                    selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null)}
+                    selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : suggestedGb)}
                     presets={VRAM_PRESETS}
                     onSelectPreset={onVramPreset}
                     maxGb={selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null}
+                    segments={vramSegments}
                   />
                 </div>
               </div>
@@ -151,10 +181,11 @@ export default function ConfigPanel({
         <div className="lg:hidden p-5">
           <VramGauge
             usedGb={totalVramGb}
-            selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null)}
+            selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : suggestedGb)}
             presets={VRAM_PRESETS}
             onSelectPreset={onVramPreset}
             maxGb={selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null}
+            segments={vramSegments}
           />
         </div>
       </CollapsibleSection>
