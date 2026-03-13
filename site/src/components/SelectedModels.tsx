@@ -21,15 +21,15 @@ const ENGINE_DISPLAY: Record<string, string> = {
   'mlx': 'mlx-lm',
 }
 
-/** Label (1/3) | visible divider | Value (2/3) */
+/** Label (1/4 mobile, 1/3 desktop) | visible divider | Value */
 function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-stretch">
-      <span className="flex w-1/3 shrink-0 items-center justify-end px-3 py-2.5 font-mono text-[10px] uppercase tracking-widest text-foreground/40">
+      <span className="flex w-1/4 lg:w-1/3 shrink-0 items-center justify-end px-2 lg:px-3 py-1.5 lg:py-2.5 font-mono text-[9px] lg:text-[10px] uppercase tracking-widest text-foreground/40">
         {label}
       </span>
       <span className="w-px shrink-0 bg-foreground/[0.08]" />
-      <span className="flex w-2/3 items-center px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-foreground/80">
+      <span className="flex w-3/4 lg:w-2/3 items-center px-2 lg:px-3 py-1.5 lg:py-2.5 font-mono text-[11px] lg:text-[13px] font-bold tabular-nums text-foreground/80">
         {value}
       </span>
     </div>
@@ -40,7 +40,7 @@ function InfoBlock({ label, value }: { label: string; value: string }) {
 function InfoBlockLink({ label, url, text }: { label: string; url: string; text: string }) {
   return (
     <div className="flex items-stretch">
-      <span className="flex w-1/3 shrink-0 items-center justify-end px-3 py-2.5 font-mono text-[10px] uppercase tracking-widest text-foreground/40">
+      <span className="flex w-1/4 lg:w-1/3 shrink-0 items-center justify-end px-2 lg:px-3 py-1.5 lg:py-2.5 font-mono text-[9px] lg:text-[10px] uppercase tracking-widest text-foreground/40">
         {label}
       </span>
       <span className="w-px shrink-0 bg-foreground/[0.08]" />
@@ -48,7 +48,7 @@ function InfoBlockLink({ label, url, text }: { label: string; url: string; text:
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex w-2/3 items-center gap-1.5 px-3 py-2.5 font-mono text-[12px] text-foreground/50 transition-colors hover:text-foreground/80"
+        className="flex w-3/4 lg:w-2/3 items-center gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2.5 font-mono text-[10px] lg:text-[12px] text-foreground/50 transition-colors hover:text-foreground/80"
       >
         <ExternalLink size={11} className="shrink-0" />
         <span className="truncate">{text}</span>
@@ -75,13 +75,13 @@ function InfoBlockTps({ tpsValue, gpuName }: { tpsValue: number | null; gpuName:
 
   return (
     <div className="flex items-stretch" ref={ref}>
-      <span className="flex w-1/3 shrink-0 items-center justify-end px-3 py-2.5 font-mono text-[10px] uppercase tracking-widest text-foreground/40">
+      <span className="flex w-1/4 lg:w-1/3 shrink-0 items-center justify-end px-2 lg:px-3 py-1.5 lg:py-2.5 font-mono text-[9px] lg:text-[10px] uppercase tracking-widest text-foreground/40">
         tps
       </span>
       <span className="w-px shrink-0 bg-foreground/[0.08]" />
-      <div className="relative flex w-2/3 items-center px-3 py-2.5 min-h-[39.5px]">
+      <div className="relative flex w-3/4 lg:w-2/3 items-center px-2 lg:px-3 py-1.5 lg:py-2.5 min-h-0 lg:min-h-[39.5px]">
         {tpsValue != null ? (
-          <span className="font-mono text-[13px] font-bold tabular-nums text-foreground/80">
+          <span className="font-mono text-[11px] lg:text-[13px] font-bold tabular-nums text-foreground/80">
             {tpsValue} tok/s · {gpuName}
           </span>
         ) : (
@@ -157,9 +157,9 @@ function SegmentLabel({
 }) {
   return (
     <div className="flex flex-col">
-      <span className="inline-block h-10 w-full" style={SEGMENT_PATTERNS[pattern](color)} />
-      <div className="flex flex-col gap-0.5 px-2.5 py-2.5">
-        <span className="whitespace-nowrap font-mono text-[15px] font-bold tabular-nums text-foreground/80">{value}</span>
+      <span className="inline-block h-6 lg:h-10 w-full" style={SEGMENT_PATTERNS[pattern](color)} />
+      <div className="flex flex-col gap-0.5 px-1.5 py-1.5 lg:px-2.5 lg:py-2.5">
+        <span className="whitespace-nowrap font-mono text-[12px] lg:text-[15px] font-bold tabular-nums text-foreground/80">{value}</span>
         <span className="font-mono text-[9px] uppercase tracking-widest text-foreground/35">{label}</span>
       </div>
     </div>
@@ -204,19 +204,19 @@ function VramBreakdownBar({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2 lg:gap-3">
       {/* Header: total */}
       <div className="flex items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-widest text-foreground/35">
           {memLabel}
         </span>
-        <span className="font-mono text-lg font-bold tabular-nums text-foreground/70">
+        <span className="font-mono text-sm lg:text-lg font-bold tabular-nums text-foreground/70">
           {formatVram(totalMb)}
         </span>
       </div>
 
       {/* Segment labels as proportional blocks — model → kv cache → runtime */}
-      <div className="grid min-h-[5.5rem]" style={{ gridTemplateColumns: cols }}>
+      <div className="grid min-h-0 lg:min-h-[5.5rem]" style={{ gridTemplateColumns: cols }}>
         <SegmentLabel label="weights" value={formatVram(modelMb)} color={segmentColor} pattern="solid" />
         {kvCacheMb > 0 && (
           <SegmentLabel label="kv cache" value={formatVram(kvCacheMb)} color={segmentColor} pattern="stripes" />
@@ -279,13 +279,13 @@ function FilledSlotCard({
 
   return (
     <div
-      className="group relative flex flex-1 flex-col gap-4 overflow-hidden border bg-foreground/[0.03] p-5 text-left transition-all duration-150 animate-fade-in"
+      className="group relative flex flex-1 flex-col gap-3 lg:gap-4 overflow-hidden border bg-foreground/[0.03] p-3 lg:p-5 text-left transition-all duration-150 animate-fade-in"
       style={{ borderColor: `color-mix(in srgb, ${accentColor} 20%, transparent)`, borderTopWidth: 4, borderTopColor: accentColor }}
     >
       {/* Model name + remove X */}
       <div className="flex items-start justify-between gap-2">
         <span
-          className="flex-1 font-mono text-2xl font-bold leading-tight line-clamp-2 min-h-[3.75rem]"
+          className="flex-1 font-mono text-base lg:text-2xl font-bold leading-tight truncate lg:line-clamp-2 lg:min-h-[3.75rem]"
           style={{ color: accentColor }}
           title={displayName}
         >
@@ -456,7 +456,7 @@ export default function SelectedModels({
 
   return (
     <div
-      className="grid gap-4"
+      className="flex flex-col gap-4 lg:grid"
       style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))' }}
     >
       {SLOTS.flatMap((slot) => {

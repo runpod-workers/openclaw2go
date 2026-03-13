@@ -200,7 +200,30 @@ function App() {
   }
 
   return (
-    <div className="noise-bg flex h-screen w-screen overflow-hidden bg-background">
+    <div className="noise-bg flex min-h-screen lg:h-screen w-screen flex-col lg:flex-row lg:overflow-hidden bg-background">
+      {/* Mobile header — logo only, sections are collapsible below */}
+      <div className="flex lg:hidden shrink-0 items-center justify-center border-b border-foreground/[0.06] px-4 py-2">
+        <a
+          href="https://github.com/runpod-workers/openclaw2go"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+        >
+          <img
+            src={`${import.meta.env.BASE_URL}openclaw2go_logo_nobg.png`}
+            alt="openclaw2go"
+            width={28}
+            height={28}
+            className="h-7 w-7 object-contain"
+          />
+          <span className="font-mono text-[11px] font-bold tracking-tight text-foreground/70">
+            openclaw2go
+          </span>
+        </a>
+      </div>
+
+      {/* On mobile: both panels render in a single scrollable column.
+          On desktop (lg+): side-by-side layout as before. */}
       <ModelCatalog
         models={allModels}
         os={os}

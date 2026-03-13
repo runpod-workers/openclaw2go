@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useState } from 'react'
 import SectionHeader from './SectionHeader'
+import CollapsibleSection from './CollapsibleSection'
 import PlatformSelector from './PlatformSelector'
 import ModelSearch from './ModelSearch'
 import ModelFilters, { type FilterState, type TaskChip, EMPTY_FILTERS } from './ModelFilters'
@@ -126,98 +127,133 @@ export default function ModelCatalog({
     [os, selectedModelIds, onToggleModel]
   )
 
+  const osBadge = (
+    <span className="flex items-center gap-2">
+      {os && (
+        <span className="font-mono text-[9px] text-foreground/40">
+          {os === 'mac' ? 'macOS' : os === 'windows' ? 'Windows' : 'Linux'}
+        </span>
+      )}
+      {hasSelections && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onClearAll() }}
+          className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/50 transition-colors hover:text-foreground/80"
+        >
+          reset
+        </button>
+      )}
+    </span>
+  )
+
+  const modelsBadge = selectedModels.length > 0 ? (
+    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 font-mono text-[10px] font-bold text-primary">
+      {selectedModels.length}
+    </span>
+  ) : undefined
+
   return (
-    <div className="flex w-[480px] shrink-0 flex-col overflow-hidden border-r border-foreground/[0.06]">
-      <SectionHeader className="justify-between">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
-          Operating System
-        </span>
-        {hasSelections && (
-          <button
-            onClick={onClearAll}
-            className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/50 transition-colors hover:text-foreground/80"
-          >
-            reset all
-          </button>
-        )}
-      </SectionHeader>
-
-      <PlatformSelector os={os} onChange={onOsChange} />
-
-      <SectionHeader>
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
-          Models
-        </span>
-      </SectionHeader>
-
-      <ModelSearch value={search} onChange={setSearch} />
-      <ModelFilters filters={filters} onChange={setFilters} />
-
-      {/* column headers */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-foreground/[0.04] px-3 py-2">
-        <span className="flex-1 font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
-          Model
-        </span>
-        <span className="shrink-0 font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
-          Quant
-        </span>
-        <span className="w-[36px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
-          Ctx
-        </span>
-        <span className="w-[30px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
-          TPS
-        </span>
-        <span className="w-[48px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
-          Memory
-        </span>
-      </div>
-
-      {/* scrollable model list */}
-      <div className="flex-1 overflow-y-auto py-1" data-model-list>
-        {modelSections.length === 0 && (
-          <div className="flex items-center justify-center py-12">
-            <span className="font-mono text-[10px] text-foreground/30">no models match</span>
-          </div>
-        )}
-        {modelSections.map((section) => (
-          <div key={section.key} className="flex flex-col">
-            <div className="sticky top-0 z-10 bg-background/90 px-5 py-1.5 backdrop-blur-sm">
-              <span
-                className="font-mono text-[8px] font-bold uppercase tracking-[0.2em]"
-                style={{ color: section.color }}
+    <div className="flex w-full lg:w-[480px] shrink-0 flex-col overflow-visible lg:overflow-hidden border-r-0 lg:border-r border-foreground/[0.06]">
+      {/* Operating System — collapsible on mobile */}
+      <CollapsibleSection title="Operating System" badge={osBadge} defaultOpen>
+        {/* Desktop: show section header */}
+        <div className="hidden lg:block">
+          <SectionHeader className="justify-between">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
+              Operating System
+            </span>
+            {hasSelections && (
+              <button
+                onClick={onClearAll}
+                className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/50 transition-colors hover:text-foreground/80"
               >
-                {section.label}
-              </span>
-            </div>
-            {section.items.map((group) => {
-              const isSelected = group.variants.some((v) =>
-                selectedModelIds.has(v.model.id)
-              )
-              const variant = getVariantForOs(group, os)
-              const wouldExceed =
-                effectiveVramMb > 0 &&
-                !isSelected &&
-                variant.vramTotal > remainingVramMb
-              const dimmed = !isSelected && lockedTypes.has(group.type)
+                reset all
+              </button>
+            )}
+          </SectionHeader>
+        </div>
+        <PlatformSelector os={os} onChange={onOsChange} />
+      </CollapsibleSection>
 
-              return (
-                <ModelGroupCard
-                  key={group.key}
-                  group={group}
-                  selected={isSelected}
-                  onToggle={() => handleGroupToggle(group)}
-                  wouldExceed={wouldExceed}
-                  dimmed={dimmed}
-                  os={os}
-                  accentColor={section.color}
-                  hasVision={group.hasVision}
-                  capabilities={group.capabilities}
-                />
-              )
-            })}
-          </div>
-        ))}
-      </div>
+      {/* Models — collapsible on mobile, flex-1 on desktop for scrollable list */}
+      <CollapsibleSection title="Models" badge={modelsBadge} className="lg:flex-1 lg:min-h-0 flex flex-col">
+        {/* Desktop: show section header */}
+        <div className="hidden lg:block">
+          <SectionHeader>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
+              Models
+            </span>
+          </SectionHeader>
+        </div>
+
+        <ModelSearch value={search} onChange={setSearch} />
+        <ModelFilters filters={filters} onChange={setFilters} />
+
+        {/* column headers */}
+        <div className="flex shrink-0 items-center gap-2 border-b border-foreground/[0.04] px-3 py-2">
+          <span className="flex-1 font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
+            Model
+          </span>
+          <span className="shrink-0 font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
+            Quant
+          </span>
+          <span className="w-[36px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
+            Ctx
+          </span>
+          <span className="w-[30px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
+            TPS
+          </span>
+          <span className="w-[48px] shrink-0 text-right font-mono text-[8px] font-semibold uppercase tracking-[0.15em] text-foreground/60">
+            Memory
+          </span>
+        </div>
+
+        {/* model list — scrollable on desktop, full-height on mobile */}
+        <div className="overflow-y-auto py-1 max-h-[50vh] lg:max-h-none lg:flex-1" data-model-list>
+          {modelSections.length === 0 && (
+            <div className="flex items-center justify-center py-12">
+              <span className="font-mono text-[10px] text-foreground/30">no models match</span>
+            </div>
+          )}
+          {modelSections.map((section) => (
+            <div key={section.key} className="flex flex-col">
+              <div className="sticky top-0 z-10 bg-background/90 px-5 py-1.5 backdrop-blur-sm">
+                <span
+                  className="font-mono text-[8px] font-bold uppercase tracking-[0.2em]"
+                  style={{ color: section.color }}
+                >
+                  {section.label}
+                </span>
+              </div>
+              {section.items.map((group) => {
+                const isSelected = group.variants.some((v) =>
+                  selectedModelIds.has(v.model.id)
+                )
+                const variant = getVariantForOs(group, os)
+                const wouldExceed =
+                  effectiveVramMb > 0 &&
+                  !isSelected &&
+                  variant.vramTotal > remainingVramMb
+                const dimmed = !isSelected && lockedTypes.has(group.type)
+
+                return (
+                  <ModelGroupCard
+                    key={group.key}
+                    group={group}
+                    selected={isSelected}
+                    onToggle={() => handleGroupToggle(group)}
+                    wouldExceed={wouldExceed}
+                    dimmed={dimmed}
+                    os={os}
+                    accentColor={section.color}
+                    hasVision={group.hasVision}
+                    capabilities={group.capabilities}
+                  />
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      </CollapsibleSection>
     </div>
   )
 }
