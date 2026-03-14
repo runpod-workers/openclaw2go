@@ -34,10 +34,14 @@ The site/configurator uses 3 global categories: `llm`, `image`, `audio`. Individ
 
 ### Build Gotchas
 - `GGML_NATIVE=OFF` is required — CI runner CPU differs from target GPUs.
+- `CUDA_ARCHITECTURES` must include `100` for GB10/B200 (sm_100). Currently: `80;89;90;100;120`.
 - CUDA 12.8+ required for Blackwell (sm_120). Official llama.cpp Docker images ship CUDA 12.4 which lacks sm_120.
 - PyTorch cu128 required for RTX 5090 Blackwell sm_120, works on all other GPUs too.
 - Diffusers installed from git — stable release lacks `Flux2KleinPipeline`.
 - Engine compilation takes ~70min. Pre-built as `openclaw2go-engines` image, only rebuild when `engines/` changes.
+- ARM64 engine builds only compile sm_100 — skip unnecessary architectures to save build time.
+- ik_llama.cpp may not compile on ARM64. The engine build is resilient — on failure it writes `/opt/engines/ik-llamacpp/BUILD_FAILED` instead of crashing. Check this marker to know if ik-llamacpp is available.
+- DGX Spark unified memory: nvidia-smi reports GPU-accessible portion (128GB for GB10).
 
 ### Shell Script Gotchas
 - Never use `echo | while read` for background processes — pipe creates a subshell, PIDs from `&` aren't children of the main shell, `wait $PID` fails. Use `while read < file` instead.
@@ -54,6 +58,8 @@ Internal only: 8001 (audio), 8002 (image), 8003 (vision), 8004 (embedding), 8005
 ### CI/CD
 - `workflow_dispatch` only works from default branch — feature branch workflows can't be manually triggered until merged to main.
 - Fork CI auto-rebases cherry-picks onto new llama.cpp releases. Tag convention: `{upstream-tag}-openclaw.{patch}`.
+- Engine and unified images built per-architecture (amd64/arm64) with multi-arch manifests. Tags: `image:tag-amd64`, `image:tag-arm64`, `image:tag` (manifest).
+- ARM64 builds run on `ubuntu-24.04-arm` GitHub runners. amd64 builds run on `DO` (DigitalOcean).
 
 ### Site: OS Tab State in Selected Models
 The selected model cards share a synchronized OS tab state (`sharedOs` in `SelectedModels.tsx`). This is **separate** from the global OS selector:

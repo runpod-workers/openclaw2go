@@ -1,0 +1,7 @@
+{
+  "id": "dgx-spark-128gb",
+  "name": "NVIDIA GB10",
+  "vramMb": 131072,
+  "arch": "sm_100",
+  "minCuda": "12.8"
+}
