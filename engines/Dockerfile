@@ -70,8 +70,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN git clone --depth 1 https://github.com/ikawrakow/ik_llama.cpp.git && \
-    cd ik_llama.cpp && \
+# Create output dir upfront so COPY in stage 3 always has a valid source,
+# even if the build fails before cmake creates it.
+RUN mkdir -p /build/ik_llama.cpp/build/bin
+
+RUN git clone --depth 1 https://github.com/ikawrakow/ik_llama.cpp.git ik_src && \
+    cd ik_src && \
     ( \
       cmake -B build \
           -DGGML_CUDA=ON \
@@ -80,15 +84,16 @@ RUN git clone --depth 1 https://github.com/ikawrakow/ik_llama.cpp.git && \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/build/ik_llama.cpp/build/bin \
           -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined && \
-      cmake --build build --config Release -j$(nproc) \
+      cmake --build build --config Release -j$(nproc) && \
+      cp build/bin/llama-server build/bin/llama-cli /build/ik_llama.cpp/build/bin/ && \
+      cp build/bin/*.so* /build/ik_llama.cpp/build/bin/ 2>/dev/null; true \
     ) 2>&1 || { \
       echo "========================================" ; \
       echo "WARNING: ik_llama.cpp build FAILED on $(uname -m)" ; \
       echo "This is expected on ARM64 — ik_llama.cpp may not support this architecture yet." ; \
       echo "The image will ship WITHOUT ik-llamacpp engine (no IQ2_KS/smol-IQ3_KS quants)." ; \
       echo "========================================" ; \
-      mkdir -p /build/ik_llama.cpp/build/bin && \
-      echo "ik_llama.cpp build failed on $(uname -m) at $(date -u)" > /build/ik_llama.cpp/BUILD_FAILED ; \
+      echo "ik_llama.cpp build failed on $(uname -m) at $(date -u)" > /build/ik_llama.cpp/build/bin/BUILD_FAILED ; \
     }
 
 # ============================================================
