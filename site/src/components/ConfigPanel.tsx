@@ -52,6 +52,8 @@ export default function ConfigPanel({
   modelIdToGroup,
   os,
   hasSelections,
+  contextOverride,
+  onContextChange,
 }: {
   selectedModels: CatalogModel[]
   totalVramGb: number
@@ -68,6 +70,8 @@ export default function ConfigPanel({
   modelIdToGroup: Map<string, ModelGroup>
   os: OsPlatform | null
   hasSelections: boolean
+  contextOverride: number | null
+  onContextChange: (ctx: number | null) => void
 }) {
   const hasModels = selectedModels.length > 0
 
@@ -75,8 +79,9 @@ export default function ConfigPanel({
   const vramSegments: VramSegment[] = useMemo(() => {
     const byType: Record<string, number> = {}
     for (const m of selectedModels) {
-      const kvCacheMb = (m.kvCacheMbPer1kTokens && m.contextLength)
-        ? (m.contextLength / 1000) * m.kvCacheMbPer1kTokens
+      const ctxLen = (m.type === 'llm' && contextOverride != null) ? contextOverride : m.contextLength
+      const kvCacheMb = (m.kvCacheMbPer1kTokens && ctxLen)
+        ? (ctxLen / 1000) * m.kvCacheMbPer1kTokens
         : 0
       byType[m.type] = (byType[m.type] ?? 0) + m.vram.model + m.vram.overhead + kvCacheMb
     }
@@ -87,7 +92,7 @@ export default function ConfigPanel({
         gb: byType[slot.type] / 1024,
         color: slot.color,
       }))
-  }, [selectedModels])
+  }, [selectedModels, contextOverride])
 
   // When models are selected but no GPU/VRAM preset chosen, suggest the smallest fitting preset
   const suggestedGb = useMemo(() => {
@@ -246,6 +251,8 @@ export default function ConfigPanel({
           modelIdToGroup={modelIdToGroup}
           gpus={gpus}
           os={os}
+          contextOverride={contextOverride}
+          onContextChange={onContextChange}
         />
       </div>
 
@@ -281,6 +288,7 @@ export default function ConfigPanel({
                   selectedModels={selectedModels}
                   modelIdToGroup={modelIdToGroup}
                   os={os}
+                  contextOverride={contextOverride}
                 />
               </div>
             </div>

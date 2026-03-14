@@ -3,7 +3,7 @@ import { formatContext, formatVram, type CatalogModel, type GpuInfo, type OsPlat
 import type { ModelGroup, ModelVariant } from '../lib/group-models'
 import { findSiblingsWithOs } from '../lib/group-models'
 import { PlatformIcon } from './PlatformSelector'
-import { X, ExternalLink, HelpCircle } from 'lucide-react'
+import { X, ExternalLink, HelpCircle, RotateCcw } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 const SLOTS: { type: 'llm' | 'image' | 'audio'; label: string; color: string }[] = [
@@ -111,6 +111,77 @@ function InfoBlockTps({ tpsValue, gpuName }: { tpsValue: number | null; gpuName:
             )}
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+/** Generate discrete context steps: 16k, 32k, 64k, 128k... up to max (always included) */
+function generateContextSteps(maxTokens: number): number[] {
+  const MIN = 16384
+  const steps: number[] = []
+  let v = MIN
+  while (v < maxTokens) {
+    steps.push(v)
+    v *= 2
+  }
+  // Always include the model's max even if it's not a power of 2
+  if (steps[steps.length - 1] !== maxTokens) {
+    steps.push(maxTokens)
+  }
+  return steps
+}
+
+/** Context slider control — same two-column layout as InfoBlock */
+function ContextControl({
+  contextLength,
+  contextOverride,
+  onContextChange,
+}: {
+  contextLength: number
+  contextOverride: number | null
+  onContextChange: (ctx: number | null) => void
+}) {
+  const steps = useMemo(() => generateContextSteps(contextLength), [contextLength])
+  const effectiveCtx = contextOverride ?? contextLength
+  // Find nearest step index for the slider
+  const currentIdx = steps.reduce((best, s, i) =>
+    Math.abs(s - effectiveCtx) < Math.abs(steps[best] - effectiveCtx) ? i : best, 0)
+  const isOverridden = contextOverride != null && contextOverride !== contextLength
+
+  return (
+    <div className="flex items-stretch">
+      <span className="relative flex w-1/4 lg:w-1/3 shrink-0 items-center justify-end px-2 lg:px-3 py-1.5 lg:py-2.5 font-mono text-[9px] lg:text-[10px] uppercase tracking-widest text-foreground/40">
+        {isOverridden && (
+          <button
+            onClick={() => onContextChange(null)}
+            className="absolute left-1 lg:left-1.5 shrink-0 p-0.5 text-foreground/30 transition-colors hover:text-foreground/60"
+            title="reset to default"
+          >
+            <RotateCcw size={10} />
+          </button>
+        )}
+        context
+      </span>
+      <span className="w-px shrink-0 bg-foreground/[0.08]" />
+      <div className="flex w-3/4 lg:w-2/3 items-center gap-2 px-2 lg:px-3 py-1.5 lg:py-2.5">
+        <input
+          type="range"
+          min={0}
+          max={steps.length - 1}
+          step={1}
+          value={currentIdx}
+          onChange={(e) => {
+            const val = steps[Number(e.target.value)]
+            onContextChange(val === contextLength ? null : val)
+          }}
+          className="context-slider h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-foreground/10 accent-foreground/60
+            [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground/70
+            [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-foreground/70"
+        />
+        <span className="shrink-0 w-[5.5rem] text-right font-mono text-[11px] lg:text-[13px] font-bold tabular-nums text-foreground/80">
+          {formatContext(effectiveCtx)} tokens
+        </span>
       </div>
     </div>
   )
@@ -242,6 +313,8 @@ function FilledSlotCard({
   isMacTabActive,
   macSiblings,
   onSwapToSibling,
+  contextOverride,
+  onContextChange,
 }: {
   model: CatalogModel
   group: ModelGroup | undefined
@@ -255,6 +328,8 @@ function FilledSlotCard({
   isMacTabActive: boolean
   macSiblings: ModelGroup[]
   onSwapToSibling: (group: ModelGroup) => void
+  contextOverride: number | null
+  onContextChange: (ctx: number | null) => void
 }) {
   const activeTab = activeTabIndex
   const displayName = group?.displayName ?? model.name
@@ -266,8 +341,9 @@ function FilledSlotCard({
   const engine = ENGINE_DISPLAY[v.engine] ?? v.engine
   const quant = v.bits != null ? `${v.bits}bit` : '--'
   const repo = activeVariant?.repo ?? model.repo
-  const kvCacheMb = (v.kvCacheMbPer1kTokens && v.contextLength)
-    ? (v.contextLength / 1000) * v.kvCacheMbPer1kTokens
+  const effectiveCtx = (model.type === 'llm' && contextOverride != null) ? contextOverride : v.contextLength
+  const kvCacheMb = (v.kvCacheMbPer1kTokens && effectiveCtx)
+    ? (effectiveCtx / 1000) * v.kvCacheMbPer1kTokens
     : 0
 
   // TPS: pick the first entry and resolve GPU display name
@@ -402,7 +478,17 @@ function FilledSlotCard({
             <InfoBlock label="engine" value={engine} />
             <div className="h-px bg-foreground/[0.06]" />
 
-            {v.contextLength && (
+            {v.contextLength && model.type === 'llm' && (
+              <>
+                <ContextControl
+                  contextLength={v.contextLength}
+                  contextOverride={contextOverride}
+                  onContextChange={onContextChange}
+                />
+                <div className="h-px bg-foreground/[0.06]" />
+              </>
+            )}
+            {v.contextLength && model.type !== 'llm' && (
               <>
                 <InfoBlock label="context" value={`${formatContext(v.contextLength)} tokens`} />
                 <div className="h-px bg-foreground/[0.06]" />
@@ -423,12 +509,16 @@ export default function SelectedModels({
   modelIdToGroup,
   gpus,
   os,
+  contextOverride,
+  onContextChange,
 }: {
   models: CatalogModel[]
   onToggle: (model: CatalogModel) => void
   modelIdToGroup: Map<string, ModelGroup>
   gpus: GpuInfo[]
   os: OsPlatform | null
+  contextOverride: number | null
+  onContextChange: (ctx: number | null) => void
 }) {
   // Shared OS tab state across all cards (independent of global OS selector)
   const [sharedOs, setSharedOs] = useState<OsPlatform | null>(os)
@@ -513,6 +603,8 @@ export default function SelectedModels({
               isMacTabActive={isMacTabActive}
               macSiblings={macSiblings}
               onSwapToSibling={handleSwapToSibling}
+              contextOverride={contextOverride}
+              onContextChange={onContextChange}
             />
           </div>
         )]

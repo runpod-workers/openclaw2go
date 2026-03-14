@@ -91,8 +91,8 @@ function isTabVisible(tab: DeployTab, os: OsPlatform | null): boolean {
   return true
 }
 
-function buildDockerCommand(models: CatalogModel[]): string {
-  const config: Record<string, string> = {}
+function buildDockerCommand(models: CatalogModel[], contextOverride?: number | null): string {
+  const config: Record<string, unknown> = {}
   for (const m of models) {
     if (m.type === 'llm') {
       config.llm = m.repo
@@ -101,6 +101,9 @@ function buildDockerCommand(models: CatalogModel[]): string {
     } else if (m.type === 'image') {
       config.image = m.repo
     }
+  }
+  if (contextOverride != null) {
+    config.contextLength = contextOverride
   }
 
   const configStr = Object.keys(config).length > 0
@@ -118,7 +121,7 @@ function buildDockerCommand(models: CatalogModel[]): string {
   ].join('\n')
 }
 
-function buildMlxCommand(models: CatalogModel[]): { command: string; config: string; missing: string[] } {
+function buildMlxCommand(models: CatalogModel[], contextOverride?: number | null): { command: string; config: string; missing: string[] } {
   const missing: string[] = []
 
   const mlxModels = models.filter((m) => {
@@ -160,12 +163,12 @@ function buildMlxCommand(models: CatalogModel[]): { command: string; config: str
   }
 
   // Generate openclaw.json config
-  const config = buildMlxConfig(mlxModels)
+  const config = buildMlxConfig(mlxModels, contextOverride)
 
   return { command: sections.join('\n\n'), config, missing }
 }
 
-function buildMlxConfig(models: CatalogModel[]): string {
+function buildMlxConfig(models: CatalogModel[], contextOverride?: number | null): string {
   const llm = models.find((m) => m.type === 'llm')
   if (!llm) return ''
 
@@ -175,7 +178,7 @@ function buildMlxConfig(models: CatalogModel[]): string {
     apiKey: 'local',
     modelId: llm.repo.split('/').pop() ?? llm.repo,
     modelName: llm.name,
-    contextWindow: llm.contextLength ?? 32768,
+    contextWindow: contextOverride ?? llm.contextLength ?? 32768,
     hasVision: llm.hasVision,
     authToken: 'changeme',
   })
@@ -187,10 +190,12 @@ export default function DeployCard({
   selectedModels,
   modelIdToGroup,
   os,
+  contextOverride,
 }: {
   selectedModels: CatalogModel[]
   modelIdToGroup: Map<string, ModelGroup>
   os: OsPlatform | null
+  contextOverride: number | null
 }) {
   const [activeTab, setActiveTab] = useState<DeployTab>('docker')
 
@@ -222,9 +227,9 @@ export default function DeployCard({
     [selectedModels, modelIdToGroup]
   )
 
-  const docker = useMemo(() => buildDockerCommand(dockerModels), [dockerModels])
+  const docker = useMemo(() => buildDockerCommand(dockerModels, contextOverride), [dockerModels, contextOverride])
 
-  const mlx = useMemo(() => buildMlxCommand(mlxResolvedModels), [mlxResolvedModels])
+  const mlx = useMemo(() => buildMlxCommand(mlxResolvedModels, contextOverride), [mlxResolvedModels, contextOverride])
 
   const hasModels = selectedModels.length > 0
 

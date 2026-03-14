@@ -86,10 +86,11 @@ export function formatContext(tokens: number): string {
 }
 
 /** Total runtime VRAM: weights + overhead + KV cache at default context length */
-export function getTotalVram(selectedModels: CatalogModel[]): number {
+export function getTotalVram(selectedModels: CatalogModel[], llmContextOverride?: number | null): number {
   return selectedModels.reduce((sum, m) => {
-    const kvCacheMb = (m.kvCacheMbPer1kTokens && m.contextLength)
-      ? (m.contextLength / 1000) * m.kvCacheMbPer1kTokens
+    const ctxLen = (m.type === 'llm' && llmContextOverride != null) ? llmContextOverride : m.contextLength
+    const kvCacheMb = (m.kvCacheMbPer1kTokens && ctxLen)
+      ? (ctxLen / 1000) * m.kvCacheMbPer1kTokens
       : 0
     return sum + m.vram.model + m.vram.overhead + kvCacheMb
   }, 0)

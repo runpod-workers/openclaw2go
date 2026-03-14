@@ -23,6 +23,7 @@ function App() {
   const [selectedModelIds, setSelectedModelIds] = useState<Set<string>>(new Set())
   const [selectedGpu, setSelectedGpu] = useState<GpuInfo | null>(null)
   const [selectedVramGb, setSelectedVramGb] = useState<number | null>(null)
+  const [contextOverride, setContextOverride] = useState<number | null>(null)
 
   // Track whether URL state has been hydrated to avoid syncing before load
   const hydrated = useRef(false)
@@ -52,6 +53,7 @@ function App() {
           if (match) setSelectedGpu(match)
         }
         if (url.vram != null) setSelectedVramGb(url.vram)
+        if (url.ctx != null) setContextOverride(url.ctx)
 
         hydrated.current = true
         setLoading(false)
@@ -90,7 +92,7 @@ function App() {
     })
   }, [selectedModelIds, allModels, os])
 
-  const totalVramMb = useMemo(() => getTotalVram(selectedModels), [selectedModels])
+  const totalVramMb = useMemo(() => getTotalVram(selectedModels, contextOverride), [selectedModels, contextOverride])
   const totalVramGb = totalVramMb / 1024
 
   // GPU count is fully derived — auto-calculated from selected GPU + total VRAM
@@ -109,8 +111,9 @@ function App() {
       audio: audio?.id ?? null,
       gpu: selectedGpu?.id ?? null,
       vram: selectedVramGb,
+      ctx: contextOverride,
     })
-  }, [os, selectedModels, selectedGpu, selectedVramGb])
+  }, [os, selectedModels, selectedGpu, selectedVramGb, contextOverride])
 
   const toggleModel = useCallback(
     (model: CatalogModel) => {
@@ -129,6 +132,7 @@ function App() {
         }
         return next
       })
+      if (model.type === 'llm') setContextOverride(null)
     },
     [allModels]
   )
@@ -169,6 +173,7 @@ function App() {
     setOs(null)
     setSelectedGpu(null)
     setSelectedVramGb(null)
+    setContextOverride(null)
     clearUrlState()
   }, [])
 
@@ -252,6 +257,8 @@ function App() {
         modelIdToGroup={modelIdToGroup}
         os={os}
         hasSelections={hasSelections}
+        contextOverride={contextOverride}
+        onContextChange={setContextOverride}
       />
     </div>
   )

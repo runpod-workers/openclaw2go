@@ -7,9 +7,10 @@ export interface UrlState {
   audio: string | null
   gpu: string | null
   vram: number | null
+  ctx: number | null
 }
 
-const PARAM_KEYS = ['os', 'llm', 'image', 'audio', 'gpu', 'vram'] as const
+const PARAM_KEYS = ['os', 'llm', 'image', 'audio', 'gpu', 'vram', 'ctx'] as const
 
 const VALID_OS: Set<string> = new Set(['linux', 'windows', 'mac'])
 
@@ -23,6 +24,9 @@ export function parseUrlState(): UrlState {
   const vramRaw = params.get('vram')
   const vram = vramRaw ? Number(vramRaw) : null
 
+  const ctxRaw = params.get('ctx')
+  const ctx = ctxRaw ? Number(ctxRaw) : null
+
   return {
     os,
     llm: params.get('llm'),
@@ -30,6 +34,7 @@ export function parseUrlState(): UrlState {
     audio: params.get('audio'),
     gpu: params.get('gpu'),
     vram: vram && Number.isFinite(vram) ? vram : null,
+    ctx: ctx && Number.isFinite(ctx) && ctx >= 16384 ? ctx : null,
   }
 }
 
@@ -43,6 +48,7 @@ export function syncUrlState(state: UrlState): void {
   if (state.audio) params.set('audio', state.audio)
   if (state.gpu) params.set('gpu', state.gpu)
   if (state.vram != null) params.set('vram', String(state.vram))
+  if (state.ctx != null) params.set('ctx', String(state.ctx))
 
   const search = params.toString()
   const url = search ? `${window.location.pathname}?${search}` : window.location.pathname
