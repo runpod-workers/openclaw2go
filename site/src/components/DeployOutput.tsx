@@ -114,7 +114,7 @@ function buildDockerCommand(models: CatalogModel[], contextOverride?: number | n
     'docker run --gpus all \\',
     `  -e OPENCLAW2GO_CONFIG='${configStr}' \\`,
     '  -e OPENCLAW_WEB_PASSWORD=changeme \\',
-    '  -e LLAMA_API_KEY=changeme \\',
+    '  -e LLAMACPP_API_KEY=changeme \\',
     '  -p 8000:8000 -p 8080:8080 -p 18789:18789 \\',
     '  -v openclaw2go-models:/workspace \\',
     '  runpod/openclaw2go:latest',

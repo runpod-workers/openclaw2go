@@ -105,7 +105,7 @@ RUN npm install -g --prefer-offline --omit=dev @anthropic-ai/claude-code opencla
 WORKDIR /
 
 # ── Environment defaults ──────────────────────────────────
-ENV LLAMA_API_KEY="changeme" \
+ENV LLAMACPP_API_KEY="changeme" \
     OPENCLAW_WEB_PASSWORD="changeme" \
     OPENCLAW_STATE_DIR="/workspace/.openclaw" \
     OPENCLAW_WORKSPACE="/workspace/openclaw" \

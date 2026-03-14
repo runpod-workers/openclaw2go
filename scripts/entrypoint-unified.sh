@@ -127,7 +127,8 @@ echo "Profile: $PROFILE_NAME ($PROFILE_ID)"
 # ============================================================
 # Environment defaults
 # ============================================================
-LLAMA_API_KEY="${LLAMA_API_KEY:-changeme}"
+# Support both LLAMACPP_API_KEY (new) and LLAMA_API_KEY (deprecated)
+LLAMACPP_API_KEY="${LLAMACPP_API_KEY:-${LLAMA_API_KEY:-changeme}}"
 OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
 OPENCLAW_WEB_PROXY_PORT="${OPENCLAW_WEB_PROXY_PORT:-8080}"
@@ -297,7 +298,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                     --jinja
                     -ctk q8_0
                     -ctv q8_0
-                    --api-key "$LLAMA_API_KEY"
+                    --api-key "$LLAMACPP_API_KEY"
                 )
 
                 # Add -ngl unless "auto" (let --fit determine GPU layers)
@@ -411,7 +412,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                 --host 0.0.0.0
                 --port "$port"
                 -ngl 99
-                --api-key "$LLAMA_API_KEY"
+                --api-key "$LLAMACPP_API_KEY"
             )
 
             if [ -n "$MMPROJ_FILE" ]; then
@@ -442,7 +443,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                 --port "$port"
                 -ngl 99
                 --embedding
-                --api-key "$LLAMA_API_KEY"
+                --api-key "$LLAMACPP_API_KEY"
             )
 
             if [ -n "$EXTRA_START_ARGS" ]; then
@@ -472,7 +473,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                 --port "$port"
                 -ngl 99
                 --reranking
-                --api-key "$LLAMA_API_KEY"
+                --api-key "$LLAMACPP_API_KEY"
             )
 
             env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
@@ -626,7 +627,7 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
     "providers": {
       "$LLM_PROVIDER_NAME": {
         "baseUrl": "http://localhost:${LLM_PORT}/v1",
-        "apiKey": "$LLAMA_API_KEY",
+        "apiKey": "$LLAMACPP_API_KEY",
         "api": "openai-completions",
         "models": [{
           "id": "$LLM_MODEL_NAME",
@@ -700,7 +701,7 @@ elif [ -d "/workspace/.config/gh" ] && [ -f "/workspace/.config/gh/hosts.yml" ];
 fi
 
 # Setup Claude Code environment (OpenAI-compatible)
-export OPENAI_API_KEY="$LLAMA_API_KEY"
+export OPENAI_API_KEY="$LLAMACPP_API_KEY"
 export OPENAI_BASE_URL="http://localhost:${LLM_PORT}/v1"
 
 # ============================================================
