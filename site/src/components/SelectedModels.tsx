@@ -389,7 +389,7 @@ function FilledSlotCard({
                 : "text-foreground/30 hover:text-foreground/50",
               singleTab && "cursor-default"
             )}
-            style={i === activeTab && !isMacTabActive ? { borderBottomColor: accentColor } : undefined}
+            style={i === activeTab && !isMacTabActive ? { borderBottomColor: 'rgba(255,255,255,0.6)' } : undefined}
           >
             {vt.os.map((o, idx) => (
               <span key={o} className="inline-flex items-center gap-1">
@@ -412,7 +412,7 @@ function FilledSlotCard({
                 ? "text-foreground/80 border-b-2"
                 : "text-foreground/30 hover:text-foreground/50",
             )}
-            style={isMacTabActive ? { borderBottomColor: accentColor } : undefined}
+            style={isMacTabActive ? { borderBottomColor: 'rgba(255,255,255,0.6)' } : undefined}
           >
             <PlatformIcon os="mac" className="h-3.5 w-3.5" />
             <span>macOS</span>
