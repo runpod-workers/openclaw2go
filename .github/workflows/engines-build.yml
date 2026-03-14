@@ -71,6 +71,7 @@ jobs:
           context: .
           file: engines/Dockerfile
           push: true
+          provenance: false
           build-args: |
             CUDA_ARCHITECTURES=${{ env.CUDA_ARCHS }}
             LLAMACPP_OPENCLAW_TAG=${{ env.LLAMACPP_TAG }}
