@@ -85,8 +85,19 @@ export function formatContext(tokens: number): string {
   return `${tokens}`
 }
 
+/** Total runtime VRAM: weights + overhead + KV cache at default context length */
 export function getTotalVram(selectedModels: CatalogModel[]): number {
-  return selectedModels.reduce((sum, m) => sum + m.vram.model + m.vram.overhead, 0)
+  return selectedModels.reduce((sum, m) => {
+    const kvCacheMb = (m.kvCacheMbPer1kTokens && m.contextLength)
+      ? (m.contextLength / 1000) * m.kvCacheMbPer1kTokens
+      : 0
+    return sum + m.vram.model + m.vram.overhead + kvCacheMb
+  }, 0)
+}
+
+/** VRAM without KV cache — used for catalog size display */
+export function getModelVram(model: CatalogModel): number {
+  return model.vram.model + model.vram.overhead
 }
 
 export function getModelsForOs(os: OsPlatform | null, allModels: CatalogModel[]): CatalogModel[] {

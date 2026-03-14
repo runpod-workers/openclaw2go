@@ -33,9 +33,9 @@ function CopyButton({ text }: { text: string }) {
 
 function CodeBlock({ code, requirements }: { code: string; requirements: string[] }) {
   return (
-    <div className="flex h-full gap-3">
+    <div className="flex h-full flex-col sm:flex-row gap-3">
       {/* Requirements column */}
-      <div className="flex w-[140px] shrink-0 flex-col gap-1.5 py-1">
+      <div className="flex w-full sm:w-[140px] shrink-0 flex-col gap-1.5 py-1">
         <span className="font-mono text-[8px] font-semibold uppercase tracking-widest text-foreground/30">
           requires
         </span>
@@ -50,7 +50,7 @@ function CodeBlock({ code, requirements }: { code: string; requirements: string[
       </div>
 
       {/* Code column */}
-      <div className="relative flex min-w-0 flex-1 max-w-[620px] flex-col overflow-hidden rounded border border-foreground/[0.06] bg-[#080706]">
+      <div className="relative flex min-w-0 flex-1 max-w-full sm:max-w-[620px] flex-col overflow-hidden rounded border border-foreground/[0.06] bg-[#080706]">
         <div className="absolute top-3 right-3 z-10">
           <CopyButton text={code} />
         </div>
@@ -282,7 +282,7 @@ export default function DeployCard({
                         save as ~/.openclaw/openclaw.json
                       </span>
                     </div>
-                    <div className="relative flex min-w-0 max-w-[620px] flex-col overflow-hidden rounded border border-foreground/[0.06] bg-[#080706]">
+                    <div className="relative flex min-w-0 max-w-full sm:max-w-[620px] flex-col overflow-hidden rounded border border-foreground/[0.06] bg-[#080706]">
                       <div className="absolute top-3 right-3 z-10">
                         <CopyButton text={mlx.config} />
                       </div>

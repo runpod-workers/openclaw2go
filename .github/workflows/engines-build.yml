@@ -3,18 +3,21 @@ name: Build Engines Base Image
 # This workflow builds pre-compiled llama.cpp binaries (unified fork + ik_llama.cpp).
 # Only run manually or when engines/ changes — this is the slow build.
 # The main docker-build.yml uses the output image and is fast (~5-10 min).
+#
+# Builds per-architecture images (amd64 + arm64) then creates a multi-arch manifest.
+# ARM64 only compiles sm_100 (the only ARM64+CUDA architecture) to save build time.
 
 on:
   push:
     paths:
       - 'engines/**'
       - '.github/workflows/engines-build.yml'
-    branches: [main, openclaw-rename]
+    branches: [main, openclaw-rename, feat/site-improvements]
   workflow_dispatch:
     inputs:
       cuda_architectures:
-        description: 'CUDA architectures (semicolon-separated)'
-        default: '80;89;90;120'
+        description: 'CUDA architectures for amd64 (semicolon-separated)'
+        default: '80;89;90;100;120'
         required: false
       llamacpp_openclaw_tag:
         description: 'openclaw2go-llamacpp fork tag/branch to build from'
@@ -27,7 +30,16 @@ on:
 
 jobs:
   build-engines:
-    runs-on: DO
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: DO
+            cuda_archs_default: '80;89;90;100;120'
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            cuda_archs_default: '100'
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,7 +51,11 @@ jobs:
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
           echo "TAG=${{ github.event.inputs.tag || 'latest' }}" >> $GITHUB_ENV
-          echo "CUDA_ARCHS=${{ github.event.inputs.cuda_architectures || '80;89;90;120' }}" >> $GITHUB_ENV
+          if [[ "${{ matrix.arch }}" == "amd64" ]]; then
+            echo "CUDA_ARCHS=${{ github.event.inputs.cuda_architectures || matrix.cuda_archs_default }}" >> $GITHUB_ENV
+          else
+            echo "CUDA_ARCHS=${{ matrix.cuda_archs_default }}" >> $GITHUB_ENV
+          fi
           echo "LLAMACPP_TAG=${{ github.event.inputs.llamacpp_openclaw_tag || 'main' }}" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
@@ -58,7 +74,41 @@ jobs:
             CUDA_ARCHITECTURES=${{ env.CUDA_ARCHS }}
             LLAMACPP_OPENCLAW_TAG=${{ env.LLAMACPP_TAG }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}
-          platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:buildcache,mode=max
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:buildcache-${{ matrix.arch }},mode=max
+
+  create-manifest:
+    needs: build-engines
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+          echo "TAG=${{ github.event.inputs.tag || 'latest' }}" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker manifest create \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }} \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-amd64 \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-arm64
+
+          docker manifest annotate \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }} \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-amd64 \
+            --os linux --arch amd64
+
+          docker manifest annotate \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }} \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-arm64 \
+            --os linux --arch arm64
+
+          docker manifest push ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}

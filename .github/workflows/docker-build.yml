@@ -215,9 +215,17 @@ jobs:
           cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache,mode=max
 
   # Unified image - works on all GPUs with tested CUDA architectures
-  # Uses pre-built engines from openclaw2go-engines:latest (built by engines-build.yml)
+  # Uses pre-built engines from openclaw2go-engines (built by engines-build.yml)
+  # Builds per-architecture images (amd64 + arm64) then creates a multi-arch manifest.
   build-unified:
-    runs-on: DO
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: DO
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -274,13 +282,91 @@ jobs:
           file: Dockerfile.unified
           push: ${{ env.PUSH_IMAGES == 'true' }}
           build-args: |
-            ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:latest
+            ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:latest-${{ matrix.arch }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw2go:latest', env.DOCKERHUB_REPO) || '' }}
-          platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go:buildcache,mode=max
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go:buildcache-${{ matrix.arch }},mode=max
+
+  create-manifest:
+    needs: build-unified
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine build type
+        id: build_type
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BRANCH_NAME="${{ github.head_ref }}"
+          else
+            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
+          fi
+          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
+
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          fi
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker manifest create \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }} \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64
+
+          docker manifest annotate \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }} \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
+            --os linux --arch amd64
+
+          docker manifest annotate \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }} \
+            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64 \
+            --os linux --arch arm64
+
+          docker manifest push ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}
+
+          # Also tag as latest if this is a tagged release
+          if [[ "${{ env.ALSO_LATEST }}" == "true" ]]; then
+            docker manifest create \
+              ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest \
+              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
+              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64
+
+            docker manifest annotate \
+              ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest \
+              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
+              --os linux --arch amd64
+
+            docker manifest annotate \
+              ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest \
+              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64 \
+              --os linux --arch arm64
+
+            docker manifest push ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest
+          fi
 
   # Disabled for now
   # build-glm47-flash-fp16:
