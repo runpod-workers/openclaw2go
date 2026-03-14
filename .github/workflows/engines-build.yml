@@ -1,6 +1,6 @@
 name: Build Engines Base Image
 
-# This workflow builds pre-compiled llama.cpp binaries (unified fork + ik_llama.cpp).
+# This workflow builds pre-compiled llama.cpp binaries (unified fork).
 # Only run manually or when engines/ changes — this is the slow build.
 # The main docker-build.yml uses the output image and is fast (~5-10 min).
 #
@@ -31,6 +31,7 @@ on:
 jobs:
   build-engines:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - arch: amd64
