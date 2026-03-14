@@ -75,7 +75,10 @@ export default function ConfigPanel({
   const vramSegments: VramSegment[] = useMemo(() => {
     const byType: Record<string, number> = {}
     for (const m of selectedModels) {
-      byType[m.type] = (byType[m.type] ?? 0) + m.vram.model + m.vram.overhead
+      const kvCacheMb = (m.kvCacheMbPer1kTokens && m.contextLength)
+        ? (m.contextLength / 1000) * m.kvCacheMbPer1kTokens
+        : 0
+      byType[m.type] = (byType[m.type] ?? 0) + m.vram.model + m.vram.overhead + kvCacheMb
     }
     return SLOT_ORDER
       .filter((slot) => (byType[slot.type] ?? 0) > 0)
