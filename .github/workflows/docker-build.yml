@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/site-improvements]
     tags: ['*']
   pull_request:
     paths:
@@ -26,35 +26,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -93,35 +69,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -159,35 +111,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -233,35 +161,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -293,35 +197,11 @@ jobs:
     needs: build-unified
     runs-on: ubuntu-latest
     steps:
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3

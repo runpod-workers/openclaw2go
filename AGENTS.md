@@ -60,6 +60,7 @@ Internal only: 8001 (audio), 8002 (image), 8003 (vision), 8004 (embedding), 8005
 - Fork CI auto-rebases cherry-picks onto new llama.cpp releases. Tag convention: `{upstream-tag}-openclaw.{patch}`.
 - Engine and unified images built per-architecture (amd64/arm64) with multi-arch manifests. Tags: `image:tag-amd64`, `image:tag-arm64`, `image:tag` (manifest).
 - ARM64 builds run on `ubuntu-24.04-arm` GitHub runners. amd64 builds run on `DO` (DigitalOcean).
+- Docker images always tag as `latest` — no version branching. We ship from feature branches directly to production.
 
 ### Site: OS Tab State in Selected Models
 The selected model cards share a synchronized OS tab state (`sharedOs` in `SelectedModels.tsx`). This is **separate** from the global OS selector:
