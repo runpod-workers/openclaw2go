@@ -147,6 +147,7 @@ jobs:
   # Builds per-architecture images (amd64 + arm64) then creates a multi-arch manifest.
   build-unified:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - arch: amd64
