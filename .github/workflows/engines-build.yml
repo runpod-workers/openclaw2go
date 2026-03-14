@@ -14,7 +14,7 @@ on:
     inputs:
       cuda_architectures:
         description: 'CUDA architectures (semicolon-separated)'
-        default: '80;89;90;120'
+        default: '80;89;90;100;120'
         required: false
       llamacpp_openclaw_tag:
         description: 'openclaw2go-llamacpp fork tag/branch to build from'
