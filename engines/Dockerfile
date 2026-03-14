@@ -17,17 +17,15 @@
 
 ARG CUDA_VERSION=12.8
 ARG UBUNTU_VERSION=24.04
-ARG CUDA_ARCHITECTURES="80;89;90;120"
+ARG CUDA_ARCHITECTURES="80;89;90;100;120"
 ARG LLAMACPP_OPENCLAW_TAG=main
 
 # ============================================================
 # Stage 1: Build openclaw2go-llamacpp (unified fork)
 # ============================================================
 # Our fork at github.com/runpod-workers/openclaw2go-llamacpp merges:
-#   - llama.cpp main (LLM, vision, embeddings, reranking)
+#   - llama.cpp b8323 (LLM, vision, embeddings, reranking, Nemotron-3-Super)
 #   - PR #18641 (liquid-audio: TTS/STT for LFM2.5)
-#   - PR #19460 (glm-dsa: GLM-5 MoE dynamic sparse attention)
-#   - PR #12794 (OuteTTS 1.0 native TTS support)
 #   - PR #18039 (Eagle-3 speculative decoding)
 FROM nvcr.io/nvidia/cuda-dl-base:25.03-cuda${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS openclaw2go-llamacpp
 
@@ -47,6 +45,7 @@ RUN git clone --depth 1 --branch ${LLAMACPP_OPENCLAW_TAG} \
         -DGGML_NATIVE=OFF \
         -DCMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
         -DCMAKE_BUILD_TYPE=Release \
+        -DLLAMA_BUILD_TESTS=OFF \
         -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined && \
     cmake --build build --config Release -j$(nproc)
 
@@ -71,6 +70,7 @@ RUN git clone --depth 1 https://github.com/ikawrakow/ik_llama.cpp.git && \
         -DGGML_NATIVE=OFF \
         -DCMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
         -DCMAKE_BUILD_TYPE=Release \
+        -DLLAMA_BUILD_TESTS=OFF \
         -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/build/ik_llama.cpp/build/bin \
         -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined && \
     cmake --build build --config Release -j$(nproc)

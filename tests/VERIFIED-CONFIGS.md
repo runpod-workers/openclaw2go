@@ -61,7 +61,14 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
 | `{"llm":"ubergarm/minimax-m25-iq2ks-gguf"}` | LLM (MiniMax-M2.5 IQ2_KS 2-bit) | 65k | 80659 / 81559 MiB | **PASS** | 2026-02-19 | 229B MoE, ik_llama.cpp, reasoning+tool calling work, ~97 tok/s, ~1 GB free, KV=130 MB/1k |
+| `{"llm":"unsloth/nemotron3-super-gguf"}` | LLM (Nemotron-3-Super Q2_K_XL) | 131k | 53521 / 81559 MiB | **PASS** | 2026-03-13 | 120B MoE (12B active), Mamba2-Transformer hybrid, reasoning works, ~85 tok/s, ~28 GB free, KV=8 MB/1k. Requires llama.cpp b8310+ (PR #20411) |
 | `{"llm":true,"audio":true,"image":true}` | LLM+Audio+Image | auto (~150k) | ~30 GB | PENDING | — | Needs sm_90 in engines build |
+
+### RTX Pro 6000 96GB (sm_120, Blackwell)
+
+| Config | Services | Context | VRAM Used | Status | Date | Notes |
+|--------|----------|---------|-----------|--------|------|-------|
+| `{"llm":"unsloth/nemotron3-super-q4kxl-gguf"}` | LLM (Nemotron-3-Super Q4_K_XL) | 256k | 82005 / 97887 MiB | **PASS** | 2026-03-13 | 120B MoE (12B active), Mamba2-Transformer hybrid, reasoning works, ~75 tok/s, ~16 GB free, KV=8 MB/1k. Requires llama.cpp b8310+ (PR #20411) |
 
 ### B200 180GB (sm_100, Blackwell)
 
@@ -70,6 +77,7 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 | `{"llm":"unsloth/glm5-tq1-gguf"}` | LLM (GLM-5 TQ1_0 1-bit) | 202k | 175030 / 183359 MiB | **PASS** | 2026-02-13 | PR #19460 engine, reasoning works, ~27 tok/s, ~8 GB free, max context |
 | `{"llm":"ubergarm/minimax-m25-iq3ks-gguf"}` | LLM (MiniMax-M2.5 smol-IQ3_KS 3-bit) | 196k | 115478 / 183359 MiB | **PASS** | 2026-02-19 | 229B MoE, ik_llama.cpp, reasoning+tool calling work, ~93 tok/s, ~68 GB free, KV=130 MB/1k |
 | `{"llm":"ubergarm/minimax-m25-iq4xs-gguf"}` | LLM (MiniMax-M2.5 IQ4_XS 4-bit) | 196k | 143956 / 183359 MiB | **PASS** | 2026-02-13 | 229B MoE, reasoning+tool calling work, ~109 tok/s, ~38 GB free, KV=130 MB/1k |
+| `{"llm":"unsloth/nemotron3-super-q8-gguf"}` | LLM (Nemotron-3-Super Q8_0) | 256k | 124678 / 183359 MiB | **PASS** | 2026-03-13 | 120B MoE (12B active), Mamba2-Transformer hybrid, reasoning works, ~90 tok/s, ~58 GB free, KV=8 MB/1k. Requires llama.cpp b8310+ (PR #20411) |
 
 ### 2x H200 SXM 282GB (sm_90, Hopper)
 
@@ -92,4 +100,4 @@ vLLM was removed from the default image in Feb 2025 to reduce image size (~5-6 G
 - **Image**: `runpod/openclaw2go:<tag>`
 - **Engines**: `runpod/openclaw2go-engines:<tag>`
 - **Dockerfile**: `Dockerfile.unified` (runtime), `engines/Dockerfile` (llama.cpp builds)
-- **CUDA Architectures**: sm_80 (A100), sm_89 (RTX 4090/L40), sm_90 (H100), sm_120 (RTX 5090)
+- **CUDA Architectures**: sm_80 (A100), sm_89 (RTX 4090/L40), sm_90 (H100), sm_100 (B200), sm_120 (RTX 5090/RTX Pro 6000)

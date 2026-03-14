@@ -6,13 +6,18 @@ This directory contains templates and workflows for the `runpod-workers/openclaw
 
 Fork created at `runpod-workers/openclaw2go-llamacpp`. Branch `main` has all cherry-picks applied.
 
-Cherry-picked PRs on `main`:
+Current base: **b8323** (tag: `b8323-openclaw.1`)
+
+Merged PRs on `main`:
 - PR #18641 (liquid-audio: TTS/STT for LFM2.5)
-- PR #12794 (OuteTTS 1.0 native TTS support) — build disabled, API stale vs current master
 - PR #18039 (Eagle-3 speculative decoding)
 
-Already merged upstream (no cherry-pick needed):
+Already merged upstream (included in b8323):
 - PR #19460 (glm-dsa: GLM-5 MoE dynamic sparse attention)
+- PR #20411 (Nemotron-3-Super support)
+
+Dropped:
+- PR #12794 (OuteTTS 1.0) — build was disabled, API stale vs current master
 
 ## Tag Convention
 
