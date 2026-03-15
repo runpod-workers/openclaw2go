@@ -60,7 +60,6 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
-| `{"llm":"ubergarm/minimax-m25-iq2ks-gguf"}` | LLM (MiniMax-M2.5 IQ2_KS 2-bit) | 65k | 80659 / 81559 MiB | **PASS** | 2026-02-19 | 229B MoE, ik_llama.cpp, reasoning+tool calling work, ~97 tok/s, ~1 GB free, KV=130 MB/1k |
 | `{"llm":true,"audio":true,"image":true}` | LLM+Audio+Image | auto (~150k) | ~30 GB | PENDING | — | Needs sm_90 in engines build |
 
 ### B200 180GB (sm_100, Blackwell)
@@ -68,7 +67,6 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
 | `{"llm":"unsloth/glm5-tq1-gguf"}` | LLM (GLM-5 TQ1_0 1-bit) | 202k | 175030 / 183359 MiB | **PASS** | 2026-02-13 | PR #19460 engine, reasoning works, ~27 tok/s, ~8 GB free, max context |
-| `{"llm":"ubergarm/minimax-m25-iq3ks-gguf"}` | LLM (MiniMax-M2.5 smol-IQ3_KS 3-bit) | 196k | 115478 / 183359 MiB | **PASS** | 2026-02-19 | 229B MoE, ik_llama.cpp, reasoning+tool calling work, ~93 tok/s, ~68 GB free, KV=130 MB/1k |
 | `{"llm":"ubergarm/minimax-m25-iq4xs-gguf"}` | LLM (MiniMax-M2.5 IQ4_XS 4-bit) | 196k | 143956 / 183359 MiB | **PASS** | 2026-02-13 | 229B MoE, reasoning+tool calling work, ~109 tok/s, ~38 GB free, KV=130 MB/1k |
 
 ### 2x H200 SXM 282GB (sm_90, Hopper)

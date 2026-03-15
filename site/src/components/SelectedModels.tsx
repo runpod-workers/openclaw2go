@@ -16,7 +16,6 @@ const SLOTS: { type: 'llm' | 'image' | 'audio'; label: string; color: string }[]
 const ENGINE_DISPLAY: Record<string, string> = {
   'llamacpp': 'llama.cpp',
   'openclaw2go-llamacpp': 'llama.cpp',
-  'ik-llamacpp': 'ik_llama.cpp',
   'image-gen': 'diffusers',
   'mlx': 'mlx-lm',
 }

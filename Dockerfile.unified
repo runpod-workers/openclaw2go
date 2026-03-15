@@ -77,10 +77,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=engines /opt/engines/openclaw2go-llamacpp/ /opt/engines/openclaw2go-llamacpp/
 RUN ldconfig /opt/engines/openclaw2go-llamacpp/lib/
 
-# ── Engine: ik-llamacpp (REMOVED) ─────────────────────────────
-# ik_llama.cpp was removed from the engines image — not compatible with ARM64.
-# TODO: Re-add when ik_llama.cpp supports ARM64 builds.
-
 # ── Engine: shared PyTorch venv (image-gen + Qwen3-TTS, from Stage 1) ──
 COPY --from=build-pytorch /opt/engines/pytorch/venv/ /opt/engines/pytorch/venv/
 

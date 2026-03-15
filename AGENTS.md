@@ -9,10 +9,8 @@ This is a living document. When you encounter a non-obvious gotcha, error-prone 
 ### Model Type Taxonomy
 The site/configurator uses 3 global categories: `llm`, `image`, `audio`. Individual models in the registry may have more specific `type` values (`vision`, `embedding`, `reranking`, `tts`) — these are model-level tags, not separate UI categories. Vision models appear under LLM, TTS under Audio, embedding/reranking are auxiliary services without their own UI category.
 
-### Two llama.cpp Engines — MUST Stay Separate
-- `openclaw2go-llamacpp`: unified fork with cherry-picked unmerged PRs (audio, OuteTTS, Eagle-3)
-- `ik-llamacpp`: custom GGML types (139+) are **fundamentally incompatible** with standard llama.cpp
-- Each engine MUST have its own `LD_LIBRARY_PATH`. openclaw2go-llamacpp is ldconfig'd; ik-llamacpp uses per-process LD_LIBRARY_PATH.
+### llama.cpp Engine
+- `openclaw2go-llamacpp`: unified fork with cherry-picked unmerged PRs (audio, Eagle-3, Nemotron-3-Super)
 
 ### VRAM & KV Cache
 - Each LLM model declares `kvCacheMbPer1kTokens` in its JSON config. Fallback: 40 MB/1k if not specified.
@@ -40,7 +38,6 @@ The site/configurator uses 3 global categories: `llm`, `image`, `audio`. Individ
 - Diffusers installed from git — stable release lacks `Flux2KleinPipeline`.
 - Engine compilation takes ~70min. Pre-built as `openclaw2go-engines` image, only rebuild when `engines/` changes.
 - ARM64 engine builds only compile sm_100 — skip unnecessary architectures to save build time.
-- ik_llama.cpp may not compile on ARM64. The engine build is resilient — on failure it writes `/opt/engines/ik-llamacpp/BUILD_FAILED` instead of crashing. Check this marker to know if ik-llamacpp is available.
 - DGX Spark unified memory: nvidia-smi reports GPU-accessible portion (128GB for GB10).
 
 ### Shell Script Gotchas

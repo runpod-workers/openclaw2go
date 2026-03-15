@@ -46,7 +46,6 @@ body:
       label: Engine
       options:
         - openclaw2go-llamacpp
-        - ik-llamacpp
         - llamacpp
         - llamacpp-audio
         - image-gen

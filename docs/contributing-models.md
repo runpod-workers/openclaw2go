@@ -32,7 +32,7 @@ Each model is a JSON file in `registry/models/` with these fields:
 | `id` | Yes | Unique ID in `provider/name` format (lowercase) |
 | `name` | Yes | Human-readable model name |
 | `type` | Yes | `llm`, `audio`, or `image` |
-| `engine` | Yes | `openclaw2go-llamacpp`, `ik-llamacpp`, `llamacpp`, `llamacpp-audio`, `image-gen`, `mlx-lm`, `mlx-audio`, `mflux`, or `vllm` |
+| `engine` | Yes | `openclaw2go-llamacpp`, `llamacpp`, `llamacpp-audio`, `image-gen`, `mlx-lm`, `mlx-audio`, `mflux`, or `vllm` |
 | `repo` | Yes | HuggingFace repository name |
 | `files` | Yes | Array of files to download from the repo |
 | `downloadDir` | Yes | Must start with `/workspace/models/` |

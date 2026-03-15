@@ -10,15 +10,6 @@
     "type": "native",
     "source": "https://github.com/runpod-workers/openclaw2go-llamacpp"
   },
-  "ik-llamacpp": {
-    "id": "ik-llamacpp",
-    "name": "ik_llama.cpp (custom quants)",
-    "description": "ikawrakow fork with custom GGML types (IQ2_KS, smol-IQ3_KS, type 139+)",
-    "binary": "/opt/engines/ik-llamacpp/bin/llama-server",
-    "libPath": "/opt/engines/ik-llamacpp/lib",
-    "type": "native",
-    "source": "https://github.com/ikawrakow/ik_llama.cpp"
-  },
   "image-gen": {
     "id": "image-gen",
     "name": "Image Generation (Diffusers + SDNQ)",

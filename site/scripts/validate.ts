@@ -19,7 +19,7 @@ const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 const MODELS_DIR = join(REPO_ROOT, 'registry', 'models')
 const GPUS_DIR = join(REPO_ROOT, 'registry', 'gpus')
 
-const ALLOWED_ENGINES = new Set(['llamacpp', 'llamacpp-audio', 'llamacpp-glm-dsa', 'ik-llamacpp', 'image-gen', 'qwen3-tts', 'mlx', 'mlx-lm', 'mlx-audio', 'mflux', 'openclaw2go-llamacpp', 'vllm'])
+const ALLOWED_ENGINES = new Set(['llamacpp', 'llamacpp-audio', 'llamacpp-glm-dsa', 'image-gen', 'qwen3-tts', 'mlx', 'mlx-lm', 'mlx-audio', 'mflux', 'openclaw2go-llamacpp', 'vllm'])
 const ALLOWED_TYPES = new Set(['llm', 'audio', 'image', 'vision', 'embedding', 'reranking', 'tts'])
 const ALLOWED_STATUSES = new Set(['stable', 'experimental', 'deprecated'])
 
