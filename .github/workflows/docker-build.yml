@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/site-improvements]
     tags: ['*']
   pull_request:
     paths:

@@ -95,8 +95,7 @@ RUN python3 -m pip install --no-cache-dir huggingface_hub
 
 # ── OpenClaw + Claude Code ────────────────────────────────
 RUN npm install -g --prefer-offline --omit=dev @anthropic-ai/claude-code openclaw@latest && \
-    npm cache clean --force && \
-    find /usr/lib/node_modules -name "README*" -o -name "CHANGELOG*" -o -name "LICENSE*" -o -name "*.md" | xargs rm -f 2>/dev/null; true
+    npm cache clean --force
 
 WORKDIR /
 
