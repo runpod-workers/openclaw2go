@@ -240,6 +240,7 @@ function App() {
         effectiveVramMb={effectiveVramMb}
         onClearAll={handleClearAll}
         hasSelections={hasSelections}
+        contextOverride={contextOverride}
       />
       <ConfigPanel
         selectedModels={selectedModels}

@@ -38,6 +38,7 @@ export default function ModelCatalog({
   effectiveVramMb,
   onClearAll,
   hasSelections,
+  contextOverride,
 }: {
   models: CatalogModel[]
   os: OsPlatform | null
@@ -49,6 +50,7 @@ export default function ModelCatalog({
   effectiveVramMb: number
   onClearAll: () => void
   hasSelections: boolean
+  contextOverride: number | null
 }) {
   const [search, setSearch] = useState("")
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
@@ -229,10 +231,16 @@ export default function ModelCatalog({
                   selectedModelIds.has(v.model.id)
                 )
                 const variant = getVariantForOs(group, os)
+                const m = variant.model
+                const ctxLen = (m.type === 'llm' && contextOverride != null) ? contextOverride : m.contextLength
+                const kvCacheMb = (m.kvCacheMbPer1kTokens && ctxLen)
+                  ? (ctxLen / 1000) * m.kvCacheMbPer1kTokens
+                  : 0
+                const fullVramMb = variant.vramTotal + kvCacheMb
                 const wouldExceed =
                   effectiveVramMb > 0 &&
                   !isSelected &&
-                  variant.vramTotal > remainingVramMb
+                  fullVramMb > remainingVramMb
                 const dimmed = !isSelected && lockedTypes.has(group.type)
 
                 return (
@@ -247,6 +255,7 @@ export default function ModelCatalog({
                     accentColor={section.color}
                     hasVision={group.hasVision}
                     capabilities={group.capabilities}
+                    contextOverride={contextOverride}
                   />
                 )
               })}

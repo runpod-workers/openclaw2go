@@ -14,6 +14,7 @@ export default function ModelGroupCard({
   accentColor,
   hasVision,
   capabilities,
+  contextOverride,
 }: {
   group: ModelGroup
   selected: boolean
@@ -24,8 +25,15 @@ export default function ModelGroupCard({
   accentColor: string
   hasVision?: boolean
   capabilities?: string[]
+  contextOverride?: number | null
 }) {
   const variant = getVariantForOs(group, os)
+  const m = variant.model
+  const ctxLen = (m.type === 'llm' && contextOverride != null) ? contextOverride : m.contextLength
+  const kvCacheMb = (m.kvCacheMbPer1kTokens && ctxLen)
+    ? (ctxLen / 1000) * m.kvCacheMbPer1kTokens
+    : 0
+  const fullVramMb = variant.vramTotal + kvCacheMb
 
   return (
     <div
@@ -120,7 +128,7 @@ export default function ModelGroupCard({
         "w-[48px] shrink-0 text-right font-mono text-[10px] tabular-nums",
         selected ? "text-foreground/80" : "text-foreground/60"
       )}>
-        {formatVram(variant.vramTotal)}
+        {formatVram(fullVramMb)}
       </span>
     </div>
   )

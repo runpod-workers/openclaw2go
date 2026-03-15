@@ -511,6 +511,7 @@ export default function SelectedModels({
   os,
   contextOverride,
   onContextChange,
+  onPlatformTabChange,
 }: {
   models: CatalogModel[]
   onToggle: (model: CatalogModel) => void
@@ -519,6 +520,7 @@ export default function SelectedModels({
   os: OsPlatform | null
   contextOverride: number | null
   onContextChange: (ctx: number | null) => void
+  onPlatformTabChange?: (os: OsPlatform) => void
 }) {
   // Shared OS tab state across all cards (independent of global OS selector)
   const [sharedOs, setSharedOs] = useState<OsPlatform | null>(os)
@@ -560,8 +562,8 @@ export default function SelectedModels({
           ? allVariants.filter((vt) => vt.os.includes(os))
           : allVariants
 
-        // Check if this group has no Mac variant at all
-        const macUnavailable = !allVariants.some((vt) => vt.os.includes('mac'))
+        // Show synthetic macOS tab only when NO global OS filter is active
+        const macUnavailable = !os && !allVariants.some((vt) => vt.os.includes('mac'))
         const isMacTabActive = sharedOs === 'mac' && macUnavailable
         const macSiblings = macUnavailable && group
           ? findSiblingsWithOs(group, allGroups, 'mac')
@@ -595,7 +597,7 @@ export default function SelectedModels({
               group={group}
               visibleVariants={filtered}
               activeTabIndex={activeIdx}
-              onTabSelect={setSharedOs}
+              onTabSelect={(newOs) => { setSharedOs(newOs); if (newOs) onPlatformTabChange?.(newOs) }}
               accentColor={slot.color}
               gpus={gpus}
               onRemove={() => onToggle(m)}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import SectionHeader from './SectionHeader'
 import CollapsibleSection from './CollapsibleSection'
 import GpuSelector from './VramLegend'
@@ -8,7 +8,7 @@ import DeployCard from './DeployOutput'
 import SecurityGuide from './SecurityGuide'
 import type { CatalogModel, GpuInfo, GpuCount, OsPlatform } from '../lib/catalog'
 import { VRAM_PRESETS } from '../lib/catalog'
-import type { ModelGroup } from '../lib/group-models'
+import { getVariantForOs, type ModelGroup } from '../lib/group-models'
 import { Link, TriangleAlert } from 'lucide-react'
 
 /** Slot order + colors — must match SLOTS in SelectedModels.tsx */
@@ -75,15 +75,26 @@ export default function ConfigPanel({
 }) {
   const hasModels = selectedModels.length > 0
 
-  // Per-type VRAM segments for the gauge bar — ordered llm → image → audio (matches selected model cards)
+  // Track the active platform tab from SelectedModels (may differ from global os)
+  const [sharedOs, setSharedOs] = useState<OsPlatform | null>(os)
+  const handleSharedOsChange = useCallback((newOs: OsPlatform) => setSharedOs(newOs), [])
+
+  // Reset shared tab state when global OS changes
+  useEffect(() => { setSharedOs(os) }, [os])
+
+  // Per-type VRAM segments for the gauge bar — use the variant matching the active tab,
+  // so switching platform tabs in a card immediately updates the memory gauge.
   const vramSegments: VramSegment[] = useMemo(() => {
     const byType: Record<string, number> = {}
     for (const m of selectedModels) {
-      const ctxLen = (m.type === 'llm' && contextOverride != null) ? contextOverride : m.contextLength
-      const kvCacheMb = (m.kvCacheMbPer1kTokens && ctxLen)
-        ? (ctxLen / 1000) * m.kvCacheMbPer1kTokens
+      const group = modelIdToGroup.get(m.id)
+      const variant = group ? getVariantForOs(group, sharedOs) : null
+      const v = variant?.model ?? m
+      const ctxLen = (v.type === 'llm' && contextOverride != null) ? contextOverride : v.contextLength
+      const kvCacheMb = (v.kvCacheMbPer1kTokens && ctxLen)
+        ? (ctxLen / 1000) * v.kvCacheMbPer1kTokens
         : 0
-      byType[m.type] = (byType[m.type] ?? 0) + m.vram.model + m.vram.overhead + kvCacheMb
+      byType[v.type] = (byType[v.type] ?? 0) + v.vram.model + v.vram.overhead + kvCacheMb
     }
     return SLOT_ORDER
       .filter((slot) => (byType[slot.type] ?? 0) > 0)
@@ -92,18 +103,24 @@ export default function ConfigPanel({
         gb: byType[slot.type] / 1024,
         color: slot.color,
       }))
-  }, [selectedModels, contextOverride])
+  }, [selectedModels, contextOverride, sharedOs, modelIdToGroup])
+
+  // Variant-aware total VRAM — sum from vramSegments so it matches the gauge bar
+  const displayVramGb = useMemo(
+    () => vramSegments.reduce((sum, s) => sum + s.gb, 0),
+    [vramSegments],
+  )
 
   // When models are selected but no GPU/VRAM preset chosen, suggest the smallest fitting preset
   const suggestedGb = useMemo(() => {
     if (selectedVramGb != null || selectedGpu != null) return null
-    if (totalVramGb <= 0) return null
-    return VRAM_PRESETS.find((p) => p >= totalVramGb) ?? VRAM_PRESETS[VRAM_PRESETS.length - 1]
-  }, [selectedVramGb, selectedGpu, totalVramGb])
+    if (displayVramGb <= 0) return null
+    return VRAM_PRESETS.find((p) => p >= displayVramGb) ?? VRAM_PRESETS[VRAM_PRESETS.length - 1]
+  }, [selectedVramGb, selectedGpu, displayVramGb])
 
-  const memoryBadge = totalVramGb > 0 ? (
+  const memoryBadge = displayVramGb > 0 ? (
     <span className="font-mono text-[9px] tabular-nums text-foreground/40">
-      {totalVramGb.toFixed(1)} GB
+      {displayVramGb.toFixed(1)} GB
     </span>
   ) : undefined
 
@@ -130,7 +147,7 @@ export default function ConfigPanel({
                 </SectionHeader>
                 <div className="p-5">
                   <VramGauge
-                    usedGb={totalVramGb}
+                    usedGb={displayVramGb}
                     selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : suggestedGb)}
                     presets={VRAM_PRESETS}
                     onSelectPreset={onVramPreset}
@@ -152,7 +169,7 @@ export default function ConfigPanel({
                     gpus={gpus}
                     selectedGpu={selectedGpu}
                     onSelect={onGpuSelect}
-                    totalVramNeeded={totalVramMb}
+                    totalVramNeeded={displayVramGb * 1024}
                     selectedVramGb={selectedVramGb}
                   />
                 </div>
@@ -188,7 +205,7 @@ export default function ConfigPanel({
         {/* Mobile: just Memory content */}
         <div className="lg:hidden p-5">
           <VramGauge
-            usedGb={totalVramGb}
+            usedGb={displayVramGb}
             selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : suggestedGb)}
             presets={VRAM_PRESETS}
             onSelectPreset={onVramPreset}
@@ -206,7 +223,7 @@ export default function ConfigPanel({
               gpus={gpus}
               selectedGpu={selectedGpu}
               onSelect={onGpuSelect}
-              totalVramNeeded={totalVramMb}
+              totalVramNeeded={displayVramGb * 1024}
               selectedVramGb={selectedVramGb}
             />
           </div>
@@ -224,7 +241,7 @@ export default function ConfigPanel({
               <span className="font-mono text-[10px] tabular-nums text-foreground/60">
                 {selectedModels.length} model{selectedModels.length !== 1 ? "s" : ""}
                 {" / "}
-                {totalVramGb.toFixed(1)} GB
+                {displayVramGb.toFixed(1)} GB
               </span>
             )}
           </div>
@@ -253,6 +270,7 @@ export default function ConfigPanel({
           os={os}
           contextOverride={contextOverride}
           onContextChange={onContextChange}
+          onPlatformTabChange={handleSharedOsChange}
         />
       </div>
 
