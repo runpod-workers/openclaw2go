@@ -12,7 +12,7 @@ on:
     paths:
       - 'engines/**'
       - '.github/workflows/engines-build.yml'
-    branches: [main, openclaw-rename, feat/site-improvements]
+    branches: [main]
   workflow_dispatch:
     inputs:
       cuda_architectures:
