@@ -212,42 +212,12 @@ jobs:
 
       - name: Create and push multi-arch manifest
         run: |
-          docker manifest create \
+          docker manifest create --amend \
             ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }} \
             ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
             ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64
 
-          docker manifest annotate \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }} \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
-            --os linux --arch amd64
-
-          docker manifest annotate \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }} \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64 \
-            --os linux --arch arm64
-
           docker manifest push ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}
-
-          # Also tag as latest if this is a tagged release
-          if [[ "${{ env.ALSO_LATEST }}" == "true" ]]; then
-            docker manifest create \
-              ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest \
-              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
-              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64
-
-            docker manifest annotate \
-              ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest \
-              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-amd64 \
-              --os linux --arch amd64
-
-            docker manifest annotate \
-              ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest \
-              ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}-arm64 \
-              --os linux --arch arm64
-
-            docker manifest push ${{ env.DOCKERHUB_REPO }}/openclaw2go:latest
-          fi
 
   # Disabled for now
   # build-glm47-flash-fp16:

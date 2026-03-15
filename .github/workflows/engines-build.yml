@@ -98,19 +98,9 @@ jobs:
 
       - name: Create and push multi-arch manifest
         run: |
-          docker manifest create \
+          docker manifest create --amend \
             ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }} \
             ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-amd64 \
             ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-arm64
-
-          docker manifest annotate \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }} \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-amd64 \
-            --os linux --arch amd64
-
-          docker manifest annotate \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }} \
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}-arm64 \
-            --os linux --arch arm64
 
           docker manifest push ${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:${{ env.TAG }}
