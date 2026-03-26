@@ -184,7 +184,7 @@ function buildCloudConfig(
   models: CatalogModel[],
   agentId: string,
   contextOverride?: number | null,
-): { image: string; envVars: { key: string; value: string }[]; ports: string[] } {
+): { image: string; envVars: { key: string; value: string }[]; ports: { port: string; protocol: string; service: string; note: string | null }[] } {
   const configParts: Record<string, string | number> = { agent: agentId }
   for (const m of models) {
     const role = m.type === 'llm' ? 'llm' : m.type === 'image' ? 'image' : m.type === 'audio' ? 'audio' : null
@@ -370,7 +370,6 @@ function CliSteps({
 export default function DeployCard({
   selectedModels,
   modelIdToGroup,
-  os,
   globalOs,
   contextOverride,
   onToggle,
@@ -378,7 +377,6 @@ export default function DeployCard({
 }: {
   selectedModels: CatalogModel[]
   modelIdToGroup: Map<string, ModelGroup>
-  os: OsPlatform | null
   globalOs: OsPlatform | null
   contextOverride: number | null
   onToggle?: (model: CatalogModel) => void

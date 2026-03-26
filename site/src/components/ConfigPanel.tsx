@@ -9,6 +9,7 @@ import SecurityGuide from './SecurityGuide'
 import type { CatalogModel, GpuInfo, GpuCount, OsPlatform } from '../lib/catalog'
 import { VRAM_PRESETS } from '../lib/catalog'
 import { getVariantForOs, type ModelGroup, type CatalogEntry } from '../lib/group-models'
+import type { AgentFramework } from '../lib/frameworks'
 import { Link, TriangleAlert } from 'lucide-react'
 
 /** Slot order + colors — must match SLOTS in SelectedModels.tsx */
@@ -71,7 +72,7 @@ export default function ConfigPanel({
   contextOverride: number | null
   onContextChange: (ctx: number | null) => void
   swapModelVariant?: (oldModel: CatalogModel, newModel: CatalogModel) => void
-  framework: { available: boolean; name: string; docsUrl?: string; securityUrl?: string }
+  framework: AgentFramework
 }) {
   const hasModels = selectedModels.length > 0
 
@@ -305,7 +306,6 @@ export default function ConfigPanel({
                 <DeployCard
                   selectedModels={selectedModels}
                   modelIdToGroup={modelIdToGroup}
-                  os={sharedOs}
                   globalOs={os}
                   contextOverride={contextOverride}
                   onToggle={onToggleModel}

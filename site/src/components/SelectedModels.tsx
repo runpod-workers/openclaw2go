@@ -145,8 +145,6 @@ function ContextControl({
   // Find nearest step index for the slider
   const currentIdx = steps.reduce((best, s, i) =>
     Math.abs(s - effectiveCtx) < Math.abs(steps[best] - effectiveCtx) ? i : best, 0)
-  const isOverridden = contextOverride != null && contextOverride !== contextLength
-
   return (
     <div className="flex items-stretch">
       <button
@@ -421,7 +419,6 @@ function FilledSlotCard({
     }
   }, [activeOs, activeQuantIdx, currentSv, model, swapModelVariant])
 
-  const activeVariant = isUnavailableActive ? undefined : (platformTabs[activeTabIdx]?.variant ?? visibleVariants[0])
   // Use the selected model directly — it always reflects the correct quant+platform after any swap
   const v = model
 
