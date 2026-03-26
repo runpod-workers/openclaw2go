@@ -18,13 +18,13 @@ jobs:
   # Temporarily disabled - only building NVFP4 5090 image
   build-glm47-flash-awq-4bit:
     if: false
-    runs-on: DO
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Blacksmith Builder
+        uses: useblacksmith/setup-docker-builder@v1
 
       - name: Set environment variables
         run: |
@@ -45,7 +45,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: useblacksmith/build-push-action@v2
         with:
           context: .
           file: models/glm47-flash-awq-4bit/Dockerfile
@@ -54,20 +54,18 @@ jobs:
             ${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-awq-4bit:${{ env.VERSION }}
             ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go-glm4.7-flash-awq-4bit:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-awq-4bit:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-awq-4bit:buildcache,mode=max
 
   # Disabled - vLLM NVFP4 has bugs with GLM-4.7 MLA on Blackwell
   # See models/glm47-flash-nvfp4-5090/ISSUES.md
   build-glm47-flash-nvfp4-5090:
     if: false
-    runs-on: DO
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Blacksmith Builder
+        uses: useblacksmith/setup-docker-builder@v1
 
       - name: Set environment variables
         run: |
@@ -88,7 +86,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: useblacksmith/build-push-action@v2
         with:
           context: .
           file: models/glm47-flash-nvfp4-5090/Dockerfile
@@ -97,19 +95,17 @@ jobs:
             ${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-nvfp4-5090:${{ env.VERSION }}
             ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go-glm4.7-flash-nvfp4-5090:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-nvfp4-5090:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-nvfp4-5090:buildcache,mode=max
 
   # Disabled - replaced by unified image
   build-glm47-flash-gguf-llamacpp:
     if: false
-    runs-on: DO
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Blacksmith Builder
+        uses: useblacksmith/setup-docker-builder@v1
 
       - name: Set environment variables
         run: |
@@ -130,7 +126,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: useblacksmith/build-push-action@v2
         with:
           context: .
           file: models/glm47-flash-gguf-llamacpp/Dockerfile
@@ -139,8 +135,6 @@ jobs:
             ${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:${{ env.VERSION }}
             ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache,mode=max
 
   # Unified image - works on all GPUs with tested CUDA architectures
   # Uses pre-built engines from a2go-engines (built by engines-build.yml)
@@ -153,14 +147,14 @@ jobs:
           - arch: amd64
             runner: DO
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: blacksmith-4vcpu-ubuntu-2404-arm
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Blacksmith Builder
+        uses: useblacksmith/setup-docker-builder@v1
 
       - name: Set environment variables
         run: |
@@ -181,7 +175,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: useblacksmith/build-push-action@v2
         with:
           context: .
           file: Dockerfile.unified
@@ -191,15 +185,13 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go:buildcache-${{ matrix.arch }}
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go:buildcache-${{ matrix.arch }},mode=max
 
   create-manifest:
     needs: build-unified
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Blacksmith Builder
+        uses: useblacksmith/setup-docker-builder@v1
 
       - name: Set environment variables
         run: |
