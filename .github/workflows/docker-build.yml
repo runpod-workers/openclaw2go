@@ -145,7 +145,7 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: DO
+            runner: blacksmith-4vcpu-ubuntu-2404
           - arch: arm64
             runner: blacksmith-4vcpu-ubuntu-2404-arm
     runs-on: ${{ matrix.runner }}

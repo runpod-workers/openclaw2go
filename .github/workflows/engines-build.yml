@@ -35,7 +35,7 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: DO
+            runner: blacksmith-4vcpu-ubuntu-2404
             cuda_archs_default: '80;89;90;100;120'
           - arch: arm64
             runner: blacksmith-4vcpu-ubuntu-2404-arm

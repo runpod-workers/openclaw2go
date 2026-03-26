@@ -67,7 +67,7 @@ Internal only: 8001 (audio), 8002 (image), 8003 (vision), 8004 (embedding), 8005
 - `workflow_dispatch` only works from default branch — feature branch workflows can't be manually triggered until merged to main.
 - Fork CI auto-rebases cherry-picks onto new llama.cpp releases. Tag convention: `{upstream-tag}-openclaw.{patch}`.
 - Engine and unified images built per-architecture (amd64/arm64) with multi-arch manifests. Tags: `image:tag-amd64`, `image:tag-arm64`, `image:tag` (manifest).
-- ARM64 builds run on `ubuntu-24.04-arm` GitHub runners. amd64 builds run on `DO` (DigitalOcean).
+- ARM64 builds run on `blacksmith-4vcpu-ubuntu-2404-arm`. amd64 builds run on `blacksmith-4vcpu-ubuntu-2404`. All CI runs on Blacksmith runners.
 - Docker images always tag as `latest` — no version branching. We ship from feature branches directly to production.
 
 ### Catalog Grouping — `catalogKey`
