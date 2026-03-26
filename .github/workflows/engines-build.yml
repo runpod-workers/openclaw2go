@@ -38,15 +38,15 @@ jobs:
             runner: DO
             cuda_archs_default: '80;89;90;100;120'
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: blacksmith-4vcpu-ubuntu-2404-arm
             cuda_archs_default: '100'
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Blacksmith Builder
+        uses: useblacksmith/setup-docker-builder@v1
 
       - name: Set environment variables
         run: |
@@ -66,7 +66,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push engines image
-        uses: docker/build-push-action@v6
+        uses: useblacksmith/build-push-action@v2
         with:
           context: .
           file: engines/Dockerfile
@@ -78,15 +78,13 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_REPO }}/a2go-engines:${{ env.TAG }}-${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-engines:buildcache-${{ matrix.arch }}
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-engines:buildcache-${{ matrix.arch }},mode=max
 
   create-manifest:
     needs: build-engines
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Blacksmith Builder
+        uses: useblacksmith/setup-docker-builder@v1
 
       - name: Set environment variables
         run: |
