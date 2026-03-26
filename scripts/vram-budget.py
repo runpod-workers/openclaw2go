@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-vram-budget.py - VRAM budget calculator for OpenClaw2Go.
+vram-budget.py - VRAM budget calculator for agent2go.
 
 Computes whether a set of models fits on a GPU, recommends max context length.
 Used by resolve-profile.py and as a standalone CLI tool.

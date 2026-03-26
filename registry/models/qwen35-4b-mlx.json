@@ -1,15 +1,18 @@
 {
   "id": "mlx-community/qwen35-4b-mlx",
+  "group": "qwen35-4b",
+  "family": "qwen35",
+  "catalogKey": "qwen35-4b",
   "name": "Qwen3.5-4B MLX 8-bit",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 8,
   "repo": "mlx-community/Qwen3.5-4B-8bit",
   "vram": {
-    "model": 4600,
+    "model": 5100,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 18,
+  "kvCacheMbPer1kTokens": 34,
   "defaults": {
     "contextLength": 262000
   },

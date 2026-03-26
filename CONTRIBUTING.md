@@ -1,4 +1,4 @@
-# Contributing to OpenClaw2Go
+# Contributing to agent2go
 
 Thanks for your interest in contributing! This guide covers how to report issues, add models, and submit pull requests.
 
@@ -16,8 +16,8 @@ The model registry is community-driven. See the full guide in [docs/contributing
 
 Quick version:
 
-1. Run the model on an OpenClaw2Go pod
-2. Export with `openclaw2go registry export --format issue`
+1. Run the model on an agent2go pod
+2. Export with `a2go registry export --format issue`
 3. Open a [New Model Issue](../../issues/new?template=new-model.yml) and paste the config
 
 ## Development Setup
@@ -35,7 +35,7 @@ npm run validate:hf  # Also check HuggingFace repos exist
 ### Docker image
 
 ```bash
-docker build -f Dockerfile.unified -t openclaw2go .
+docker build -f Dockerfile.unified -t a2go .
 ```
 
 See [AGENTS.md](AGENTS.md) for architecture context and codebase structure.

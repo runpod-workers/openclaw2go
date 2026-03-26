@@ -1,6 +1,9 @@
 {
   "id": "mlx-community/olmo31-think-32b-mlx",
-  "name": "OLMo-3.1-32B-Think MLX 4-bit",
+  "group": "olmo31-think-32b",
+  "family": "olmo31-think-32b",
+  "catalogKey": "olmo31-think-32b",
+  "name": "OLMo 3.1 Think 32B MLX 4-bit",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,
@@ -9,7 +12,7 @@
     "model": 18100,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 40,
+  "kvCacheMbPer1kTokens": 75,
   "defaults": {
     "contextLength": 32768
   },

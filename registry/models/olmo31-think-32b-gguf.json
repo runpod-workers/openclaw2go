@@ -1,8 +1,11 @@
 {
   "id": "unsloth/olmo31-think-32b-gguf",
+  "group": "olmo31-think-32b",
+  "family": "olmo31-think-32b",
+  "catalogKey": "olmo31-think-32b",
   "name": "OLMo 3.1 Think 32B GGUF Q4_K_M",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "unsloth/Olmo-3.1-32B-Think-GGUF",
   "files": [
@@ -11,7 +14,7 @@
   "downloadDir": "/workspace/models/Olmo-3.1-32B-Think-GGUF",
   "servedAs": "olmo-3.1-think-32b",
   "vram": {
-    "model": 18500,
+    "model": 19500,
     "overhead": 1000
   },
   "kvCacheMbPer1kTokens": 40,

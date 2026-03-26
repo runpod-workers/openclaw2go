@@ -47,7 +47,6 @@ RUN mkdir -p /workspace/.openclaw /workspace/openclaw
 # Environment variables
 # HF_HOME on container disk (100GB needed), OpenClaw state on workspace
 ENV HF_HOME=/root/.cache/huggingface
-ENV OPENCLAW_STATE_DIR=/workspace/.openclaw
 ENV OPENCLAW_WORKSPACE=/workspace/openclaw
 ENV MODEL_NAME=zai-org/GLM-4.7-Flash
 ENV SERVED_MODEL_NAME=glm-4.7-flash
@@ -57,7 +56,7 @@ ENV TOOL_CALL_PARSER=glm47
 # MAX_MODEL_LEN is auto-detected based on GPU - don't set here
 
 # Copy entrypoint scripts + skills + CLI
-COPY skills/ /opt/openclaw/skills/
+COPY openclaw/skills/ /opt/openclaw/skills/
 COPY scripts/openclaw-image-gen /usr/local/bin/openclaw-image-gen
 COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
 COPY models/glm47-flash-fp16/entrypoint.sh /entrypoint.sh

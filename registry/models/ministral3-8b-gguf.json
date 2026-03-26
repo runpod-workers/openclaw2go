@@ -1,8 +1,11 @@
 {
   "id": "mistralai/ministral3-8b-gguf",
+  "group": "ministral3-8b",
+  "family": "ministral3-8b",
+  "catalogKey": "ministral3-8b",
   "name": "Ministral-3-8B-Instruct GGUF Q8_0 (Dec 2025)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 8,
   "repo": "unsloth/Ministral-3-8B-Instruct-2512-GGUF",
   "files": [

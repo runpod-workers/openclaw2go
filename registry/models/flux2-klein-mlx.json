@@ -1,5 +1,8 @@
 {
   "id": "mlx/flux2-klein",
+  "group": "flux2-klein",
+  "family": "flux2-klein",
+  "catalogKey": "flux2-klein",
   "name": "FLUX.2 Klein 4B MLX 4-bit",
   "type": "image",
   "engine": "mflux",

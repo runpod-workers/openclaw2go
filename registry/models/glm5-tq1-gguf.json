@@ -1,8 +1,11 @@
 {
   "id": "unsloth/glm5-tq1-gguf",
+  "group": "glm5-1bit",
+  "family": "glm5",
+  "catalogKey": "glm5",
   "name": "GLM-5-754B TQ1_0 (1-bit, 176GB)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 1,
   "repo": "unsloth/GLM-5-GGUF",
   "files": [

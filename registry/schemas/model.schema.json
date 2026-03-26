@@ -1,14 +1,24 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OpenClaw2Go Model Config",
-  "description": "Schema for model configuration files in the openclaw2go registry",
+  "title": "agent2go Model Config",
+  "description": "Schema for model configuration files in the a2go registry",
   "type": "object",
-  "required": ["id", "name", "type", "engine", "vram"],
+  "required": ["id", "group", "family", "name", "type", "engine", "vram"],
   "properties": {
     "id": {
       "type": "string",
       "pattern": "^[a-z0-9._-]+/[a-z0-9._-]+$",
       "description": "Unique model ID in provider/name format (lowercase)"
+    },
+    "group": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Group key — models with the same group become variants of the same UI card"
+    },
+    "family": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Family key — models with the same family are siblings (used for alternative bit-level suggestions)"
     },
     "name": {
       "type": "string",
@@ -21,7 +31,7 @@
     },
     "engine": {
       "type": "string",
-      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "ik-llamacpp", "image-gen", "qwen3-tts", "mlx", "mlx-lm", "mlx-audio", "mflux", "openclaw2go-llamacpp", "vllm"],
+      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "image-gen", "qwen3-tts", "mlx", "mlx-lm", "mlx-audio", "mflux", "a2go-llamacpp", "vllm"],
       "description": "Engine to use for this model"
     },
     "repo": {

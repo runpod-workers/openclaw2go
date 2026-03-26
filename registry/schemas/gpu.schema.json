@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OpenClaw2Go GPU Config",
-  "description": "Schema for GPU configuration files in the openclaw2go-registry",
+  "title": "agent2go GPU Config",
+  "description": "Schema for GPU configuration files in the a2go-registry",
   "type": "object",
   "required": ["id", "name", "vramMb", "arch"],
   "properties": {

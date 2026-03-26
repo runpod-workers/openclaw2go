@@ -1,8 +1,11 @@
 {
   "id": "unsloth/qwen35-27b-gguf",
+  "group": "qwen35-27b",
+  "family": "qwen35",
+  "catalogKey": "qwen35-27b",
   "name": "Qwen3.5-27B Q4_K_M (4-bit, 16.7GB, 409K context, multimodal)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "unsloth/Qwen3.5-27B-GGUF",
   "files": [

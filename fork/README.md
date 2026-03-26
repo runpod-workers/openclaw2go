@@ -1,10 +1,10 @@
-# openclaw2go-llamacpp Fork Scaffolding
+# a2go-llamacpp Fork Scaffolding
 
-This directory contains templates and workflows for the `runpod-workers/openclaw2go-llamacpp` fork.
+This directory contains templates and workflows for the `runpod-labs/a2go-llamacpp` fork.
 
 ## Setup (done)
 
-Fork created at `runpod-workers/openclaw2go-llamacpp`. Branch `main` has all cherry-picks applied.
+Fork created at `runpod-labs/a2go-llamacpp`. Branch `main` has all cherry-picks applied.
 
 Current base: **b8323** (tag: `b8323-openclaw.1`)
 

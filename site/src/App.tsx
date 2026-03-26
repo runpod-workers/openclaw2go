@@ -8,10 +8,12 @@ import {
   type GpuInfo,
   type OsPlatform,
 } from './lib/catalog'
-import { groupModels, getVariantForOs, type ModelGroup } from './lib/group-models'
-import { parseUrlState, syncUrlState, clearUrlState } from './lib/url-state'
+import { groupModels, buildCatalogEntries, getVariantForOs, type ModelGroup, type CatalogEntry } from './lib/group-models'
+import { parseUrlState, syncUrlState, clearUrlState, type ModelParam } from './lib/url-state'
 import ModelCatalog from './components/ModelCatalog'
 import ConfigPanel from './components/ConfigPanel'
+import { DEFAULT_FRAMEWORK } from './lib/frameworks'
+import { FrameworkPill } from './components/FrameworkSelector'
 
 function App() {
   const [allModels, setAllModels] = useState<CatalogModel[]>([])
@@ -23,6 +25,8 @@ function App() {
   const [selectedModelIds, setSelectedModelIds] = useState<Set<string>>(new Set())
   const [selectedGpu, setSelectedGpu] = useState<GpuInfo | null>(null)
   const [selectedVramGb, setSelectedVramGb] = useState<number | null>(null)
+  const [contextOverride, setContextOverride] = useState<number | null>(null)
+  const framework = DEFAULT_FRAMEWORK
 
   // Track whether URL state has been hydrated to avoid syncing before load
   const hydrated = useRef(false)
@@ -39,9 +43,12 @@ function App() {
 
         const ids = new Set<string>()
         for (const type of ['llm', 'image', 'audio'] as const) {
-          const urlId = url[type]
-          if (urlId) {
-            const match = models.find((m) => m.id === urlId)
+          const param = url[type]
+          if (param) {
+            const match = models.find((m) =>
+              m.repo.toLowerCase() === param.repo.toLowerCase() &&
+              (param.bits == null || m.bits === param.bits)
+            )
             if (match) ids.add(match.id)
           }
         }
@@ -52,6 +59,7 @@ function App() {
           if (match) setSelectedGpu(match)
         }
         if (url.vram != null) setSelectedVramGb(url.vram)
+        if (url.ctx != null) setContextOverride(url.ctx)
 
         hydrated.current = true
         setLoading(false)
@@ -64,6 +72,8 @@ function App() {
 
   const allGroups = useMemo(() => groupModels(allModels), [allModels])
 
+  const allEntries = useMemo(() => buildCatalogEntries(allGroups), [allGroups])
+
   const modelIdToGroup = useMemo(() => {
     const map = new Map<string, ModelGroup>()
     for (const group of allGroups) {
@@ -73,6 +83,15 @@ function App() {
     }
     return map
   }, [allGroups])
+
+  const modelIdToEntry = useMemo(() => {
+    const map = new Map<string, CatalogEntry>()
+    for (const entry of allEntries)
+      for (const group of entry.groups)
+        for (const v of group.variants)
+          map.set(v.model.id, entry)
+    return map
+  }, [allEntries])
 
   const filteredGpus = useMemo(() => getGpusForOs(os, allGpus), [os, allGpus])
 
@@ -90,27 +109,32 @@ function App() {
     })
   }, [selectedModelIds, allModels, os])
 
-  const totalVramMb = useMemo(() => getTotalVram(selectedModels), [selectedModels])
-  const totalVramGb = totalVramMb / 1024
+  const totalVramMb = useMemo(() => getTotalVram(selectedModels, contextOverride), [selectedModels, contextOverride])
 
   // GPU count is fully derived — auto-calculated from selected GPU + total VRAM
-  const gpuCount = selectedGpu ? getMinGpuCount(totalVramMb, selectedGpu.vramMb) : 1
+  const gpuCount = selectedGpu ? getMinGpuCount(totalVramMb, selectedGpu) : 1
 
   // Sync state to URL whenever selections change (after initial hydration)
   useEffect(() => {
     if (!hydrated.current) return
+    function toModelParam(m: CatalogModel | undefined): ModelParam | null {
+      if (!m) return null
+      return { repo: m.repo, bits: m.bits ?? null }
+    }
     const llm = selectedModels.find((m) => m.type === 'llm')
     const image = selectedModels.find((m) => m.type === 'image')
     const audio = selectedModels.find((m) => m.type === 'audio')
     syncUrlState({
       os,
-      llm: llm?.id ?? null,
-      image: image?.id ?? null,
-      audio: audio?.id ?? null,
+      llm: toModelParam(llm),
+      image: toModelParam(image),
+      audio: toModelParam(audio),
       gpu: selectedGpu?.id ?? null,
       vram: selectedVramGb,
+      ctx: contextOverride,
+      fw: null,
     })
-  }, [os, selectedModels, selectedGpu, selectedVramGb])
+  }, [os, selectedModels, selectedGpu, selectedVramGb, contextOverride])
 
   const toggleModel = useCallback(
     (model: CatalogModel) => {
@@ -129,9 +153,19 @@ function App() {
         }
         return next
       })
+      if (model.type === 'llm') setContextOverride(null)
     },
     [allModels]
   )
+
+  const swapModelVariant = useCallback((oldModel: CatalogModel, newModel: CatalogModel) => {
+    setSelectedModelIds(prev => {
+      const next = new Set(prev)
+      next.delete(oldModel.id)
+      next.add(newModel.id)
+      return next
+    })
+  }, [])
 
   const handleGpuSelect = useCallback((gpu: GpuInfo) => {
     setSelectedGpu((prev) => (prev?.id === gpu.id ? null : gpu))
@@ -169,6 +203,7 @@ function App() {
     setOs(null)
     setSelectedGpu(null)
     setSelectedVramGb(null)
+    setContextOverride(null)
     clearUrlState()
   }, [])
 
@@ -200,9 +235,33 @@ function App() {
   }
 
   return (
-    <div className="noise-bg flex h-screen w-screen overflow-hidden bg-background">
+    <div className="noise-bg flex min-h-screen lg:h-screen w-screen flex-col lg:flex-row lg:overflow-hidden bg-background">
+      {/* Mobile header — logo + framework pill */}
+      <div className="flex lg:hidden shrink-0 items-center justify-between border-b border-foreground/[0.06] px-4 py-2">
+        <a
+          href="https://github.com/runpod/a2go"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+        >
+          <img
+            src={`${import.meta.env.BASE_URL}a2go_logo_nobg.png`}
+            alt="agent2go"
+            width={28}
+            height={28}
+            className="h-7 w-7 object-contain"
+          />
+          <span className="font-mono text-[11px] font-bold tracking-tight text-foreground/70">
+            agent2go
+          </span>
+        </a>
+        <FrameworkPill selected={framework} />
+      </div>
+
+      {/* On mobile: both panels render in a single scrollable column.
+          On desktop (lg+): side-by-side layout as before. */}
       <ModelCatalog
-        models={allModels}
+        entries={allEntries}
         os={os}
         onOsChange={handleOsChange}
         selectedModelIds={selectedModelIds}
@@ -212,23 +271,26 @@ function App() {
         effectiveVramMb={effectiveVramMb}
         onClearAll={handleClearAll}
         hasSelections={hasSelections}
+        framework={framework}
       />
       <ConfigPanel
         selectedModels={selectedModels}
-        totalVramGb={totalVramGb}
-        effectiveVramGb={effectiveVramGb}
         selectedVramGb={selectedVramGb}
         selectedGpu={selectedGpu}
         gpus={filteredGpus}
-        totalVramMb={totalVramMb}
         gpuCount={gpuCount}
         onGpuSelect={handleGpuSelect}
         onVramPreset={handleVramPreset}
         onToggleModel={toggleModel}
         onClearAll={handleClearAll}
         modelIdToGroup={modelIdToGroup}
+        modelIdToEntry={modelIdToEntry}
         os={os}
         hasSelections={hasSelections}
+        contextOverride={contextOverride}
+        onContextChange={setContextOverride}
+        swapModelVariant={swapModelVariant}
+        framework={framework}
       />
     </div>
   )

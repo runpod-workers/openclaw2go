@@ -16,6 +16,7 @@
     "build:prod": "npm run catalog:prod && npm run build"
   },
   "dependencies": {
+    "@radix-ui/react-popover": "^1.1.15",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@tailwindcss/vite": "^4.1.18",

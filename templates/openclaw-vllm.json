@@ -1,7 +1,7 @@
 {
   "tiers": {
     "tier1": {
-      "name": "openclaw2go-vllm-qwen3",
+      "name": "a2go-vllm-qwen3",
       "description": "Tier 1: Qwen3-30B-A3B on 1x H100 (~$2/hr) - Best for validation",
       "imageName": "vllm/vllm-openai:v0.12.0",
       "containerDiskInGb": 50,
@@ -25,7 +25,7 @@
       ]
     },
     "tier2": {
-      "name": "openclaw2go-vllm-mimo",
+      "name": "a2go-vllm-mimo",
       "description": "Tier 2: MiMo-V2-Flash on 2x H100 (~$4/hr) - Fastest inference",
       "imageName": "vllm/vllm-openai:v0.12.0",
       "containerDiskInGb": 50,
@@ -48,7 +48,7 @@
       ]
     },
     "tier3": {
-      "name": "openclaw2go-vllm-glm47",
+      "name": "a2go-vllm-glm47",
       "description": "Tier 3: GLM-4.7-FP8 on 4x H100 or 2x H200 (~$7-8/hr) - SOTA tool calling",
       "imageName": "vllm/vllm-openai:latest",
       "containerDiskInGb": 100,
@@ -73,7 +73,7 @@
       ]
     },
     "tier3_h200": {
-      "name": "openclaw2go-vllm-glm47-h200",
+      "name": "a2go-vllm-glm47-h200",
       "description": "Tier 3 Alt: GLM-4.7-FP8 on 2x H200 (~$7/hr) - Best value for SOTA",
       "imageName": "vllm/vllm-openai:latest",
       "containerDiskInGb": 100,

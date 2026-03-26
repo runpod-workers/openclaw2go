@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-openclaw-tts - Text-to-Speech using LFM2.5-Audio server
-Converts text to speech using the persistent audio server (near-instant inference)
+openclaw-tts - Text-to-Speech using the active audio/TTS engine
+
+Auto-detects the running engine (LFM2.5-Audio native or Qwen3-TTS/OpenAI-compatible)
+and uses the correct API.
 
 Usage:
   openclaw-tts "Hello world" --output /tmp/hello.wav
@@ -17,10 +19,10 @@ import sys
 import wave
 import urllib.request
 
-AUDIO_SERVER_URL = "http://localhost:8001/v1/chat/completions"
 SAMPLE_RATE = 24000
 
-VOICES = {
+# LFM2.5-Audio voice prompts (native engine only)
+LFM_VOICES = {
     "US male": "Perform TTS. Use the US male voice.",
     "UK male": "Perform TTS. Use the UK male voice.",
     "US female": "Perform TTS. Use the US female voice.",
@@ -28,33 +30,74 @@ VOICES = {
 }
 
 
-def tts_stream(text: str, voice: str = "US male") -> list:
-    """Stream TTS from server, return audio samples as 16-bit integers."""
-    system_prompt = VOICES.get(voice, VOICES["US male"])
-    
+def detect_engine():
+    """Read engine metadata written by the entrypoint."""
+    for path in ["/tmp/oc_audio_engine", "/tmp/oc_tts_engine"]:
+        try:
+            with open(path) as f:
+                meta = json.load(f)
+                return meta
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
+    return None
+
+
+def tts_openai(text: str, port: int, model: str, voice: str, output_path: str):
+    """TTS via OpenAI-compatible /v1/audio/speech endpoint (Qwen3-TTS etc.)."""
+    url = f"http://localhost:{port}/v1/audio/speech"
+    payload = {
+        "model": model or "tts",
+        "input": text,
+        "voice": voice or "alloy",
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=300) as response:
+            audio_data = response.read()
+            output_dir = os.path.dirname(os.path.abspath(output_path))
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
+            with open(output_path, "wb") as f:
+                f.write(audio_data)
+            return len(audio_data)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def tts_lfm_native(text: str, port: int, voice: str, output_path: str):
+    """TTS via LFM2.5-Audio native streaming API (chat completions with audio chunks)."""
+    url = f"http://localhost:{port}/v1/chat/completions"
+    system_prompt = LFM_VOICES.get(voice, LFM_VOICES["US male"])
+
     payload = {
         "model": "",
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text}
+            {"role": "user", "content": text},
         ],
         "stream": True,
-        "max_tokens": 4096
+        "max_tokens": 4096,
     }
-    
+
     req = urllib.request.Request(
-        AUDIO_SERVER_URL,
-        data=json.dumps(payload).encode('utf-8'),
+        url,
+        data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
-        method="POST"
+        method="POST",
     )
-    
+
     all_samples = []
-    
+
     try:
-        with urllib.request.urlopen(req, timeout=120) as response:
+        with urllib.request.urlopen(req, timeout=300) as response:
             for line in response:
-                line = line.decode('utf-8').strip()
+                line = line.decode("utf-8").strip()
                 if not line or line == "data: [DONE]":
                     continue
                 if line.startswith("data: "):
@@ -73,49 +116,62 @@ def tts_stream(text: str, voice: str = "US male") -> list:
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-    
-    return all_samples
 
+    if not all_samples:
+        print("Error: No audio generated", file=sys.stderr)
+        sys.exit(1)
 
-def save_wav(samples: list, output_path: str, sample_rate: int = SAMPLE_RATE):
-    """Save 16-bit samples to WAV file."""
     output_dir = os.path.dirname(os.path.abspath(output_path))
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
-    with wave.open(output_path, 'wb') as wav_file:
+    with wave.open(output_path, "wb") as wav_file:
         wav_file.setnchannels(1)
-        wav_file.setsampwidth(2)  # 16-bit
-        wav_file.setframerate(sample_rate)
-        wav_file.writeframes(struct.pack(f"<{len(samples)}h", *samples))
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(SAMPLE_RATE)
+        wav_file.writeframes(struct.pack(f"<{len(all_samples)}h", *all_samples))
+
+    return len(all_samples) / SAMPLE_RATE
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert text to speech using LFM2.5-Audio")
+    parser = argparse.ArgumentParser(description="Convert text to speech")
     parser.add_argument("text", nargs="?", help="Text to convert to speech")
     parser.add_argument("-t", "--text", dest="text_opt", help="Text to convert (alternative)")
     parser.add_argument("-o", "--output", required=True, help="Output WAV file path")
-    parser.add_argument("-v", "--voice", default="US male", 
-                        choices=list(VOICES.keys()), help="Voice to use")
-    
+    parser.add_argument("-v", "--voice", default=None, help="Voice to use")
+    parser.add_argument("--port", type=int, default=None, help="Audio server port (auto-detected)")
+
     args = parser.parse_args()
     text = args.text or args.text_opt
-    
+
     if not text:
         print("Error: Text is required", file=sys.stderr)
         parser.print_help()
         sys.exit(1)
-    
-    print(f"Generating speech for: \"{text}\"", file=sys.stderr)
-    
-    samples = tts_stream(text, args.voice)
-    
-    if not samples:
-        print("Error: No audio generated", file=sys.stderr)
-        sys.exit(1)
-    
-    save_wav(samples, args.output)
-    duration = len(samples) / SAMPLE_RATE
-    print(f"Success! Audio saved to: {args.output} ({duration:.2f}s)", file=sys.stderr)
+
+    # Auto-detect engine
+    engine_meta = detect_engine()
+    engine_type = engine_meta.get("type", "native") if engine_meta else "native"
+    port = args.port or (engine_meta.get("port", 8001) if engine_meta else 8001)
+    model = engine_meta.get("model", "") if engine_meta else ""
+    engine_name = engine_meta.get("engine", "unknown") if engine_meta else "unknown"
+
+    print(f'Generating speech for: "{text}"', file=sys.stderr)
+
+    if engine_type == "python-venv":
+        # OpenAI-compatible API (Qwen3-TTS, etc.)
+        print(f"  Engine: {engine_name} (OpenAI TTS API on port {port})", file=sys.stderr)
+        size = tts_openai(text, port, model, args.voice or "alloy", args.output)
+        print(f"Success! Audio saved to: {args.output} ({size} bytes)", file=sys.stderr)
+    else:
+        # LFM2.5-Audio native streaming API
+        voice = args.voice or "US male"
+        if voice not in LFM_VOICES:
+            print(f"Warning: Unknown voice '{voice}', using 'US male'", file=sys.stderr)
+            voice = "US male"
+        print(f"  Engine: {engine_name} (LFM native on port {port})", file=sys.stderr)
+        duration = tts_lfm_native(text, port, voice, args.output)
+        print(f"Success! Audio saved to: {args.output} ({duration:.2f}s)", file=sys.stderr)
 
 
 if __name__ == "__main__":

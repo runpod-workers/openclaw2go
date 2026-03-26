@@ -1,11 +1,11 @@
 # Verified GPU Configurations
 
-Tested configurations for the unified OpenClaw2Go image. Each entry records the GPU, config, and verification results.
+Tested configurations for the unified agent2go image. Each entry records the GPU, config, and verification results.
 
 ## Test Procedure
 
 1. Create pod with target GPU and unified image
-2. Set `OPENCLAW2GO_CONFIG` env var to the test config
+2. Set `A2GO_CONFIG` env var to the test config
 3. Verify services start:
    - LLM: `curl http://localhost:8000/health` + `curl http://localhost:8000/v1/models`
    - Audio: `openclaw-tts "Hello" --output /tmp/test.wav` (if audio enabled)
@@ -75,7 +75,6 @@ Tested configurations for the unified OpenClaw2Go image. Each entry records the 
 | Config | Services | Context | VRAM Used | Status | Date | Notes |
 |--------|----------|---------|-----------|--------|------|-------|
 | `{"llm":"unsloth/glm5-tq1-gguf"}` | LLM (GLM-5 TQ1_0 1-bit) | 202k | 175030 / 183359 MiB | **PASS** | 2026-02-13 | PR #19460 engine, reasoning works, ~27 tok/s, ~8 GB free, max context |
-| `{"llm":"ubergarm/minimax-m25-iq3ks-gguf"}` | LLM (MiniMax-M2.5 smol-IQ3_KS 3-bit) | 196k | 115478 / 183359 MiB | **PASS** | 2026-02-19 | 229B MoE, ik_llama.cpp, reasoning+tool calling work, ~93 tok/s, ~68 GB free, KV=130 MB/1k |
 | `{"llm":"ubergarm/minimax-m25-iq4xs-gguf"}` | LLM (MiniMax-M2.5 IQ4_XS 4-bit) | 196k | 143956 / 183359 MiB | **PASS** | 2026-02-13 | 229B MoE, reasoning+tool calling work, ~109 tok/s, ~38 GB free, KV=130 MB/1k |
 | `{"llm":"unsloth/nemotron3-super-q8-gguf"}` | LLM (Nemotron-3-Super Q8_0) | 256k | 124678 / 183359 MiB | **PASS** | 2026-03-13 | 120B MoE (12B active), Mamba2-Transformer hybrid, reasoning works, ~90 tok/s, ~58 GB free, KV=8 MB/1k. Requires llama.cpp b8310+ (PR #20411) |
 
@@ -97,7 +96,7 @@ vLLM was removed from the default image in Feb 2025 to reduce image size (~5-6 G
 
 ## Docker Image
 
-- **Image**: `runpod/openclaw2go:<tag>`
-- **Engines**: `runpod/openclaw2go-engines:<tag>`
+- **Image**: `runpod/a2go:<tag>`
+- **Engines**: `runpod/a2go-engines:<tag>`
 - **Dockerfile**: `Dockerfile.unified` (runtime), `engines/Dockerfile` (llama.cpp builds)
 - **CUDA Architectures**: sm_80 (A100), sm_89 (RTX 4090/L40), sm_90 (H100), sm_100 (B200), sm_120 (RTX 5090/RTX Pro 6000)

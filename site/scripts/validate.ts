@@ -19,7 +19,7 @@ const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 const MODELS_DIR = join(REPO_ROOT, 'registry', 'models')
 const GPUS_DIR = join(REPO_ROOT, 'registry', 'gpus')
 
-const ALLOWED_ENGINES = new Set(['llamacpp', 'llamacpp-audio', 'llamacpp-glm-dsa', 'ik-llamacpp', 'image-gen', 'qwen3-tts', 'mlx', 'mlx-lm', 'mlx-audio', 'mflux', 'openclaw2go-llamacpp', 'vllm'])
+const ALLOWED_ENGINES = new Set(['a2go-llamacpp', 'image-gen', 'qwen3-tts', 'mlx-lm', 'mlx-audio', 'mflux'])
 const ALLOWED_TYPES = new Set(['llm', 'audio', 'image', 'vision', 'embedding', 'reranking', 'tts'])
 const ALLOWED_STATUSES = new Set(['stable', 'experimental', 'deprecated'])
 
@@ -38,10 +38,20 @@ function listJsonFiles(dir: string): string[] {
 function validateModel(data: Record<string, unknown>, filepath: string): string[] {
   const errors: string[] = []
 
-  for (const field of ['id', 'name', 'type', 'engine', 'vram']) {
+  for (const field of ['id', 'group', 'family', 'name', 'type', 'engine', 'vram']) {
     if (!(field in data)) errors.push(`${filepath}: missing required field '${field}'`)
   }
   if (errors.length > 0) return errors
+
+  const groupPattern = /^[a-z0-9-]+$/
+  const group = data.group as string
+  if (!groupPattern.test(group)) {
+    errors.push(`${filepath}: group '${group}' must match ^[a-z0-9-]+$`)
+  }
+  const family = data.family as string
+  if (!groupPattern.test(family)) {
+    errors.push(`${filepath}: family '${family}' must match ^[a-z0-9-]+$`)
+  }
 
   if (!ALLOWED_TYPES.has(data.type as string)) {
     errors.push(`${filepath}: invalid type '${data.type}' (allowed: ${[...ALLOWED_TYPES].join(', ')})`)
@@ -152,6 +162,22 @@ async function main() {
       errors.push(`Duplicate model ID '${id}': ${file} and ${seenModelIds.get(id)}`)
     }
     seenModelIds.set(id, file)
+  }
+
+  // Cross-file: models in the same group must have the same family
+  const groupFamilyMap = new Map<string, { family: string; file: string }>()
+  for (const [, { data, file }] of allModels) {
+    const group = data.group as string | undefined
+    const family = data.family as string | undefined
+    if (!group || !family) continue
+    const existing = groupFamilyMap.get(group)
+    if (existing) {
+      if (existing.family !== family) {
+        errors.push(`Group '${group}' has inconsistent family: '${family}' in ${file} vs '${existing.family}' in ${existing.file}`)
+      }
+    } else {
+      groupFamilyMap.set(group, { family, file })
+    }
   }
 
   // Validate GPUs

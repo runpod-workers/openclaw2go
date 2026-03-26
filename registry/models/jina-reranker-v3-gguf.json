@@ -1,8 +1,11 @@
 {
   "id": "jinaai/jina-reranker-v3-gguf",
+  "group": "jina-reranker-v3",
+  "family": "jina-reranker-v3",
+  "catalogKey": "jina-reranker-v3",
   "name": "Jina Reranker v3 GGUF Q8_0",
   "type": "reranking",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 8,
   "repo": "jinaai/jina-reranker-v3-GGUF",
   "files": [

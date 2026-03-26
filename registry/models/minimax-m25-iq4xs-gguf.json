@@ -1,8 +1,11 @@
 {
   "id": "ubergarm/minimax-m25-iq4xs-gguf",
+  "group": "minimax-m25-4bit",
+  "family": "minimax-m25",
+  "catalogKey": "minimax-m25",
   "name": "MiniMax-M2.5 GGUF IQ4_XS (123GB, 4-split)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "ubergarm/MiniMax-M2.5-GGUF",
   "files": [

@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
 """
-resolve-profile.py - Resolve OpenClaw2Go configuration to a runnable service set.
+resolve-profile.py - Resolve agent2go configuration to a runnable service set.
 
-Reads OPENCLAW2GO_CONFIG env var (JSON), resolves against registry files,
+Reads A2GO_CONFIG env var (JSON), resolves against registry files,
 detects GPU via nvidia-smi, validates VRAM budget, auto-computes optimal
 context length, and outputs resolved config JSON to stdout.
 
-Config format (OPENCLAW2GO_CONFIG env var):
+Config format (A2GO_CONFIG env var):
 
-  Model-based (primary approach):
+  Model-based (primary approach — each role takes a string model slug):
     {"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio", "image": "disty0/flux2-klein-sdnq"}
     {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "liquidai/lfm25-audio"}
     {"llm": "unsloth/glm47-flash-gguf"}
     {"llm": "unsloth/glm47-flash-gguf", "contextLength": 200000}
     {"vision": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF"}
-    {"llm": "unsloth/glm47-flash-gguf", "embedding": true}
-    {"llm": "unsloth/glm47-flash-gguf", "reranking": true}
-    {"llm": "unsloth/glm47-flash-gguf", "tts": true}
-
-  Boolean `true` is still accepted for backwards compatibility (resolves to
-  the default model for that role), but explicit model IDs are preferred.
+    {"llm": "unsloth/glm47-flash-gguf", "embedding": "jinaai/jina-reranker-v3-gguf"}
+    {"llm": "unsloth/glm47-flash-gguf", "tts": "qwen/qwen3-tts-06b"}
 
   Model names are case-insensitive. You can use the HuggingFace repo name
   (e.g., "unsloth/GLM-4.7-Flash-GGUF") or the short model ID
   (e.g., "unsloth/glm47-flash-gguf").
+
+  When a HuggingFace repo contains multiple quantizations, append ":Nbit" to disambiguate:
+    {"llm": "unsloth/Qwen3.5-122B-A10B-GGUF:4bit"}
 
   Profile shorthand (optional presets):
     {"profile": "rtx5090-full-stack"}                 — load a pre-defined preset
@@ -34,6 +33,7 @@ Config format (OPENCLAW2GO_CONFIG env var):
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -55,7 +55,7 @@ ROLE_PORTS = {
     "tts": 8006,
 }
 
-# Roles that support OPENCLAW2GO_CONFIG keys
+# Roles that support A2GO_CONFIG keys
 CONFIG_ROLES = ("llm", "audio", "image", "vision", "embedding", "reranking", "tts")
 
 
@@ -125,9 +125,14 @@ def get_default_model(models, model_type):
     return None
 
 
-def find_model(value, models):
-    """Find a model by ID or HuggingFace repo name (case-insensitive)."""
-    # Exact match first
+def find_model(value, models, bits=None):
+    """Find a model by ID or HuggingFace repo name (case-insensitive).
+
+    When bits is provided and matching by repo, filters candidates to those
+    with the matching bit size. This disambiguates repos that contain multiple
+    quantizations (e.g. 2-bit and 4-bit variants of the same model).
+    """
+    # Exact match first (by ID)
     if value in models:
         return models[value]
     # Case-insensitive match on ID
@@ -136,30 +141,83 @@ def find_model(value, models):
         if model_id.lower() == value_lower:
             return model
     # Case-insensitive match on HuggingFace repo name
+    repo_matches = []
     for model_id, model in models.items():
         repo = model.get("repo", "")
         if repo.lower() == value_lower:
-            return model
+            repo_matches.append(model)
+    if repo_matches:
+        if bits is not None:
+            filtered = [m for m in repo_matches if m.get("bits") == bits]
+            if len(filtered) == 1:
+                return filtered[0]
+            # bits didn't match any candidate — return None so caller can show error
+            if not filtered:
+                return None
+        return repo_matches[0]
+    # 4. Case-insensitive match on repo name without org prefix
+    partial_matches = []
+    for model_id, model in models.items():
+        repo = model.get("repo", "")
+        if "/" in repo:
+            repo_name = repo.split("/", 1)[1]
+            if repo_name.lower() == value_lower:
+                partial_matches.append(model)
+    if partial_matches:
+        if bits is not None:
+            filtered = [m for m in partial_matches if m.get("bits") == bits]
+            if len(filtered) == 1:
+                return filtered[0]
+            if not filtered:
+                return None
+        return partial_matches[0]
     return None
 
 
 def resolve_model(value, models, model_type):
-    """Resolve a config value to a model. True = default, string = model ID or HuggingFace repo name."""
-    if value is True:
-        model = get_default_model(models, model_type)
-        if not model:
-            print(f"ERROR: no default model found for type '{model_type}'", file=sys.stderr)
-            sys.exit(1)
-        return model
-    elif isinstance(value, str):
-        model = find_model(value, models)
-        if not model:
-            print(f"ERROR: unknown model '{value}' for type '{model_type}'", file=sys.stderr)
-            available = [f"{m} ({d.get('repo', '')})" for m, d in models.items() if d.get("type") == model_type]
-            print(f"Available {model_type} models: {', '.join(available)}", file=sys.stderr)
-            sys.exit(1)
-        return model
-    return None
+    """Resolve a config value to a model.
+
+    Value is a string with optional ':Nbit' suffix.
+    Examples: "unsloth/Qwen3.5-122B-A10B-GGUF:4bit", "unsloth/glm47-flash-gguf"
+    """
+    if not isinstance(value, str):
+        return None
+    m = re.match(r'^(.+):(\d+)bit$', value)
+    if m:
+        model_name, bits = m.group(1), int(m.group(2))
+    else:
+        model_name, bits = value, None
+    if not model_name:
+        return None
+    model = find_model(model_name, models, bits=bits)
+    if not model:
+        available = [f"{m} ({d.get('repo', '')})" for m, d in models.items() if d.get("type") == model_type]
+        if bits is not None:
+            # Show available bit sizes for the repo to help user pick the right one
+            name_lower = model_name.lower()
+            repo_bits = [str(d.get("bits", "?")) for m, d in models.items()
+                         if d.get("repo", "").lower() == name_lower
+                         or ("/" in d.get("repo", "") and d["repo"].split("/", 1)[1].lower() == name_lower)]
+            if repo_bits:
+                print(f"ERROR: no {bits}-bit variant found for '{model_name}' "
+                      f"(available bit sizes: {', '.join(repo_bits)})", file=sys.stderr)
+                print(f"Available {model_type} models: {', '.join(available)}", file=sys.stderr)
+                sys.exit(1)
+        # Unknown model — warn and create synthetic fallback entry
+        print(f"WARNING: unknown model '{model_name}' for type '{model_type}', "
+              f"using as-is with conservative defaults", file=sys.stderr)
+        print(f"Available {model_type} models: {', '.join(available)}", file=sys.stderr)
+        model = {
+            "id": model_name,
+            "type": model_type,
+            "repo": model_name,
+            "engine": "a2go-llamacpp",
+            "vram": {"model": 20000, "overhead": 2000},
+            "defaults": {"contextLength": 32768},
+            "files": [],
+            "_synthetic": True,
+        }
+    return model
 
 
 def get_kv_cache_rate(llm_model):
@@ -309,12 +367,12 @@ def build_from_profile(profile, models, engines):
 
 
 def main():
-    raw_config = os.environ.get("OPENCLAW2GO_CONFIG", "").strip()
+    raw_config = os.environ.get("A2GO_CONFIG", "").strip()
     if raw_config:
         try:
             config = json.loads(raw_config)
         except json.JSONDecodeError as e:
-            print(f"ERROR: invalid OPENCLAW2GO_CONFIG JSON: {e}", file=sys.stderr)
+            print(f"ERROR: invalid A2GO_CONFIG JSON: {e}", file=sys.stderr)
             sys.exit(1)
     else:
         config = {}

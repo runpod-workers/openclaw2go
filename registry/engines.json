@@ -1,23 +1,14 @@
 {
-  "openclaw2go-llamacpp": {
-    "id": "openclaw2go-llamacpp",
-    "name": "openclaw2go-llamacpp (unified fork)",
+  "a2go-llamacpp": {
+    "id": "a2go-llamacpp",
+    "name": "a2go-llamacpp (unified fork)",
     "description": "Unified llama.cpp fork merging main + audio/TTS, GLM-5 DSA, OuteTTS 1.0, Eagle-3",
-    "binary": "/opt/engines/openclaw2go-llamacpp/bin/llama-server",
-    "binaryTts": "/opt/engines/openclaw2go-llamacpp/bin/llama-tts",
-    "binaryAudio": "/opt/engines/openclaw2go-llamacpp/bin/llama-liquid-audio-server",
-    "libPath": "/opt/engines/openclaw2go-llamacpp/lib",
+    "binary": "/opt/engines/a2go-llamacpp/bin/llama-server",
+    "binaryTts": "/opt/engines/a2go-llamacpp/bin/llama-tts",
+    "binaryAudio": "/opt/engines/a2go-llamacpp/bin/llama-liquid-audio-server",
+    "libPath": "/opt/engines/a2go-llamacpp/lib",
     "type": "native",
-    "source": "https://github.com/runpod-workers/openclaw2go-llamacpp"
-  },
-  "ik-llamacpp": {
-    "id": "ik-llamacpp",
-    "name": "ik_llama.cpp (custom quants)",
-    "description": "ikawrakow fork with custom GGML types (IQ2_KS, smol-IQ3_KS, type 139+)",
-    "binary": "/opt/engines/ik-llamacpp/bin/llama-server",
-    "libPath": "/opt/engines/ik-llamacpp/lib",
-    "type": "native",
-    "source": "https://github.com/ikawrakow/ik_llama.cpp"
+    "source": "https://github.com/runpod-labs/a2go-llamacpp"
   },
   "image-gen": {
     "id": "image-gen",
@@ -48,7 +39,7 @@
   "mflux": {
     "id": "mflux",
     "name": "mflux Image Gen (Mac)",
-    "binary": "python mflux_server.py",
+    "binary": "~/.a2go/bin/mflux-server",
     "type": "python-venv"
   }
 }

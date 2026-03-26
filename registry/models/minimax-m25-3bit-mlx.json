@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/minimax-m25-3bit-mlx",
+  "group": "minimax-m25-3bit",
+  "family": "minimax-m25",
+  "catalogKey": "minimax-m25",
   "name": "MiniMax-M2.5 MLX 3-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 100000,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 130,
+  "kvCacheMbPer1kTokens": 244,
   "defaults": {
     "contextLength": 196608
   },

@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/qwen35-397b-a17b-mlx",
+  "group": "qwen35-397b-a17b-4bit",
+  "family": "qwen35",
+  "catalogKey": "qwen35-397b-a17b",
   "name": "Qwen3.5-397B-A17B MLX 4-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 224000,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 16,
+  "kvCacheMbPer1kTokens": 30,
   "defaults": {
     "contextLength": 1010000
   },

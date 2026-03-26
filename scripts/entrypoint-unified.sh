@@ -1,6 +1,6 @@
 #!/bin/bash
-# Unified OpenClaw2Go entrypoint.
-# Reads OPENCLAW2GO_CONFIG, resolves a profile from the registry, and starts
+# Unified agent2go entrypoint.
+# Reads A2GO_CONFIG, resolves a profile from the registry, and starts
 # all services (LLM, Audio, Image, Vision, Embedding, Reranking, TTS,
 # Web Proxy, OpenClaw Gateway) dynamically.
 #
@@ -10,13 +10,19 @@ set +e
 source /opt/openclaw/entrypoint-common.sh
 
 # ============================================================
-# Setup SSH server FIRST so we can always connect
+# Symlink ~/.openclaw -> /workspace/.openclaw FIRST
+# (must happen before anything creates ~/.openclaw)
+# ============================================================
+oc_create_path_symlinks
+
+# ============================================================
+# Setup SSH server so we can always connect
 # ============================================================
 oc_setup_ssh_manual
 
 echo ""
 echo "================================================"
-echo "  OpenClaw2Go — Unified Image"
+echo "  agent2go — Unified Image"
 echo "================================================"
 
 # ============================================================
@@ -97,7 +103,7 @@ oc_check_cuda
 # ============================================================
 echo ""
 echo "Fetching model registry..."
-FETCHED_DIR="$(openclaw2go registry fetch)" || true
+FETCHED_DIR="$(a2go registry fetch)" || true
 if [ -n "$FETCHED_DIR" ] && [ -d "$FETCHED_DIR" ]; then
     export OPENCLAW_REGISTRY_DIR="$FETCHED_DIR"
     echo "Using registry: $FETCHED_DIR"
@@ -106,14 +112,14 @@ else
 fi
 
 # ============================================================
-# Resolve profile from OPENCLAW2GO_CONFIG
+# Resolve profile from A2GO_CONFIG
 # ============================================================
 echo ""
 echo "Resolving profile..."
 
 RESOLVED_JSON="$(python3 /opt/openclaw/scripts/resolve-profile.py)" || {
     echo "ERROR: Profile resolution failed."
-    echo "Container staying alive for debugging. SSH in and check OPENCLAW2GO_CONFIG."
+    echo "Container staying alive for debugging. SSH in and check A2GO_CONFIG."
     sleep infinity
 }
 
@@ -127,8 +133,10 @@ echo "Profile: $PROFILE_NAME ($PROFILE_ID)"
 # ============================================================
 # Environment defaults
 # ============================================================
-LLAMA_API_KEY="${LLAMA_API_KEY:-changeme}"
-OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
+# Support both LLAMACPP_API_KEY (new) and LLAMA_API_KEY (deprecated)
+LLAMACPP_API_KEY="${LLAMACPP_API_KEY:-${LLAMA_API_KEY:-changeme}}"
+
+OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
 OPENCLAW_WEB_PROXY_PORT="${OPENCLAW_WEB_PROXY_PORT:-8080}"
 
@@ -297,7 +305,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                     --jinja
                     -ctk q8_0
                     -ctv q8_0
-                    --api-key "$LLAMA_API_KEY"
+                    --api-key "$LLAMACPP_API_KEY"
                 )
 
                 # Add -ngl unless "auto" (let --fit determine GPU layers)
@@ -347,32 +355,55 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             ;;
 
         audio)
-            # ── Audio TTS/STT via llama-liquid-audio-server ──
-            FIRST_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f1)"
-            SECOND_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f2)"
-            THIRD_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f3)"
-            FOURTH_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f4)"
+            # Write audio engine metadata so CLI tools can auto-detect the API
+            echo "{\"engine\":\"$engine_id\",\"type\":\"$ENGINE_TYPE\",\"port\":$port,\"model\":\"$MODEL_SERVED_AS\"}" > /tmp/oc_audio_engine
 
-            # Use audio-specific binary from engine if available
-            AUDIO_BINARY="${ENGINE_BINARY_AUDIO:-$ENGINE_BINARY}"
+            if [ "$ENGINE_TYPE" = "python-venv" ]; then
+                # ── Python-based audio (e.g. Qwen3-TTS serving as audio role) ──
+                echo "Starting Audio server (Python venv)..."
+                echo "  Binary: $ENGINE_BINARY"
+                echo "  Model dir: $MODEL_DOWNLOAD_DIR"
+                echo "  Port: $port"
 
-            echo "Starting Audio server (TTS/STT)..."
-            echo "  Binary: $AUDIO_BINARY"
-            echo "  Model: $MODEL_DOWNLOAD_DIR/$FIRST_FILE"
-            echo "  Port: $port (GPU accelerated)"
+                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
+                    source "$ENGINE_VENV/bin/activate"
+                fi
 
-            env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
-                "$AUDIO_BINARY" \
-                -m "$MODEL_DOWNLOAD_DIR/$FIRST_FILE" \
-                -mm "$MODEL_DOWNLOAD_DIR/$SECOND_FILE" \
-                -mv "$MODEL_DOWNLOAD_DIR/$THIRD_FILE" \
-                --tts-speaker-file "$MODEL_DOWNLOAD_DIR/$FOURTH_FILE" \
-                -ngl 99 \
-                --host 0.0.0.0 \
-                --port "$port" \
-                2>&1 &
+                "$ENGINE_BINARY" --model-dir "$MODEL_DOWNLOAD_DIR" --port "$port" \
+                    > /tmp/audio-server.log 2>&1 &
+                echo "$!" > /tmp/oc_audio_pid
 
-            echo "$!" > /tmp/oc_audio_pid
+                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
+                    deactivate 2>/dev/null || true
+                fi
+            else
+                # ── Native audio TTS/STT via llama-liquid-audio-server ──
+                FIRST_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f1)"
+                SECOND_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f2)"
+                THIRD_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f3)"
+                FOURTH_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f4)"
+
+                # Use audio-specific binary from engine if available
+                AUDIO_BINARY="${ENGINE_BINARY_AUDIO:-$ENGINE_BINARY}"
+
+                echo "Starting Audio server (TTS/STT)..."
+                echo "  Binary: $AUDIO_BINARY"
+                echo "  Model: $MODEL_DOWNLOAD_DIR/$FIRST_FILE"
+                echo "  Port: $port (GPU accelerated)"
+
+                env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
+                    "$AUDIO_BINARY" \
+                    -m "$MODEL_DOWNLOAD_DIR/$FIRST_FILE" \
+                    -mm "$MODEL_DOWNLOAD_DIR/$SECOND_FILE" \
+                    -mv "$MODEL_DOWNLOAD_DIR/$THIRD_FILE" \
+                    --tts-speaker-file "$MODEL_DOWNLOAD_DIR/$FOURTH_FILE" \
+                    -ngl 99 \
+                    --host 0.0.0.0 \
+                    --port "$port" \
+                    2>&1 &
+
+                echo "$!" > /tmp/oc_audio_pid
+            fi
             ;;
 
         image)
@@ -411,7 +442,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                 --host 0.0.0.0
                 --port "$port"
                 -ngl 99
-                --api-key "$LLAMA_API_KEY"
+                --api-key "$LLAMACPP_API_KEY"
             )
 
             if [ -n "$MMPROJ_FILE" ]; then
@@ -442,7 +473,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                 --port "$port"
                 -ngl 99
                 --embedding
-                --api-key "$LLAMA_API_KEY"
+                --api-key "$LLAMACPP_API_KEY"
             )
 
             if [ -n "$EXTRA_START_ARGS" ]; then
@@ -472,7 +503,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                 --port "$port"
                 -ngl 99
                 --reranking
-                --api-key "$LLAMA_API_KEY"
+                --api-key "$LLAMACPP_API_KEY"
             )
 
             env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
@@ -483,6 +514,9 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             ;;
 
         tts)
+            # Write TTS engine metadata so CLI tools can auto-detect the API
+            echo "{\"engine\":\"$engine_id\",\"type\":\"$ENGINE_TYPE\",\"port\":$port,\"model\":\"$MODEL_SERVED_AS\"}" > /tmp/oc_tts_engine
+
             if [ "$ENGINE_TYPE" = "python-venv" ]; then
                 # ── Qwen3-TTS via shared pytorch venv ──
                 echo "Starting TTS server (Qwen3-TTS)..."
@@ -626,7 +660,7 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
     "providers": {
       "$LLM_PROVIDER_NAME": {
         "baseUrl": "http://localhost:${LLM_PORT}/v1",
-        "apiKey": "$LLAMA_API_KEY",
+        "apiKey": "$LLAMACPP_API_KEY",
         "api": "openai-completions",
         "models": [{
           "id": "$LLM_MODEL_NAME",
@@ -700,7 +734,7 @@ elif [ -d "/workspace/.config/gh" ] && [ -f "/workspace/.config/gh/hosts.yml" ];
 fi
 
 # Setup Claude Code environment (OpenAI-compatible)
-export OPENAI_API_KEY="$LLAMA_API_KEY"
+export OPENAI_API_KEY="$LLAMACPP_API_KEY"
 export OPENAI_BASE_URL="http://localhost:${LLM_PORT}/v1"
 
 # ============================================================

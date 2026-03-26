@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/glm47-claude-distill-mlx",
+  "group": "glm47-claude-distill",
+  "family": "glm47",
+  "catalogKey": "glm47",
   "name": "GLM-4.7-Flash Claude Distill MLX 8-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 31800,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 40,
+  "kvCacheMbPer1kTokens": 75,
   "defaults": {
     "contextLength": 150000
   },

@@ -7,6 +7,9 @@ export type OsPlatform = 'linux' | 'windows' | 'mac'
 
 export interface CatalogModel {
   id: string
+  group: string
+  family: string
+  catalogKey: string
   name: string
   type: 'llm' | 'image' | 'audio'
   engine: string
@@ -32,21 +35,27 @@ export interface GpuInfo {
 }
 
 const MAC_GPUS: GpuInfo[] = [
+  { id: 'apple-m4-16gb', name: 'm4 16gb', vramMb: 16384, os: ['mac'] },
   { id: 'apple-m3-pro-18gb', name: 'm3 pro', vramMb: 18432, os: ['mac'] },
-  { id: 'apple-m4-24gb', name: 'm4', vramMb: 24576, os: ['mac'] },
-  { id: 'apple-m4-pro-48gb', name: 'm4 pro', vramMb: 49152, os: ['mac'] },
+  { id: 'apple-m4-24gb', name: 'm4 24gb', vramMb: 24576, os: ['mac'] },
+  { id: 'apple-m4-pro-24gb', name: 'm4 pro 24gb', vramMb: 24576, os: ['mac'] },
+  { id: 'apple-m4-32gb', name: 'm4 32gb', vramMb: 32768, os: ['mac'] },
+  { id: 'apple-m4-pro-48gb', name: 'm4 pro 48gb', vramMb: 49152, os: ['mac'] },
   { id: 'apple-m4-max-128gb', name: 'm4 max', vramMb: 131072, os: ['mac'] },
   { id: 'apple-m4-ultra-256gb', name: 'm4 ultra', vramMb: 262144, os: ['mac'] },
 ]
 
-export const VRAM_PRESETS = [8, 16, 24, 32, 48, 80, 128, 141, 192, 256, 288]
+export const VRAM_PRESETS = [8, 16, 24, 32, 48, 80, 128, 141, 192, 256, 288, 384, 512]
 export const GPU_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8] as const
 export type GpuCount = (typeof GPU_COUNTS)[number]
 
-/** Minimum GPU count needed to fit the given VRAM (in MB) on a single GPU's VRAM */
-export function getMinGpuCount(totalVramMb: number, gpuVramMb: number): GpuCount {
-  if (gpuVramMb <= 0) return 1
-  const needed = Math.ceil(totalVramMb / gpuVramMb)
+/** Minimum GPU count needed to fit the given VRAM (in MB) on a single GPU's VRAM.
+ *  Mac/Apple Silicon does not support multi-GPU scaling — always returns 1. */
+export function getMinGpuCount(totalVramMb: number, gpu: { vramMb: number; os: OsPlatform[] }): GpuCount {
+  if (gpu.vramMb <= 0) return 1
+  const isMac = gpu.os.includes('mac')
+  if (isMac) return 1
+  const needed = Math.ceil(totalVramMb / gpu.vramMb)
   return Math.max(1, Math.min(needed, 8)) as GpuCount
 }
 
@@ -85,8 +94,20 @@ export function formatContext(tokens: number): string {
   return `${tokens}`
 }
 
-export function getTotalVram(selectedModels: CatalogModel[]): number {
-  return selectedModels.reduce((sum, m) => sum + m.vram.model + m.vram.overhead, 0)
+/** Total runtime VRAM: weights + overhead + KV cache at default context length */
+export function getTotalVram(selectedModels: CatalogModel[], llmContextOverride?: number | null): number {
+  return selectedModels.reduce((sum, m) => {
+    const ctxLen = (m.type === 'llm' && llmContextOverride != null) ? llmContextOverride : m.contextLength
+    const kvCacheMb = (m.kvCacheMbPer1kTokens && ctxLen)
+      ? (ctxLen / 1000) * m.kvCacheMbPer1kTokens
+      : 0
+    return sum + m.vram.model + m.vram.overhead + kvCacheMb
+  }, 0)
+}
+
+/** VRAM without KV cache — used for catalog size display */
+export function getModelVram(model: CatalogModel): number {
+  return model.vram.model + model.vram.overhead
 }
 
 export function getModelsForOs(os: OsPlatform | null, allModels: CatalogModel[]): CatalogModel[] {
@@ -101,6 +122,9 @@ export function getGpusForOs(os: OsPlatform | null, allGpus: GpuInfo[]): GpuInfo
 
 interface RawModel {
   id: string
+  group: string
+  family: string
+  catalogKey: string
   name: string
   type: 'llm' | 'audio' | 'image'
   engine: string
@@ -141,6 +165,9 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
     if (m.platform === 'mlx') {
       return [{
         id: m.id,
+        group: m.group,
+        family: m.family,
+        catalogKey: m.catalogKey,
         name: m.name.toLowerCase(),
         type: m.type,
         engine: m.engine,
@@ -162,6 +189,9 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
     // GGUF model → Linux/Windows entry
     const ggufEntry: CatalogModel = {
       id: m.id,
+      group: m.group,
+      family: m.family,
+      catalogKey: m.catalogKey,
       name: m.name.toLowerCase(),
       type: m.type,
       engine: m.engine,

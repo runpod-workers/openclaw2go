@@ -49,10 +49,9 @@ ENV MAX_MODEL_LEN="114688"
 ENV VLLM_API_KEY="changeme"
 
 # OpenClaw workspace
-ENV OPENCLAW_STATE_DIR="/workspace/.openclaw"
 ENV OPENCLAW_WORKSPACE="/workspace/openclaw"
 
-COPY skills/ /opt/openclaw/skills/
+COPY openclaw/skills/ /opt/openclaw/skills/
 COPY scripts/openclaw-image-gen /usr/local/bin/openclaw-image-gen
 COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
 COPY models/glm47-flash-awq-4bit/entrypoint.sh /entrypoint.sh

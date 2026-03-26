@@ -61,11 +61,12 @@ export default function GpuSelector({
   }, [gpus])
 
   function renderGpu(gpu: GpuInfo) {
-    const count = getMinGpuCount(totalVramNeeded, gpu.vramMb)
+    const count = getMinGpuCount(totalVramNeeded, gpu)
     const effectiveVram = gpu.vramMb * count
     const isSelected = selectedGpu?.id === gpu.id
 
-    const cantFit = totalVramNeeded > 0 && gpu.vramMb * 8 < totalVramNeeded
+    const isMac = gpu.os.includes('mac')
+    const cantFit = totalVramNeeded > 0 && (isMac ? gpu.vramMb < totalVramNeeded : gpu.vramMb * 8 < totalVramNeeded)
     const fitsPreset = selectedVramGb ? effectiveVram >= selectedVramGb * 1024 : true
 
     const disabled = cantFit || !fitsPreset

@@ -2,13 +2,12 @@
 # Pre-configured with everything needed for AI coding assistant
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
-LABEL maintainer="Runpod OpenClaw2Go"
-LABEL description="OpenClaw2Go with vLLM for local LLM inference"
+LABEL maintainer="Runpod agent2go"
+LABEL description="agent2go with vLLM for local LLM inference"
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 ENV HF_HOME=/workspace/huggingface
-ENV OPENCLAW_STATE_DIR=/workspace/.openclaw
 ENV OPENCLAW_WORKSPACE=/workspace/openclaw
 
 # Install system dependencies
@@ -41,7 +40,7 @@ RUN mkdir -p /workspace/huggingface \
     /workspace/scripts
 
 # Copy startup scripts + skills + CLI
-COPY skills/ /opt/openclaw/skills/
+COPY openclaw/skills/ /opt/openclaw/skills/
 COPY scripts/openclaw-image-gen /usr/local/bin/openclaw-image-gen
 COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
 COPY scripts/entrypoint.sh /entrypoint.sh

@@ -1,8 +1,11 @@
 {
   "id": "teichai/glm47-claude-distill-gguf",
+  "group": "glm47-claude-distill",
+  "family": "glm47",
+  "catalogKey": "glm47",
   "name": "GLM-4.7-Flash Claude Distill GGUF Q4_K_M",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "TeichAI/GLM-4.7-Flash-Claude-Opus-4.5-High-Reasoning-Distill-GGUF",
   "files": [
@@ -11,7 +14,7 @@
   "downloadDir": "/workspace/models/GLM-4.7-Claude-Distill-GGUF",
   "servedAs": "glm-4.7-flash-claude-distill",
   "vram": {
-    "model": 17300,
+    "model": 18100,
     "overhead": 500
   },
   "kvCacheMbPer1kTokens": 40,

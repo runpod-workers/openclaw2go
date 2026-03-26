@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/qwen3-coder-next-mlx",
+  "group": "qwen3-coder-next",
+  "family": "qwen3-coder-next",
+  "catalogKey": "qwen3-coder-next",
   "name": "Qwen3-Coder-Next MLX 4-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 45000,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 13,
+  "kvCacheMbPer1kTokens": 24,
   "defaults": {
     "contextLength": 32768
   },

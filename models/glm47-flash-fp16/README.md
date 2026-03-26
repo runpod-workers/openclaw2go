@@ -29,7 +29,7 @@ Best quality with auto-detected context based on GPU.
 
 ### 1. Create Runpod Pod
 
-- **Image**: `yourusername/openclaw2go-glm4.7-flash-fp16:latest`
+- **Image**: `yourusername/a2go-glm4.7-flash-fp16:latest`
 - **GPU**: 1x H100 80GB or A100 80GB
 - **Volume**: 50GB at `/workspace`
 - **Container Disk**: 100GB (model stored here)

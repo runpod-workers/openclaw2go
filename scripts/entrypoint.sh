@@ -16,9 +16,13 @@ GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.90}"
 TOOL_CALL_PARSER="${TOOL_CALL_PARSER:-hermes}"
 TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-auto}"
 HF_HOME="${HF_HOME:-/workspace/huggingface}"
-OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
 OPENCLAW_WEB_PASSWORD="${OPENCLAW_WEB_PASSWORD:-changeme}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+
+# Symlink ~/.openclaw -> /workspace/.openclaw on RunPod (before setting defaults)
+oc_create_path_symlinks
+
+OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 
 export HF_HOME
 export OPENCLAW_STATE_DIR

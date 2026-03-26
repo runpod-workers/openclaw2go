@@ -1,0 +1,7 @@
+{
+  "id": "rtx-3090",
+  "name": "NVIDIA RTX 3090",
+  "vramMb": 24576,
+  "arch": "sm_86",
+  "minCuda": "11.0"
+}

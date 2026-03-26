@@ -1,8 +1,11 @@
 {
   "id": "unsloth/qwen35-397b-a17b-gguf",
+  "group": "qwen35-397b-a17b-2bit",
+  "family": "qwen35",
+  "catalogKey": "qwen35-397b-a17b",
   "name": "Qwen3.5-397B-A17B UD-Q2_K_XL (2-bit, 137GB, 1M context, 4-split)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 2,
   "repo": "unsloth/Qwen3.5-397B-A17B-GGUF",
   "files": [

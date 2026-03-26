@@ -1,11 +1,11 @@
-# Install openclaw2go CLI for Windows
-# Usage: irm https://openclaw2go.io/install.ps1 | iex
+# Install a2go CLI for Windows
+# Usage: irm https://a2go.run/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$Repo = "runpod-workers/openclaw2go-cli"
-$Binary = "openclaw2go"
-$Asset = "${Binary}-windows-amd64.exe"
+$Repo = "runpod/a2go"
+$Binary = "a2go"
+$Asset = "a2go_windows_amd64.exe"
 
 # Get latest release tag
 Write-Host "Finding latest release..."
@@ -24,7 +24,7 @@ Write-Host "Downloading $Binary $Tag for windows/amd64..."
 Write-Host "  $Url"
 
 # Install directory
-$InstallDir = "$env:LOCALAPPDATA\openclaw2go"
+$InstallDir = "$env:LOCALAPPDATA\a2go"
 if (-not (Test-Path $InstallDir)) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
@@ -53,4 +53,5 @@ if ($UserPath -notlike "*$InstallDir*") {
 }
 
 Write-Host ""
-Write-Host "Run 'openclaw2go version' to verify the installation."
+Write-Host "Next: a2go doctor"
+Write-Host ""

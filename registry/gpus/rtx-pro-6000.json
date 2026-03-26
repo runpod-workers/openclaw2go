@@ -1,0 +1,7 @@
+{
+  "id": "rtx-pro-6000",
+  "name": "NVIDIA RTX Pro 6000",
+  "vramMb": 98304,
+  "arch": "sm_120",
+  "minCuda": "12.8"
+}

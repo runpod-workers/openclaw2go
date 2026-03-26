@@ -83,7 +83,7 @@ export function buildCatalog(outputDir: string): boolean {
   let ok = true
 
   for (const m of models) {
-    if (!validateRequired(m, ['id', 'name', 'type', 'engine', 'vram'], 'model', (m._source as string) ?? '?')) ok = false
+    if (!validateRequired(m, ['id', 'group', 'family', 'catalogKey', 'name', 'type', 'engine', 'vram'], 'model', (m._source as string) ?? '?')) ok = false
   }
   for (const g of gpus) {
     if (!validateRequired(g, ['id', 'name', 'vramMb', 'arch'], 'gpu', (g._source as string) ?? '?')) ok = false

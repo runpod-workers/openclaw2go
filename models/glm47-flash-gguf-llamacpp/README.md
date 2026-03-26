@@ -33,7 +33,7 @@ llama.cpp has native support for `Glm4MoeLite` architecture (PR #18936 merged Ja
 1. **Add your SSH key** to [Runpod Account Settings → SSH Public Keys](https://www.runpod.io/console/user/settings) (required for device pairing later). If you don't have an SSH key, follow the [Runpod SSH guide](https://docs.runpod.io/pods/configuration/use-ssh).
 
 2. **Create a Pod** with:
-   - Image: `runpod/openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest`
+   - Image: `runpod/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest`
    - GPU: RTX 5090 (or any 32GB+ GPU)
    - Ports: `8000/http`, `8080/http`, `18789/http`, `22/tcp`
    - Network Volume: **30GB minimum**, mounted to `/workspace`
@@ -99,13 +99,13 @@ Note: audio/image servers run on `8001/8002` internally and are not exposed.
 
 ```bash
 # Build
-docker build -f models/glm47-flash-gguf-llamacpp/Dockerfile -t openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf .
+docker build -f models/glm47-flash-gguf-llamacpp/Dockerfile -t a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf .
 
 # Run on RTX 5090
 docker run --gpus all -p 8000:8000 -p 8080:8080 -p 18789:18789 \
   -v /path/to/workspace:/workspace \
   -e LLAMA_API_KEY=your-key \
-  openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf
+  a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf
 ```
 
 ## API Usage

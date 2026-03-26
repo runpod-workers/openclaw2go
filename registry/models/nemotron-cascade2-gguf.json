@@ -1,0 +1,25 @@
+{
+  "id": "bartowski/nemotron-cascade2-gguf",
+  "group": "nemotron-cascade2",
+  "family": "nemotron-cascade2",
+  "catalogKey": "nemotron-cascade2",
+  "name": "Nemotron-Cascade-2-30B-A3B GGUF IQ4_XS",
+  "type": "llm",
+  "engine": "a2go-llamacpp",
+  "bits": 4,
+  "repo": "bartowski/nvidia_Nemotron-Cascade-2-30B-A3B-GGUF",
+  "files": ["nvidia_Nemotron-Cascade-2-30B-A3B-IQ4_XS.gguf"],
+  "downloadDir": "/workspace/models/Nemotron-Cascade-2-GGUF",
+  "servedAs": "nemotron-cascade-2",
+  "vram": { "model": 17200, "overhead": 500 },
+  "kvCacheMbPer1kTokens": 6,
+  "defaults": { "contextLength": 1048576, "port": 8000 },
+  "startDefaults": { "gpuLayers": "999", "parallel": "1" },
+  "extraStartArgs": ["--prio", "3"],
+  "provider": { "name": "local-llamacpp", "api": "openai-completions" },
+  "tps": {
+    "rtx-5090": 283
+  },
+  "default": false,
+  "status": "experimental"
+}

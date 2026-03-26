@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/ministral3-8b-mlx",
+  "group": "ministral3-8b",
+  "family": "ministral3-8b",
+  "catalogKey": "ministral3-8b",
   "name": "Ministral-3-8B MLX 4-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 6000,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 70,
+  "kvCacheMbPer1kTokens": 132,
   "defaults": {
     "contextLength": 131072
   },

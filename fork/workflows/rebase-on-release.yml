@@ -1,7 +1,7 @@
-# Fork CI workflow for runpod-workers/openclaw2go-llamacpp
+# Fork CI workflow for runpod-labs/a2go-llamacpp
 #
 # This workflow should be placed at .github/workflows/rebase-on-release.yml
-# in the openclaw2go-llamacpp fork repo.
+# in the a2go-llamacpp fork repo.
 #
 # Triggered when llama.cpp creates a new release tag.
 # Attempts automated rebase of our cherry-picks onto the new tag.

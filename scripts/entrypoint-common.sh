@@ -54,7 +54,7 @@ oc_print_ready() {
 
 oc_sync_gateway_auth() {
     local mode="${1:-token}"
-    local cfg="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}/openclaw.json"
+    local cfg="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}/openclaw.json"
     if [ ! -f "$cfg" ]; then
         return
     fi
@@ -67,7 +67,7 @@ oc_sync_gateway_auth() {
 import json
 import os
 
-cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", "/workspace/.openclaw"), "openclaw.json")
+cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw")), "openclaw.json")
 mode = os.environ.get("OPENCLAW_GATEWAY_AUTH_MODE", "token")
 token = os.environ.get("OPENCLAW_WEB_PASSWORD", "changeme")
 
@@ -106,7 +106,7 @@ PY
 
 oc_sync_skills_disable() {
     local skills="${1:-}"
-    local cfg="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}/openclaw.json"
+    local cfg="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}/openclaw.json"
     if [ -z "$skills" ] || [ ! -f "$cfg" ]; then
         return
     fi
@@ -119,7 +119,7 @@ oc_sync_skills_disable() {
 import json
 import os
 
-cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", "/workspace/.openclaw"), "openclaw.json")
+cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw")), "openclaw.json")
 raw = os.environ.get("OPENCLAW_DISABLED_SKILLS", "")
 skills = [s.strip() for s in raw.split(",") if s.strip()]
 
@@ -220,6 +220,21 @@ PY
         echo "SSH ready"
     else
         echo "WARNING: sshd not found - SSH unavailable"
+    fi
+}
+
+oc_create_path_symlinks() {
+    # On RunPod, /workspace is a persistent network volume. We symlink
+    # ~/.openclaw -> /workspace/.openclaw so data survives pod restarts
+    # while the canonical path stays at ~/.openclaw (matching official
+    # OpenClaw defaults). When running locally (no /workspace), ~/.openclaw
+    # is just a regular directory — no symlink needed.
+    local home_oc="$HOME/.openclaw"
+
+    if [ -d "/workspace" ] && [ ! -e "$home_oc" ]; then
+        mkdir -p /workspace/.openclaw
+        ln -sf /workspace/.openclaw "$home_oc"
+        echo "Symlinked $home_oc -> /workspace/.openclaw (persistent storage)"
     fi
 }
 

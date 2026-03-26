@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/glm5-mlx",
+  "group": "glm5-4bit",
+  "family": "glm5",
+  "catalogKey": "glm5",
   "name": "GLM-5 MLX 4-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 419000,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 10,
+  "kvCacheMbPer1kTokens": 19,
   "defaults": {
     "contextLength": 202752
   },

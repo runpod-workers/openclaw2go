@@ -1,4 +1,4 @@
-# OpenClaw2Go — VRAM-First Dashboard Design Brief
+# agent2go — VRAM-First Dashboard Design Brief
 
 ## What This Is
 
@@ -88,7 +88,7 @@ logo → platform → vram → model → preview → legend → services → dep
 ## UI Elements
 
 ### 1. Logo Card (`area-logo`)
-- openclaw2go logo image (32–48px) + "openclaw2go" text with neon glow
+- a2go logo image (32–48px) + "a2go" text with neon glow
 - GitHub link icon below
 
 ### 2. Platform Selector (`area-platform`)
@@ -157,7 +157,7 @@ logo → platform → vram → model → preview → legend → services → dep
 ### 9. Deploy Card (`area-deploy`, full width)
 - Tabs: docker / config / runpod (nvidia) or mlx (mac)
 - Docker tab: full `docker run` command with copy button
-- Config tab: `OPENCLAW2GO_CONFIG` JSON with copy button
+- Config tab: `A2GO_CONFIG` JSON with copy button
 - Runpod tab: 3-step visual guide (create pod → set image → expose ports)
 - MLX tab: `pip install mlx-lm` + `mlx_lm.server` command with copy button
 - Label: "deploy" in green

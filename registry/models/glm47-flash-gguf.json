@@ -1,8 +1,11 @@
 {
   "id": "unsloth/glm47-flash-gguf",
+  "group": "glm47-flash",
+  "family": "glm47",
+  "catalogKey": "glm47",
   "name": "GLM-4.7-Flash GGUF Q4_K_M",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "unsloth/GLM-4.7-Flash-GGUF",
   "files": [
@@ -11,7 +14,7 @@
   "downloadDir": "/workspace/models/GLM-4.7-Flash-GGUF",
   "servedAs": "glm-4.7-flash",
   "vram": {
-    "model": 17300,
+    "model": 18300,
     "overhead": 500
   },
   "kvCacheMbPer1kTokens": 40,

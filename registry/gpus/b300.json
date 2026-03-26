@@ -1,0 +1,7 @@
+{
+  "id": "b300",
+  "name": "NVIDIA B300 288GB",
+  "vramMb": 294912,
+  "arch": "sm_100",
+  "minCuda": "12.8"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "unsloth/nemotron3-super-gguf",
+  "group": "nemotron3-super-2bit",
+  "family": "nemotron3",
+  "catalogKey": "nemotron3-super",
+  "name": "Nemotron-3-Super-120B-A12B UD-Q2_K_XL (2-bit, 54.7GB, 256k context, 3-split)",
+  "type": "llm",
+  "engine": "a2go-llamacpp",
+  "bits": 2,
+  "repo": "unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF",
+  "files": [
+    "UD-Q2_K_XL/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q2_K_XL-00001-of-00003.gguf",
+    "UD-Q2_K_XL/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q2_K_XL-00002-of-00003.gguf",
+    "UD-Q2_K_XL/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q2_K_XL-00003-of-00003.gguf"
+  ],
+  "downloadDir": "/workspace/models/Nemotron-3-Super-GGUF",
+  "servedAs": "nemotron-3-super",
+  "vram": {
+    "model": 51950,
+    "overhead": 2500
+  },
+  "kvCacheMbPer1kTokens": 8,
+  "defaults": {
+    "contextLength": 256000,
+    "port": 8000
+  },
+  "startDefaults": {
+    "gpuLayers": "999",
+    "parallel": "1"
+  },
+  "extraStartArgs": [
+    "--prio",
+    "3"
+  ],
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-completions"
+  },
+  "tps": {
+    "h100-80gb": 87
+  },
+  "verifiedOn": [
+    "h100-80gb"
+  ],
+  "default": false,
+  "status": "experimental"
+}

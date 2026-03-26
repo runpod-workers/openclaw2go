@@ -22,7 +22,7 @@ export default function ModelSearch({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="search models..."
-        className="w-full bg-transparent py-2 pl-9 pr-3 font-mono text-[11px] text-foreground placeholder:text-foreground/40 focus:outline-none"
+        className="w-full bg-transparent py-1.5 pl-9 pr-3 font-mono text-[11px] text-foreground placeholder:text-foreground/40 focus:outline-none"
       />
       {value && (
         <button

@@ -107,13 +107,12 @@ ENV MODEL_NAME="unsloth/GLM-4.7-Flash-GGUF" \
     MAX_MODEL_LEN="150000" \
     LLAMA_API_KEY="changeme" \
     OPENCLAW_WEB_PASSWORD="changeme" \
-    OPENCLAW_STATE_DIR="/workspace/.openclaw" \
     OPENCLAW_WORKSPACE="/workspace/openclaw" \
     AUDIO_MODEL_NAME="LiquidAI/LFM2.5-Audio-1.5B-GGUF" \
     AUDIO_MODEL_PATH="/workspace/models/LFM2.5-Audio-GGUF" \
     AUDIO_QUANT="Q4_0"
 
-COPY skills/ /opt/openclaw/skills/
+COPY openclaw/skills/ /opt/openclaw/skills/
 COPY scripts/openclaw-image-gen /usr/local/bin/openclaw-image-gen
 COPY scripts/openclaw-image-server /usr/local/bin/openclaw-image-server
 COPY scripts/openclaw-tts /usr/local/bin/openclaw-tts

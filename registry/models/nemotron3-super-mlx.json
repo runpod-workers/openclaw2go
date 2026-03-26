@@ -1,0 +1,26 @@
+{
+  "id": "sjug/nemotron3-super-mlx",
+  "group": "nemotron3-super-4bit",
+  "family": "nemotron3",
+  "catalogKey": "nemotron3-super",
+  "name": "Nemotron-3-Super-120B-A12B MLX 4-bit",
+  "type": "llm",
+  "engine": "mlx-lm",
+  "bits": 4,
+  "repo": "sjug/Nemotron-3-Super-120B-A12B-MLX-4bit",
+  "vram": {
+    "model": 68000,
+    "overhead": 0
+  },
+  "kvCacheMbPer1kTokens": 15,
+  "defaults": {
+    "contextLength": 256000
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
+  "platform": "mlx",
+  "default": false,
+  "status": "experimental"
+}

@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature or improvement for OpenClaw2Go
+description: Suggest a new feature or improvement for agent2go
 title: "[Feature] "
 labels: ["enhancement"]
 body:
@@ -8,7 +8,7 @@ body:
       value: |
         ## Feature Request
 
-        Describe the feature you'd like to see in OpenClaw2Go.
+        Describe the feature you'd like to see in agent2go.
 
   - type: textarea
     id: description

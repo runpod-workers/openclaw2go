@@ -1,14 +1,22 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import SectionHeader from './SectionHeader'
+import CollapsibleSection from './CollapsibleSection'
 import GpuSelector from './VramLegend'
-import VramGauge from './VramSelector'
+import VramGauge, { type VramSegment } from './VramSelector'
 import SelectedModels from './SelectedModels'
 import DeployCard from './DeployOutput'
 import SecurityGuide from './SecurityGuide'
 import type { CatalogModel, GpuInfo, GpuCount, OsPlatform } from '../lib/catalog'
 import { VRAM_PRESETS } from '../lib/catalog'
-import type { ModelGroup } from '../lib/group-models'
+import { getVariantForOs, type ModelGroup, type CatalogEntry } from '../lib/group-models'
 import { Link, TriangleAlert } from 'lucide-react'
+
+/** Slot order + colors — must match SLOTS in SelectedModels.tsx */
+const SLOT_ORDER: { type: 'llm' | 'image' | 'audio'; color: string }[] = [
+  { type: 'llm', color: '#00e5ff' },
+  { type: 'image', color: '#ec407a' },
+  { type: 'audio', color: '#b388ff' },
+]
 
 function CopyLinkButton() {
   const [copied, setCopied] = useState(false)
@@ -30,113 +38,201 @@ function CopyLinkButton() {
 
 export default function ConfigPanel({
   selectedModels,
-  totalVramGb,
-  effectiveVramGb: _effectiveVramGb,
   selectedVramGb,
   selectedGpu,
   gpus,
-  totalVramMb,
   gpuCount,
   onGpuSelect,
   onVramPreset,
   onToggleModel,
   onClearAll,
   modelIdToGroup,
+  modelIdToEntry,
   os,
   hasSelections,
+  contextOverride,
+  onContextChange,
+  swapModelVariant,
+  framework,
 }: {
   selectedModels: CatalogModel[]
-  totalVramGb: number
-  effectiveVramGb: number
   selectedVramGb: number | null
   selectedGpu: GpuInfo | null
   gpus: GpuInfo[]
-  totalVramMb: number
   gpuCount: GpuCount
   onGpuSelect: (gpu: GpuInfo) => void
   onVramPreset: (gb: number) => void
   onToggleModel: (model: CatalogModel) => void
   onClearAll: () => void
   modelIdToGroup: Map<string, ModelGroup>
+  modelIdToEntry?: Map<string, CatalogEntry>
   os: OsPlatform | null
   hasSelections: boolean
+  contextOverride: number | null
+  onContextChange: (ctx: number | null) => void
+  swapModelVariant?: (oldModel: CatalogModel, newModel: CatalogModel) => void
+  framework: { available: boolean; name: string; docsUrl?: string; securityUrl?: string }
 }) {
   const hasModels = selectedModels.length > 0
 
+  // Track the active platform tab from SelectedModels (card-local, never affects global OS)
+  const [sharedOs, setSharedOs] = useState<OsPlatform | null>(os)
+
+  // Sync shared tab state when global OS is set; preserve user's tab selection when cleared
+  useEffect(() => { if (os != null) setSharedOs(os) }, [os])
+
+  // Per-type VRAM segments for the gauge bar — use the variant matching the active tab,
+  // so switching platform tabs in a card immediately updates the memory gauge.
+  const vramSegments: VramSegment[] = useMemo(() => {
+    const byType: Record<string, number> = {}
+    for (const m of selectedModels) {
+      const group = modelIdToGroup.get(m.id)
+      const variant = group ? getVariantForOs(group, sharedOs) : null
+      const v = variant?.model ?? m
+      const ctxLen = (v.type === 'llm' && contextOverride != null) ? contextOverride : v.contextLength
+      const kvCacheMb = (v.kvCacheMbPer1kTokens && ctxLen)
+        ? (ctxLen / 1000) * v.kvCacheMbPer1kTokens
+        : 0
+      byType[v.type] = (byType[v.type] ?? 0) + v.vram.model + v.vram.overhead + kvCacheMb
+    }
+    return SLOT_ORDER
+      .filter((slot) => (byType[slot.type] ?? 0) > 0)
+      .map((slot) => ({
+        type: slot.type,
+        gb: byType[slot.type] / 1024,
+        color: slot.color,
+      }))
+  }, [selectedModels, contextOverride, sharedOs, modelIdToGroup])
+
+  // Variant-aware total VRAM — sum from vramSegments so it matches the gauge bar
+  const displayVramGb = useMemo(
+    () => vramSegments.reduce((sum, s) => sum + s.gb, 0),
+    [vramSegments],
+  )
+
+  // When models are selected but no GPU/VRAM preset chosen, suggest the smallest fitting preset
+  const suggestedGb = useMemo(() => {
+    if (selectedVramGb != null || selectedGpu != null) return null
+    if (displayVramGb <= 0) return null
+    return VRAM_PRESETS.find((p) => p >= displayVramGb) ?? null
+  }, [selectedVramGb, selectedGpu, displayVramGb])
+
+  const memoryBadge = displayVramGb > 0 ? (
+    <span className="font-mono text-[9px] tabular-nums text-foreground/40">
+      {displayVramGb.toFixed(1)} GB
+    </span>
+  ) : undefined
+
+  const hardwareBadge = selectedGpu ? (
+    <span className="font-mono text-[9px] text-foreground/40">
+      {selectedGpu.name}
+    </span>
+  ) : undefined
+
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      {/* Toolbar row: Memory + Hardware + Logo as CSS Grid */}
-      <div className="shrink-0 border-b border-foreground/[0.06]">
-        <div
-          className="grid"
-          style={{ gridTemplateColumns: '1fr 1fr auto' }}
-        >
-          {/* Memory */}
-          <div className="border-r border-foreground/[0.06]">
-            <SectionHeader>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
-                Memory
-              </span>
-            </SectionHeader>
-            <div className="p-5">
-              <VramGauge
-                usedGb={totalVramGb}
-                selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null)}
-                presets={VRAM_PRESETS}
-                onSelectPreset={onVramPreset}
-                maxGb={selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null}
-              />
+    <div className="flex flex-1 min-h-0 flex-col overflow-visible lg:overflow-y-auto">
+      {/* Memory — collapsible on mobile, inline on desktop */}
+      <CollapsibleSection title="Memory" badge={memoryBadge}>
+        {/* Desktop: toolbar grid row with Memory + Hardware + Logo */}
+        <div className="hidden lg:block">
+          <div className="border-b border-foreground/[0.06]">
+            <div className="grid grid-cols-[1fr_1fr_auto]">
+              {/* Hardware */}
+              <div className="border-r border-foreground/[0.06]">
+                <SectionHeader>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
+                    Hardware
+                  </span>
+                </SectionHeader>
+                <div className="px-3 py-2.5">
+                  <GpuSelector
+                    gpus={gpus}
+                    selectedGpu={selectedGpu}
+                    onSelect={onGpuSelect}
+                    totalVramNeeded={displayVramGb * 1024}
+                    selectedVramGb={selectedVramGb}
+                  />
+                </div>
+              </div>
+
+              {/* Memory */}
+              <div className="border-r border-foreground/[0.06]">
+                <SectionHeader>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
+                    Memory
+                  </span>
+                </SectionHeader>
+                <div className="p-5">
+                  <VramGauge
+                    usedGb={displayVramGb}
+                    selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : suggestedGb)}
+                    presets={VRAM_PRESETS}
+                    onSelectPreset={onVramPreset}
+                    maxGb={selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null}
+                    segments={vramSegments}
+                  />
+                </div>
+              </div>
+
+              {/* Logo */}
+              <a
+                href="https://github.com/runpod/a2go"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-[180px] shrink-0 items-center justify-center py-6 transition-opacity hover:opacity-80"
+              >
+                <div className="flex flex-col items-center">
+                  <img
+                    src={`${import.meta.env.BASE_URL}a2go_logo_nobg.png`}
+                    alt="agent2go"
+                    width={200}
+                    height={200}
+                    className="mb-2 h-32 w-32 object-contain"
+                  />
+                  <span className="font-mono text-[14px] font-bold tracking-tight text-foreground/70">
+                    agent2go
+                  </span>
+                  <span className="font-mono text-[9px] text-foreground/30">
+                    v{__APP_VERSION__}
+                  </span>
+                </div>
+              </a>
             </div>
           </div>
-
-          {/* Hardware */}
-          <div className="border-r border-foreground/[0.06]">
-            <SectionHeader>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
-                Hardware
-              </span>
-            </SectionHeader>
-            <div className="px-3 py-2.5">
-              <GpuSelector
-                gpus={gpus}
-                selectedGpu={selectedGpu}
-                onSelect={onGpuSelect}
-                totalVramNeeded={totalVramMb}
-                selectedVramGb={selectedVramGb}
-              />
-            </div>
-          </div>
-
-          {/* Logo */}
-          <a
-            href="https://github.com/runpod-workers/openclaw2go"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-[280px] shrink-0 items-center justify-center py-6 transition-opacity hover:opacity-80"
-          >
-            <div className="flex flex-col items-center">
-              <img
-                src={`${import.meta.env.BASE_URL}openclaw2go_logo_nobg.png`}
-                alt="openclaw2go"
-                width={200}
-                height={200}
-                className="-mb-4 h-40 w-40 object-contain"
-              />
-              <span className="font-mono text-[14px] font-bold tracking-tight text-foreground/70">
-                openclaw2go
-              </span>
-              <span className="font-mono text-[9px] text-foreground/30">
-                v{__APP_VERSION__}
-              </span>
-            </div>
-          </a>
         </div>
+
+        {/* Mobile: just Memory content */}
+        <div className="lg:hidden p-5">
+          <VramGauge
+            usedGb={displayVramGb}
+            selectedGb={selectedVramGb ?? (selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : suggestedGb)}
+            presets={VRAM_PRESETS}
+            onSelectPreset={onVramPreset}
+            maxGb={selectedGpu ? (selectedGpu.vramMb * gpuCount) / 1024 : null}
+            segments={vramSegments}
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* Hardware — collapsible on mobile only (desktop is rendered above inside the grid) */}
+      <div className="lg:hidden">
+        <CollapsibleSection title="Hardware" badge={hardwareBadge}>
+          <div className="px-3 py-2.5">
+            <GpuSelector
+              gpus={gpus}
+              selectedGpu={selectedGpu}
+              onSelect={onGpuSelect}
+              totalVramNeeded={displayVramGb * 1024}
+              selectedVramGb={selectedVramGb}
+            />
+          </div>
+        </CollapsibleSection>
       </div>
 
       {/* Selected Models — sticky header */}
       <div className="sticky top-0 z-10 bg-background border-b border-foreground/[0.06]">
-        <SectionHeader className="justify-between">
-          <div className="flex items-center gap-3">
+        <SectionHeader className="flex-wrap gap-y-1 justify-between">
+          <div className="flex items-center gap-2 lg:gap-3">
             <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
               Selected Models
             </span>
@@ -144,12 +240,12 @@ export default function ConfigPanel({
               <span className="font-mono text-[10px] tabular-nums text-foreground/60">
                 {selectedModels.length} model{selectedModels.length !== 1 ? "s" : ""}
                 {" / "}
-                {totalVramGb.toFixed(1)} GB
+                {displayVramGb.toFixed(1)} GB
               </span>
             )}
           </div>
           {hasSelections && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 lg:gap-3">
               <CopyLinkButton />
               <span className="h-3 w-px bg-foreground/10" />
               <button
@@ -169,8 +265,13 @@ export default function ConfigPanel({
           models={selectedModels}
           onToggle={onToggleModel}
           modelIdToGroup={modelIdToGroup}
+          modelIdToEntry={modelIdToEntry}
           gpus={gpus}
           os={os}
+          contextOverride={contextOverride}
+          onContextChange={onContextChange}
+          onSharedOsChange={setSharedOs}
+          swapModelVariant={swapModelVariant}
         />
       </div>
 
@@ -178,12 +279,10 @@ export default function ConfigPanel({
       {hasModels && (
         <div className="flex-1 border-t border-foreground/[0.06]">
           <div
-            className="grid h-full"
-            style={{ gridTemplateColumns: '300px 1fr' }}
+            className="grid h-full grid-cols-1 lg:grid-cols-[300px_1fr]"
           >
             {/* Before You Deploy — left column */}
-            <div className="border-r border-primary/40 bg-primary/[0.04] flex flex-col">
-              <div className="h-[3px] bg-primary/60 shrink-0" />
+            <div className="border-b lg:border-b-0 lg:border-r border-primary/40 bg-primary/[0.04] flex flex-col border-t border-t-primary/60">
               <SectionHeader>
                 <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary flex items-center gap-1.5">
                   <TriangleAlert size={12} />
@@ -191,12 +290,12 @@ export default function ConfigPanel({
                 </span>
               </SectionHeader>
               <div className="p-4">
-                <SecurityGuide />
+                <SecurityGuide framework={framework} />
               </div>
             </div>
 
             {/* Deploy — right column */}
-            <div>
+            <div className="border-t border-t-transparent">
               <SectionHeader>
                 <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
                   Deploy
@@ -206,7 +305,11 @@ export default function ConfigPanel({
                 <DeployCard
                   selectedModels={selectedModels}
                   modelIdToGroup={modelIdToGroup}
-                  os={os}
+                  os={sharedOs}
+                  globalOs={os}
+                  contextOverride={contextOverride}
+                  onToggle={onToggleModel}
+                  framework={framework}
                 />
               </div>
             </div>

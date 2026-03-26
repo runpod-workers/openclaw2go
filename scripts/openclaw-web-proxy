@@ -36,6 +36,17 @@ const TTS_VOICES = {
   "UK female": "Perform TTS. Use the UK female voice.",
 };
 
+// Auto-detect audio engine type from entrypoint metadata
+function detectAudioEngine() {
+  const fs = require("fs");
+  for (const p of ["/tmp/oc_audio_engine", "/tmp/oc_tts_engine"]) {
+    try {
+      return JSON.parse(fs.readFileSync(p, "utf-8"));
+    } catch {}
+  }
+  return null;
+}
+
 const configPayload = {
   llmBasePath: "/api/llm",
   audioBasePath: "/api/audio",
@@ -250,6 +261,29 @@ async function callAudioServer(payload) {
 }
 
 async function handleTts(text, voice) {
+  const engineMeta = detectAudioEngine();
+  const isOpenAI = engineMeta?.type === "python-venv";
+
+  if (isOpenAI) {
+    // OpenAI-compatible /v1/audio/speech (Qwen3-TTS, etc.)
+    const url = new URL("/v1/audio/speech", audioBase);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: engineMeta.model || "tts",
+        input: text,
+        voice: voice || "alloy",
+      }),
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new Error(errText || `TTS error (${response.status})`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  // LFM2.5-Audio native streaming API
   const prompt = TTS_VOICES[voice] || TTS_VOICES["US male"];
   const payload = {
     model: "",
@@ -274,6 +308,12 @@ async function handleTts(text, voice) {
 }
 
 async function handleStt(audioBase64, format) {
+  const engineMeta = detectAudioEngine();
+  if (engineMeta?.type === "python-venv") {
+    throw new Error(`STT not supported by ${engineMeta.engine || "current engine"} (TTS-only). Use LFM2.5-Audio for STT.`);
+  }
+
+  // LFM2.5-Audio native streaming API
   const payload = {
     model: "",
     messages: [
@@ -290,6 +330,7 @@ async function handleStt(audioBase64, format) {
     ],
     stream: true,
     max_tokens: 4096,
+    temperature: 0,
   };
   const response = await callAudioServer(payload);
   let text = "";

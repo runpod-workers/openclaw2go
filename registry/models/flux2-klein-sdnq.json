@@ -1,5 +1,8 @@
 {
   "id": "disty0/flux2-klein-sdnq",
+  "group": "flux2-klein",
+  "family": "flux2-klein",
+  "catalogKey": "flux2-klein",
   "name": "FLUX.2 Klein 4B SDNQ 4-bit Dynamic",
   "type": "image",
   "engine": "image-gen",

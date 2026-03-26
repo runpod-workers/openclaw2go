@@ -15,7 +15,7 @@ package-lock.json
 .changeset/
 Dockerfile
 Dockerfile.*
-openclaw2go-registry/
+a2go-registry/
 scripts/entrypoint.sh
 scripts/setup-openclaw.sh
 scripts/start-vllm.sh

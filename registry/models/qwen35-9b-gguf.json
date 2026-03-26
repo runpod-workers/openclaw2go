@@ -1,8 +1,11 @@
 {
   "id": "unsloth/qwen35-9b-gguf",
+  "group": "qwen35-9b",
+  "family": "qwen35",
+  "catalogKey": "qwen35-9b",
   "name": "Qwen3.5-9B Q8_0 (8-bit, 8.9GB, 1M context, multimodal)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 8,
   "repo": "unsloth/Qwen3.5-9B-GGUF",
   "files": [
@@ -13,7 +16,7 @@
   "downloadDir": "/workspace/models/Qwen3.5-9B-GGUF",
   "servedAs": "qwen3.5-9b",
   "vram": {
-    "model": 8900,
+    "model": 9500,
     "overhead": 3200
   },
   "kvCacheMbPer1kTokens": 16,

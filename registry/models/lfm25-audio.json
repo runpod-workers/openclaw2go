@@ -1,12 +1,15 @@
 {
   "id": "liquidai/lfm25-audio",
+  "group": "lfm25-audio",
+  "family": "lfm25-audio",
+  "catalogKey": "lfm25-audio",
   "name": "LFM2.5-Audio-1.5B GGUF Q4_0",
   "type": "audio",
   "capabilities": [
     "tts",
     "stt"
   ],
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "LiquidAI/LFM2.5-Audio-1.5B-GGUF",
   "files": [

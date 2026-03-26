@@ -1,84 +1,70 @@
-#!/bin/sh
-# Install openclaw2go CLI
-# Usage: curl -fsSL https://openclaw2go.io/install.sh | sh
-set -e
+#!/bin/bash
+# Install the a2go CLI binary.
+# Usage: curl -sSL https://a2go.run/install.sh | bash
+set -euo pipefail
 
-REPO="runpod-workers/openclaw2go-cli"
-BINARY="openclaw2go"
+REPO="runpod/a2go"
 INSTALL_DIR="/usr/local/bin"
+BINARY_NAME="a2go"
 
-# Detect OS
-OS="$(uname -s)"
-case "$OS" in
-  Darwin)  OS="darwin" ;;
-  Linux)   OS="linux" ;;
-  *)       echo "Unsupported OS: $OS. Use install.ps1 for Windows."; exit 1 ;;
-esac
-
-# Detect architecture
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
+
 case "$ARCH" in
-  x86_64)  ARCH="amd64" ;;
-  amd64)   ARCH="amd64" ;;
-  arm64)   ARCH="arm64" ;;
-  aarch64) ARCH="arm64" ;;
-  *)       echo "Unsupported architecture: $ARCH"; exit 1 ;;
+    arm64|aarch64) ARCH="arm64" ;;
+    x86_64)        ARCH="amd64" ;;
+    *)
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+        ;;
 esac
 
-ASSET="${BINARY}-${OS}-${ARCH}"
-
-# Get latest release tag
-echo "Finding latest release..."
-TAG=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
-
-if [ -z "$TAG" ]; then
-  echo "Could not find latest release."
-  echo "Check https://github.com/${REPO}/releases"
-  exit 1
+if [ "$OS" != "darwin" ] && [ "$OS" != "linux" ]; then
+    echo "Unsupported OS: $OS. Use install.ps1 for Windows."
+    exit 1
 fi
 
-URL="https://github.com/${REPO}/releases/download/${TAG}/${ASSET}"
+echo "Installing a2go for ${OS}/${ARCH}..."
 
-echo "Downloading ${BINARY} ${TAG} for ${OS}/${ARCH}..."
-echo "  ${URL}"
+# Get latest release tag
+LATEST="$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
+if [ -z "$LATEST" ]; then
+    echo "ERROR: Could not determine latest release."
+    exit 1
+fi
+echo "  Version: $LATEST"
 
-# Download to temp file
-TMP=$(mktemp)
-if ! curl -fsSL "$URL" -o "$TMP"; then
-  echo "Download failed. Check that a release exists for your platform."
-  echo "  OS:   ${OS}"
-  echo "  Arch: ${ARCH}"
-  echo "  URL:  ${URL}"
-  rm -f "$TMP"
-  exit 1
+# Download binary
+ASSET="a2go_${OS}_${ARCH}"
+URL="https://github.com/${REPO}/releases/download/${LATEST}/${ASSET}"
+
+TMP="$(mktemp)"
+if ! curl -sSL -o "$TMP" "$URL"; then
+    echo "ERROR: Download failed from $URL"
+    rm -f "$TMP"
+    exit 1
+fi
+
+# Check if we got an actual binary (not a 404 HTML page)
+if file "$TMP" | grep -q "text"; then
+    echo "ERROR: Download failed — asset not found: $ASSET"
+    echo "Check available releases at https://github.com/${REPO}/releases"
+    rm -f "$TMP"
+    exit 1
 fi
 
 chmod +x "$TMP"
 
-# Install — try /usr/local/bin first, fall back to ~/.local/bin
+# Install — try without sudo first
 if [ -w "$INSTALL_DIR" ]; then
-  mv "$TMP" "${INSTALL_DIR}/${BINARY}"
-  echo "Installed to ${INSTALL_DIR}/${BINARY}"
-elif [ -w "/usr/local/bin" ]; then
-  mv "$TMP" "/usr/local/bin/${BINARY}"
-  echo "Installed to /usr/local/bin/${BINARY}"
+    mv "$TMP" "$INSTALL_DIR/$BINARY_NAME"
 else
-  # Fall back to ~/.local/bin
-  INSTALL_DIR="${HOME}/.local/bin"
-  mkdir -p "$INSTALL_DIR"
-  mv "$TMP" "${INSTALL_DIR}/${BINARY}"
-  echo "Installed to ${INSTALL_DIR}/${BINARY}"
-
-  # Check if it's in PATH
-  case ":$PATH:" in
-    *":${INSTALL_DIR}:"*) ;;
-    *)
-      echo ""
-      echo "Add this to your shell profile to put it in your PATH:"
-      echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""
-      ;;
-  esac
+    echo "  Need sudo to install to $INSTALL_DIR"
+    sudo mv "$TMP" "$INSTALL_DIR/$BINARY_NAME"
 fi
 
 echo ""
-echo "Run 'openclaw2go version' to verify the installation."
+echo "Installed: $(which $BINARY_NAME || echo "$INSTALL_DIR/$BINARY_NAME")"
+echo ""
+echo "Next: a2go doctor"
+echo ""

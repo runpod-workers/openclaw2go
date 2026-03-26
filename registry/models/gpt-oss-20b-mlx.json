@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/gpt-oss-20b-mlx",
+  "group": "gpt-oss-20b",
+  "family": "gpt-oss-20b",
+  "catalogKey": "gpt-oss-20b",
   "name": "GPT-OSS-20B MLX 8-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 12100,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 2,
+  "kvCacheMbPer1kTokens": 4,
   "defaults": {
     "contextLength": 131072
   },

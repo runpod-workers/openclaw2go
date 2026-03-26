@@ -1,8 +1,11 @@
 {
   "id": "unsloth/qwen25-vl-7b-gguf",
+  "group": "qwen25-vl-7b",
+  "family": "qwen25-vl-7b",
+  "catalogKey": "qwen25-vl-7b",
   "name": "Qwen2.5-VL-7B Instruct GGUF Q4_K_M (Vision + LLM)",
   "type": "vision",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
   "files": [

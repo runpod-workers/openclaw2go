@@ -1,8 +1,11 @@
 {
   "id": "unsloth/nemotron3-nano-gguf",
+  "group": "nemotron3-nano",
+  "family": "nemotron3",
+  "catalogKey": "nemotron3-nano",
   "name": "Nemotron-3-Nano-30B-A3B GGUF Q4_K_XL",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 4,
   "repo": "unsloth/Nemotron-3-Nano-30B-A3B-GGUF",
   "files": [
@@ -11,7 +14,7 @@
   "downloadDir": "/workspace/models/Nemotron-3-Nano-GGUF",
   "servedAs": "nemotron-3-nano",
   "vram": {
-    "model": 21538,
+    "model": 22800,
     "overhead": 459
   },
   "kvCacheMbPer1kTokens": 4,

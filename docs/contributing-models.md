@@ -1,15 +1,15 @@
-# Contributing Models to OpenClaw2Go
+# Contributing Models to agent2go
 
 ## Overview
 
-The OpenClaw2Go model registry is an open collection of model configurations for running AI models on GPU pods. Community contributions help expand the model catalog for everyone.
+The agent2go model registry is an open collection of model configurations for running AI models on GPU pods. Community contributions help expand the model catalog for everyone.
 
 ## How to Contribute
 
 ### Option 1: GitHub Issue (Easiest)
 
-1. Run your model on an OpenClaw2Go pod
-2. Export your config: `openclaw2go registry export --format issue`
+1. Run your model on an agent2go pod
+2. Export your config: `a2go registry export --format issue`
 3. Open a [New Model Issue](../../issues/new?template=new-model.yml)
 4. Paste the exported config and test evidence
 5. A maintainer will review and merge your contribution
@@ -32,7 +32,7 @@ Each model is a JSON file in `registry/models/` with these fields:
 | `id` | Yes | Unique ID in `provider/name` format (lowercase) |
 | `name` | Yes | Human-readable model name |
 | `type` | Yes | `llm`, `audio`, or `image` |
-| `engine` | Yes | `openclaw2go-llamacpp`, `ik-llamacpp`, `llamacpp`, `llamacpp-audio`, `image-gen`, `mlx-lm`, `mlx-audio`, `mflux`, or `vllm` |
+| `engine` | Yes | `a2go-llamacpp`, `llamacpp`, `llamacpp-audio`, `image-gen`, `mlx-lm`, `mlx-audio`, `mflux`, or `vllm` |
 | `repo` | Yes | HuggingFace repository name |
 | `files` | Yes | Array of files to download from the repo |
 | `downloadDir` | Yes | Must start with `/workspace/models/` |

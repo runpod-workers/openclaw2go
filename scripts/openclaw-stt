@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-openclaw-stt - Speech-to-Text using LFM2.5-Audio server
-Transcribes audio using the persistent audio server (near-instant inference)
+openclaw-stt - Speech-to-Text using the active audio engine
+
+Auto-detects the running engine and uses the correct API.
+Currently supports LFM2.5-Audio (native chat completions with input_audio).
 
 Usage:
   openclaw-stt /path/to/audio.wav
@@ -14,15 +16,26 @@ import json
 import sys
 import urllib.request
 
-AUDIO_SERVER_URL = "http://localhost:8001/v1/chat/completions"
+
+def detect_engine():
+    """Read engine metadata written by the entrypoint."""
+    for path in ["/tmp/oc_audio_engine", "/tmp/oc_tts_engine"]:
+        try:
+            with open(path) as f:
+                meta = json.load(f)
+                return meta
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
+    return None
 
 
-def stt_stream(wav_path: str) -> str:
-    """Stream ASR from server, return transcribed text."""
-    # Read and encode audio file
+def stt_lfm_native(wav_path: str, port: int) -> str:
+    """STT via LFM2.5-Audio native streaming API (chat completions with input_audio)."""
+    url = f"http://localhost:{port}/v1/chat/completions"
+
     with open(wav_path, "rb") as f:
         audio_data = base64.b64encode(f.read()).decode("utf-8")
-    
+
     payload = {
         "model": "",
         "messages": [
@@ -32,28 +45,29 @@ def stt_stream(wav_path: str) -> str:
                 "content": [
                     {
                         "type": "input_audio",
-                        "input_audio": {"data": audio_data, "format": "wav"}
+                        "input_audio": {"data": audio_data, "format": "wav"},
                     }
-                ]
-            }
+                ],
+            },
         ],
         "stream": True,
-        "max_tokens": 4096
+        "max_tokens": 4096,
+        "temperature": 0,
     }
-    
+
     req = urllib.request.Request(
-        AUDIO_SERVER_URL,
-        data=json.dumps(payload).encode('utf-8'),
+        url,
+        data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
-        method="POST"
+        method="POST",
     )
-    
+
     text_chunks = []
-    
+
     try:
         with urllib.request.urlopen(req, timeout=120) as response:
             for line in response:
-                line = line.decode('utf-8').strip()
+                line = line.decode("utf-8").strip()
                 if not line or line == "data: [DONE]":
                     continue
                 if line.startswith("data: "):
@@ -67,28 +81,42 @@ def stt_stream(wav_path: str) -> str:
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-    
+
     return "".join(text_chunks).strip()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Transcribe audio using LFM2.5-Audio")
+    parser = argparse.ArgumentParser(description="Transcribe audio to text")
     parser.add_argument("audio", nargs="?", help="Input WAV audio file")
     parser.add_argument("-a", "--audio", dest="audio_opt", help="Input WAV file (alternative)")
     parser.add_argument("-o", "--output", help="Output text file (optional, prints to stdout)")
-    
+    parser.add_argument("--port", type=int, default=None, help="Audio server port (auto-detected)")
+
     args = parser.parse_args()
     audio_path = args.audio or args.audio_opt
-    
+
     if not audio_path:
         print("Error: Audio file is required", file=sys.stderr)
         parser.print_help()
         sys.exit(1)
-    
+
+    # Auto-detect engine
+    engine_meta = detect_engine()
+    engine_type = engine_meta.get("type", "native") if engine_meta else "native"
+    port = args.port or (engine_meta.get("port", 8001) if engine_meta else 8001)
+    engine_name = engine_meta.get("engine", "unknown") if engine_meta else "unknown"
+
     print(f"Transcribing: {audio_path}", file=sys.stderr)
-    
-    transcript = stt_stream(audio_path)
-    
+
+    if engine_type == "python-venv":
+        # Qwen3-TTS is TTS-only, no STT support
+        print(f"Error: STT not supported by {engine_name} (TTS-only engine)", file=sys.stderr)
+        print("Hint: Use LFM2.5-Audio for STT support: A2GO_CONFIG='{\"audio\":\"liquidai/lfm25-audio\"}'", file=sys.stderr)
+        sys.exit(1)
+    else:
+        print(f"  Engine: {engine_name} (LFM native on port {port})", file=sys.stderr)
+        transcript = stt_lfm_native(audio_path, port)
+
     if args.output:
         with open(args.output, "w") as f:
             f.write(transcript)

@@ -1,5 +1,5 @@
 name: New Model Request
-description: Submit a new model for the OpenClaw2Go registry
+description: Submit a new model for the agent2go registry
 title: "[Model] "
 labels: ["new-model"]
 body:
@@ -8,8 +8,8 @@ body:
       value: |
         ## Submit a New Model
 
-        Add a model to the OpenClaw2Go registry. You can generate this config
-        automatically by running `openclaw2go registry export --format issue` on a running pod.
+        Add a model to the agent2go registry. You can generate this config
+        automatically by running `a2go registry export --format issue` on a running pod.
 
   - type: input
     id: model-id
@@ -45,8 +45,7 @@ body:
     attributes:
       label: Engine
       options:
-        - openclaw2go-llamacpp
-        - ik-llamacpp
+        - a2go-llamacpp
         - llamacpp
         - llamacpp-audio
         - image-gen
@@ -70,14 +69,14 @@ body:
       label: Full Model Config JSON
       description: |
         Paste the complete model config JSON here. You can generate this with
-        `openclaw2go registry export --format json` on a running pod.
+        `a2go registry export --format json` on a running pod.
       render: json
       placeholder: |
         {
           "id": "provider/model-name",
           "name": "Model Name",
           "type": "llm",
-          "engine": "openclaw2go-llamacpp",
+          "engine": "a2go-llamacpp",
           "repo": "org/repo-name",
           "files": ["model-file.gguf"],
           "downloadDir": "/workspace/models/ModelName",

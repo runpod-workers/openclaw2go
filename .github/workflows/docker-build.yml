@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/site-improvements]
     tags: ['*']
   pull_request:
     paths:
@@ -26,35 +26,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -75,11 +51,11 @@ jobs:
           file: models/glm47-flash-awq-4bit/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-awq-4bit:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw2go-glm4.7-flash-awq-4bit:latest', env.DOCKERHUB_REPO) || '' }}
+            ${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-awq-4bit:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go-glm4.7-flash-awq-4bit:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-awq-4bit:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-awq-4bit:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-awq-4bit:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-awq-4bit:buildcache,mode=max
 
   # Disabled - vLLM NVFP4 has bugs with GLM-4.7 MLA on Blackwell
   # See models/glm47-flash-nvfp4-5090/ISSUES.md
@@ -93,35 +69,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -142,11 +94,11 @@ jobs:
           file: models/glm47-flash-nvfp4-5090/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-nvfp4-5090:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw2go-glm4.7-flash-nvfp4-5090:latest', env.DOCKERHUB_REPO) || '' }}
+            ${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-nvfp4-5090:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go-glm4.7-flash-nvfp4-5090:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-nvfp4-5090:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-nvfp4-5090:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-nvfp4-5090:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-nvfp4-5090:buildcache,mode=max
 
   # Disabled - replaced by unified image
   build-glm47-flash-gguf-llamacpp:
@@ -159,35 +111,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -208,16 +136,25 @@ jobs:
           file: models/glm47-flash-gguf-llamacpp/Dockerfile
           push: ${{ env.PUSH_IMAGES == 'true' }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest', env.DOCKERHUB_REPO) || '' }}
+            ${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:${{ env.VERSION }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:latest', env.DOCKERHUB_REPO) || '' }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go-glm4.7-flash-gguf-flux.2-klein-4b-sdnq-4bit-dynamic-lfm2.5-audio-1.5b-gguf:buildcache,mode=max
 
   # Unified image - works on all GPUs with tested CUDA architectures
-  # Uses pre-built engines from openclaw2go-engines:latest (built by engines-build.yml)
+  # Uses pre-built engines from a2go-engines (built by engines-build.yml)
+  # Builds per-architecture images (amd64 + arm64) then creates a multi-arch manifest.
   build-unified:
-    runs-on: DO
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: DO
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -225,35 +162,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine build type
-        id: build_type
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_production=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_production=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Set environment variables
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${GITHUB_REF##refs/heads/}"
-          fi
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ steps.build_type.outputs.is_production }}" == "true" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          else
-            echo "VERSION=${BRANCH_TAG}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
-          fi
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -274,13 +187,37 @@ jobs:
           file: Dockerfile.unified
           push: ${{ env.PUSH_IMAGES == 'true' }}
           build-args: |
-            ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/openclaw2go-engines:latest
+            ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/a2go-engines:latest-${{ matrix.arch }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}/openclaw2go:${{ env.VERSION }}
-            ${{ env.ALSO_LATEST == 'true' && format('{0}/openclaw2go:latest', env.DOCKERHUB_REPO) || '' }}
-          platforms: linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/openclaw2go:buildcache,mode=max
+            ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.DOCKERHUB_REPO }}/a2go:buildcache-${{ matrix.arch }},mode=max
+
+  create-manifest:
+    needs: build-unified
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set environment variables
+        run: |
+          echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+          echo "VERSION=latest" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker buildx imagetools create -t \
+            ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }} \
+            ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-amd64 \
+            ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-arm64
 
   # Disabled for now
   # build-glm47-flash-fp16:

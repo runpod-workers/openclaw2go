@@ -1,8 +1,11 @@
 {
   "id": "unsloth/kimi-k25-q2kxl-gguf",
+  "group": "kimi-k25-2bit",
+  "family": "kimi-k25",
+  "catalogKey": "kimi-k25",
   "name": "Kimi K2.5 UD-Q2_K_XL (2-bit, 375GB, 8-split)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 2,
   "repo": "unsloth/Kimi-K2.5-GGUF",
   "files": [

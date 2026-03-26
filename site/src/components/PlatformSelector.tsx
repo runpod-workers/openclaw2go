@@ -23,6 +23,31 @@ const OS_ACTIVE_STYLES: Record<OsPlatform, string> = {
 
 export { PlatformIcon }
 
+export function OsPills({ os, onChange }: { os: OsPlatform | null; onChange: (os: OsPlatform) => void }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {OS_OPTIONS.map((opt) => {
+        const active = os === opt.id
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onChange(opt.id)}
+            className={cn(
+              "flex h-5 w-5 items-center justify-center rounded transition-all duration-150",
+              active
+                ? OS_ACTIVE_STYLES[opt.id]
+                : "text-foreground/50 hover:bg-foreground/[0.05] hover:text-foreground/70"
+            )}
+            title={opt.label}
+          >
+            <PlatformIcon os={opt.id} className="h-2.5 w-2.5" />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function PlatformSelector({
   os,
   onChange,

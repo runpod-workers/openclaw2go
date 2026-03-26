@@ -39,7 +39,6 @@ RUN npm install -g --prefer-offline openclaw@latest && \
 
 # Environment variables
 ENV HF_HOME=/workspace/huggingface
-ENV OPENCLAW_STATE_DIR=/workspace/.openclaw
 ENV OPENCLAW_WORKSPACE=/workspace/openclaw
 ENV MODEL_NAME=0xSero/GLM-4.7-REAP-40-W4A16
 ENV SERVED_MODEL_NAME=glm-4.7-reap
@@ -52,7 +51,7 @@ ENV TOOL_CALL_PARSER=glm45
 RUN mkdir -p /workspace/huggingface /workspace/.openclaw /workspace/openclaw
 
 # Copy entrypoint script + skills + CLI
-COPY skills/ /opt/openclaw/skills/
+COPY openclaw/skills/ /opt/openclaw/skills/
 COPY scripts/openclaw-image-gen /usr/local/bin/openclaw-image-gen
 COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
 COPY models/glm47-reap-w4a16/entrypoint.sh /entrypoint.sh

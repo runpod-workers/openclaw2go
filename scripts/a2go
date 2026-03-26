@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-openclaw2go - CLI for OpenClaw2Go model/profile management and registry.
+a2go - CLI for agent2go model/profile management and registry.
 
 Usage:
-  openclaw2go models                        List all available models by type
-  openclaw2go models --type llm             List models of a specific type
-  openclaw2go fit                           Show what fits on detected GPU
-  openclaw2go fit --vram 32768              Show what fits on a specific VRAM
-  openclaw2go presets                       List available presets
-  openclaw2go presets show <id>             Show preset details
-  openclaw2go validate <json-string>        Validate an OPENCLAW2GO_CONFIG
+  a2go models                        List all available models by type
+  a2go models --type llm             List models of a specific type
+  a2go fit                           Show what fits on detected GPU
+  a2go fit --vram 32768              Show what fits on a specific VRAM
+  a2go presets                       List available presets
+  a2go presets show <id>             Show preset details
+  a2go validate <json-string>        Validate an A2GO_CONFIG
 
-  openclaw2go registry fetch                Fetch external registry (runs at startup too)
-  openclaw2go registry fetch --force        Force fetch, ignoring cache TTL
-  openclaw2go registry export               Export current model config + test evidence
-  openclaw2go registry export --format issue  Formatted for GitHub Issue
-  openclaw2go registry status               Show registry source and cache info
+  a2go registry fetch                Fetch external registry (runs at startup too)
+  a2go registry fetch --force        Force fetch, ignoring cache TTL
+  a2go registry export               Export current model config + test evidence
+  a2go registry export --format issue  Formatted for GitHub Issue
+  a2go registry status               Show registry source and cache info
 
 Stdlib only — no pip dependencies required.
 """
@@ -37,13 +37,13 @@ KV_CACHE_MB_PER_1K_TOKENS = 40
 # ── Registry fetch constants ─────────────────────────────────
 
 DEFAULT_REGISTRY_URL = (
-    "https://openclaw2go.io/v1/catalog.json"
+    "https://a2go.run/v1/catalog.json"
 )
 FETCH_TIMEOUT = 5  # seconds
-CACHE_DIR = Path(os.environ.get("OPENCLAW_STATE_DIR", "/workspace/.openclaw")) / "registry"
+CACHE_DIR = Path(os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw"))) / "registry"
 CACHE_META = CACHE_DIR / ".fetch-meta.json"
 
-ALLOWED_ENGINES = {"openclaw2go-llamacpp", "ik-llamacpp", "image-gen", "qwen3-tts", "mlx-lm", "mlx-audio", "mflux"}
+ALLOWED_ENGINES = {"a2go-llamacpp", "image-gen", "qwen3-tts", "mlx-lm", "mlx-audio", "mflux"}
 REQUIRED_MODEL_FIELDS = {"id", "name", "type", "engine", "vram"}
 REQUIRED_PROFILE_FIELDS = {"id", "name", "services"}
 
@@ -139,7 +139,7 @@ def _read_file(path):
 
 
 def _log(msg):
-    print(f"[openclaw2go] {msg}", file=sys.stderr)
+    print(f"[a2go] {msg}", file=sys.stderr)
 
 
 # ── Registry fetch helpers ────────────────────────────────────
@@ -159,7 +159,7 @@ def _is_cache_fresh(ttl_seconds):
 def _fetch_catalog(url):
     """Fetch catalog.json from remote URL. Returns parsed JSON or None."""
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "openclaw2go/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "a2go/1.0"})
         with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:
             data = resp.read()
             return json.loads(data)
@@ -531,7 +531,7 @@ def cmd_presets_show(args):
 # ── Command: validate ─────────────────────────────────────────
 
 def cmd_validate(args):
-    """Validate an OPENCLAW2GO_CONFIG JSON string."""
+    """Validate an A2GO_CONFIG JSON string."""
     models = load_all_json(REGISTRY_DIR / "models")
     profiles = load_all_json(REGISTRY_DIR / "profiles")
 
@@ -574,11 +574,11 @@ def cmd_registry_fetch(args):
     On failure, prints nothing (caller falls back to baked-in registry).
 
     The entrypoint calls this at startup:
-      FETCHED_DIR="$(openclaw2go registry fetch)" || true
+      FETCHED_DIR="$(a2go registry fetch)" || true
 
     Users can also call it manually to refresh the registry:
-      openclaw2go registry fetch
-      openclaw2go registry fetch --force
+      a2go registry fetch
+      a2go registry fetch --force
     """
     force = getattr(args, "force", False)
     baked_in_dir = REGISTRY_DIR
@@ -656,7 +656,7 @@ def cmd_registry_export(args):
 
     if not current_model:
         print("ERROR: could not detect running model. Is the LLM server started?", file=sys.stderr)
-        print("Make sure you run this command inside a running OpenClaw2Go pod.", file=sys.stderr)
+        print("Make sure you run this command inside a running agent2go pod.", file=sys.stderr)
         sys.exit(1)
 
     export = {
@@ -736,23 +736,23 @@ def cmd_registry_status(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="openclaw2go",
-        description="OpenClaw2Go CLI — model management, GPU fit check, and registry tools",
+        prog="a2go",
+        description="agent2go CLI — model management, GPU fit check, and registry tools",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  openclaw2go models                         List all available models
-  openclaw2go models --type llm              List LLM models only
-  openclaw2go fit                            Show what fits on detected GPU
-  openclaw2go fit --vram 81920               Show what fits on 80GB GPU
-  openclaw2go presets                        List preset profiles
-  openclaw2go presets show <id>              Show preset details
-  openclaw2go validate '{"llm":"unsloth/glm47-flash-gguf"}'  Validate a config
-  openclaw2go registry fetch                 Fetch/refresh external registry
-  openclaw2go registry fetch --force         Force fetch, ignore cache TTL
-  openclaw2go registry export                Export current model config (JSON)
-  openclaw2go registry export --format issue Export formatted for GitHub Issue
-  openclaw2go registry status                Show registry source and cache info
+  a2go models                         List all available models
+  a2go models --type llm              List LLM models only
+  a2go fit                            Show what fits on detected GPU
+  a2go fit --vram 81920               Show what fits on 80GB GPU
+  a2go presets                        List preset profiles
+  a2go presets show <id>              Show preset details
+  a2go validate '{"llm":"unsloth/glm47-flash-gguf"}'  Validate a config
+  a2go registry fetch                 Fetch/refresh external registry
+  a2go registry fetch --force         Force fetch, ignore cache TTL
+  a2go registry export                Export current model config (JSON)
+  a2go registry export --format issue Export formatted for GitHub Issue
+  a2go registry status                Show registry source and cache info
 """
     )
     sub = parser.add_subparsers(dest="command")
@@ -772,7 +772,7 @@ Examples:
     presets_show.add_argument("preset_id", help="Preset ID")
 
     # validate
-    validate_parser = sub.add_parser("validate", help="Validate an OPENCLAW2GO_CONFIG JSON")
+    validate_parser = sub.add_parser("validate", help="Validate an A2GO_CONFIG JSON")
     validate_parser.add_argument("config_json", help="JSON string to validate")
 
     # registry

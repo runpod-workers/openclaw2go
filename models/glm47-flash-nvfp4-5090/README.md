@@ -39,7 +39,7 @@ Full 200K context window with MLA for reduced KV cache memory.
 ### 1. Create Runpod Pod
 
 **Settings:**
-- **Image**: `runpod/openclaw2go-glm4.7-flash-nvfp4-5090:latest`
+- **Image**: `runpod/a2go-glm4.7-flash-nvfp4-5090:latest`
 - **GPU**: 1x RTX 5090 32GB
 - **Volume**: 100GB at `/workspace` (network storage)
 - **Container Disk**: 50GB

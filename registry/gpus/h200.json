@@ -1,0 +1,7 @@
+{
+  "id": "h200",
+  "name": "NVIDIA H200 SXM",
+  "vramMb": 143771,
+  "arch": "sm_90",
+  "minCuda": "12.0"
+}

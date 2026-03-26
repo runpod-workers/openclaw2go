@@ -295,7 +295,7 @@ function App() {
           React.createElement("input", {
             value: llmApiKey,
             onChange: (e) => setLlmApiKey(e.target.value),
-            placeholder: "LLAMA_API_KEY",
+            placeholder: "LLAMACPP_API_KEY",
             type: "password",
           }),
           React.createElement(

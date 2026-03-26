@@ -1,4 +1,8 @@
+import { useState } from 'react'
+import * as Popover from '@radix-ui/react-popover'
 import { cn } from '../lib/utils'
+import { OsPills } from './PlatformSelector'
+import type { OsPlatform } from '../lib/catalog'
 
 export type TaskChip = 'llm' | 'vision' | 'image' | 'audio'
 
@@ -13,11 +17,19 @@ export const EMPTY_FILTERS: FilterState = {
 }
 
 export const CONTEXT_TIERS = [
-  { label: '32k+', value: 32_000 },
-  { label: '100k+', value: 100_000 },
-  { label: '200k+', value: 200_000 },
-  { label: '1m+', value: 1_000_000 },
+  { label: '32k', value: 32_000 },
+  { label: '100k', value: 100_000 },
+  { label: '250k', value: 250_000 },
+  { label: '500k', value: 500_000 },
+  { label: '1m', value: 1_000_000 },
 ]
+
+const TASK_LABELS: Record<TaskChip, string> = {
+  llm: 'llm',
+  vision: 'vis',
+  image: 'img',
+  audio: 'aud',
+}
 
 const TASK_CHIPS: TaskChip[] = ['llm', 'vision', 'image', 'audio']
 
@@ -26,90 +38,99 @@ function showContextTiers(task: TaskChip | null): boolean {
   return task === null || task === 'llm' || task === 'vision'
 }
 
-function isFiltersEmpty(f: FilterState): boolean {
-  return f.contextMin === null && f.task === null
-}
+const pillBase = 'shrink-0 rounded px-1.5 py-0.5 font-mono text-[9px] font-medium transition-all duration-150'
+const pillActive = 'bg-foreground/[0.07] text-foreground'
+const pillInactive = 'text-foreground/50 hover:bg-foreground/[0.03] hover:text-foreground/70'
 
-export default function ModelFilters({
-  filters,
+function ContextPicker({
+  value,
   onChange,
 }: {
-  filters: FilterState
-  onChange: (filters: FilterState) => void
+  value: number | null
+  onChange: (value: number | null) => void
 }) {
-  const handleTaskClick = (chip: TaskChip) => {
-    const nextTask = filters.task === chip ? null : chip
-    // Auto-clear context when switching to a non-LLM task
-    const nextContext = showContextTiers(nextTask) ? filters.contextMin : null
-    onChange({ task: nextTask, contextMin: nextContext })
-  }
+  const [open, setOpen] = useState(false)
+  const activeLabel = CONTEXT_TIERS.find((t) => t.value === value)?.label
 
   return (
-    <div className="flex shrink-0 flex-col border-b border-foreground/[0.06]">
-      {/* task row */}
-      <div className="flex items-center gap-1.5 px-3 py-2">
-        <button
-          onClick={() => { if (!isFiltersEmpty(filters)) onChange(EMPTY_FILTERS) }}
-          className={cn(
-            'font-mono text-[8px] font-semibold uppercase tracking-[0.15em] transition-colors',
-            isFiltersEmpty(filters)
-              ? 'text-foreground/30'
-              : 'text-foreground/50 hover:text-foreground/80 cursor-pointer'
-          )}
-        >
-          task
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button className={cn(pillBase, value !== null ? pillActive : pillInactive)}>
+          ctx{activeLabel ? ` ${activeLabel}` : ''}
         </button>
-        {TASK_CHIPS.map((chip) => (
-          <button
-            key={chip}
-            onClick={() => handleTaskClick(chip)}
-            className={cn(
-              'flex-1 rounded px-2 py-0.5 font-mono text-[9px] font-medium transition-all duration-150',
-              filters.task === chip
-                ? 'bg-foreground/[0.07] text-foreground'
-                : 'text-foreground/50 hover:bg-foreground/[0.03] hover:text-foreground/70'
-            )}
-          >
-            {chip}
-          </button>
-        ))}
-      </div>
-
-      {/* context row — only when LLM models are visible */}
-      {showContextTiers(filters.task) && (
-        <div className="flex items-center gap-1.5 border-t border-foreground/[0.04] px-3 py-2">
-          <button
-            onClick={() => { if (filters.contextMin !== null) onChange({ ...filters, contextMin: null }) }}
-            className={cn(
-              'font-mono text-[8px] font-semibold uppercase tracking-[0.15em] transition-colors',
-              filters.contextMin === null
-                ? 'text-foreground/30'
-                : 'text-foreground/50 hover:text-foreground/80 cursor-pointer'
-            )}
-          >
-            ctx
-          </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          className="z-50 flex gap-0.5 rounded border border-foreground/[0.08] bg-background p-1 shadow-lg animate-in fade-in-0 zoom-in-95"
+        >
           {CONTEXT_TIERS.map((tier) => (
             <button
               key={tier.value}
-              onClick={() =>
-                onChange({
-                  ...filters,
-                  contextMin: filters.contextMin === tier.value ? null : tier.value,
-                })
-              }
+              onClick={() => {
+                onChange(value === tier.value ? null : tier.value)
+                setOpen(false)
+              }}
               className={cn(
-                'flex-1 rounded px-2 py-0.5 font-mono text-[9px] font-medium transition-all duration-150',
-                filters.contextMin === tier.value
-                  ? 'bg-foreground/[0.07] text-foreground'
-                  : 'text-foreground/50 hover:bg-foreground/[0.03] hover:text-foreground/70'
+                pillBase,
+                value === tier.value ? pillActive : pillInactive,
               )}
             >
               {tier.label}
             </button>
           ))}
-        </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
+export default function ModelFilters({
+  filters,
+  onChange,
+  os,
+  onOsChange,
+}: {
+  filters: FilterState
+  onChange: (filters: FilterState) => void
+  os: OsPlatform | null
+  onOsChange: (os: OsPlatform) => void
+}) {
+  const handleTaskClick = (chip: TaskChip) => {
+    const nextTask = filters.task === chip ? null : chip
+    const nextContext = showContextTiers(nextTask) ? filters.contextMin : null
+    onChange({ task: nextTask, contextMin: nextContext })
+  }
+
+  return (
+    <div className="flex shrink-0 items-center gap-1 border-b border-foreground/[0.06] px-3 py-1.5">
+      <OsPills os={os} onChange={onOsChange} />
+
+      <div className="h-3.5 w-px shrink-0 bg-foreground/[0.08]" />
+
+      {TASK_CHIPS.map((chip) => (
+        <button
+          key={chip}
+          onClick={() => handleTaskClick(chip)}
+          className={cn(pillBase, filters.task === chip ? pillActive : pillInactive)}
+          title={chip}
+        >
+          {TASK_LABELS[chip]}
+        </button>
+      ))}
+
+      {showContextTiers(filters.task) && (
+        <>
+          <div className="h-3.5 w-px shrink-0 bg-foreground/[0.08]" />
+          <ContextPicker
+            value={filters.contextMin}
+            onChange={(contextMin) => onChange({ ...filters, contextMin })}
+          />
+        </>
       )}
+
     </div>
   )
 }

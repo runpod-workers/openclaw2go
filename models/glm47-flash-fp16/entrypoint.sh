@@ -46,7 +46,8 @@ MAX_MODEL_LEN="${MAX_MODEL_LEN:-}"
 TOOL_CALL_PARSER="${TOOL_CALL_PARSER:-glm47}"
 # Keep model on container disk (requires 100GB containerDiskInGb)
 HF_HOME="${HF_HOME:-/root/.cache/huggingface}"
-OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/workspace/.openclaw}"
+oc_create_path_symlinks
+OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"

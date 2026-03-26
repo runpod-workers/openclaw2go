@@ -1,5 +1,8 @@
 {
   "id": "mlx/lfm25-audio",
+  "group": "lfm25-audio",
+  "family": "lfm25-audio",
+  "catalogKey": "lfm25-audio",
   "name": "LFM2.5-Audio-1.5B MLX 4-bit",
   "type": "audio",
   "capabilities": [
@@ -10,7 +13,7 @@
   "bits": 4,
   "repo": "mlx-community/LFM2.5-Audio-1.5B-4bit",
   "vram": {
-    "model": 500,
+    "model": 1500,
     "overhead": 0
   },
   "defaults": {

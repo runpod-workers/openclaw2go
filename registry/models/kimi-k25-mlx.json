@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/kimi-k25-mlx",
+  "group": "kimi-k25-3bit",
+  "family": "kimi-k25",
+  "catalogKey": "kimi-k25",
   "name": "Kimi K2.5 MLX 3-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 449000,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 36,
+  "kvCacheMbPer1kTokens": 68,
   "defaults": {
     "contextLength": 98304
   },

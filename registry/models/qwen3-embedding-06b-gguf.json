@@ -1,8 +1,11 @@
 {
   "id": "qwen/qwen3-embedding-06b-gguf",
+  "group": "qwen3-embedding-06b",
+  "family": "qwen3-embedding-06b",
+  "catalogKey": "qwen3-embedding-06b",
   "name": "Qwen3-Embedding-0.6B GGUF Q8_0",
   "type": "embedding",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 8,
   "repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
   "files": [

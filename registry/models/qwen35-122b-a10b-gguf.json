@@ -1,8 +1,11 @@
 {
   "id": "unsloth/qwen35-122b-a10b-gguf",
+  "group": "qwen35-122b-a10b-2bit",
+  "family": "qwen35",
+  "catalogKey": "qwen35-122b-a10b",
   "name": "Qwen3.5-122B-A10B UD-Q2_K_XL (2-bit, 46.7GB, 1M context, multimodal)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 2,
   "repo": "unsloth/Qwen3.5-122B-A10B-GGUF",
   "files": [

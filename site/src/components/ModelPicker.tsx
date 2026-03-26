@@ -1,31 +1,27 @@
 import { cn } from '../lib/utils'
 import type { OsPlatform } from '../lib/catalog'
 import { formatVram, formatContext } from '../lib/catalog'
-import type { ModelGroup } from '../lib/group-models'
-import { getVariantForOs } from '../lib/group-models'
+import type { CatalogEntry } from '../lib/group-models'
+import { getEntrySummary } from '../lib/group-models'
 
-export default function ModelGroupCard({
-  group,
+export default function CatalogEntryCard({
+  entry,
   selected,
   onToggle,
   wouldExceed,
   dimmed,
   os,
   accentColor,
-  hasVision,
-  capabilities,
 }: {
-  group: ModelGroup
+  entry: CatalogEntry
   selected: boolean
   onToggle: () => void
   wouldExceed: boolean
   dimmed: boolean
   os: OsPlatform | null
   accentColor: string
-  hasVision?: boolean
-  capabilities?: string[]
 }) {
-  const variant = getVariantForOs(group, os)
+  const summary = getEntrySummary(entry, os)
 
   return (
     <div
@@ -48,7 +44,6 @@ export default function ModelGroupCard({
           if (next) {
             next.focus()
             next.scrollIntoView({ block: 'nearest' })
-            // Auto-swap only if the target's type already has a selected model
             const targetType = next.dataset.modelType
             if (
               targetType &&
@@ -62,65 +57,59 @@ export default function ModelGroupCard({
       }}
       className={cn(
         "group flex w-full cursor-pointer items-center text-left transition-all duration-150",
-        "h-9 px-3 gap-2",
+        "h-10 px-3 gap-2",
         selected
           ? "bg-foreground/[0.07]"
           : "hover:bg-foreground/[0.03]",
         wouldExceed && !selected && "pointer-events-none opacity-20",
-        dimmed && !selected && "opacity-35"
+        dimmed && !selected && "opacity-35",
       )}
-      data-model-type={group.type}
+      data-model-type={entry.type}
       data-selected={selected || undefined}
       style={selected ? { boxShadow: `inset 3px 0 0 ${accentColor}` } : undefined}
     >
       {/* model name */}
       <span
         className={cn(
-          "flex-1 truncate font-mono text-[11px] font-medium leading-none",
+          "flex-1 truncate font-mono font-medium leading-none",
+          "text-[11px]",
           selected ? "text-foreground" : "text-foreground/90"
         )}
-        title={group.displayName}
+        title={entry.displayName}
       >
-        {group.displayName}
+        {entry.displayName}
       </span>
 
       {/* vision badge */}
-      {hasVision && (
+      {entry.hasVision && (
         <span className="shrink-0 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[8px] font-medium text-foreground/50">
           vision
         </span>
       )}
 
       {/* capability badges (tts, stt) */}
-      {capabilities?.map((cap) => (
+      {entry.capabilities?.map((cap) => (
         <span key={cap} className="shrink-0 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[8px] font-medium text-foreground/50">
           {cap}
         </span>
       ))}
 
-      {/* quant badge */}
-      <span className="shrink-0 bg-foreground/[0.06] px-1.5 py-0.5 font-mono text-[9px] font-semibold tabular-nums text-foreground/70">
-        {variant.shortLabel}
-      </span>
-
       {/* context */}
       <span className="w-[36px] shrink-0 text-right font-mono text-[10px] tabular-nums text-foreground/60">
-        {group.contextLength ? formatContext(group.contextLength) : "--"}
+        {entry.maxContextLength ? formatContext(entry.maxContextLength) : "--"}
       </span>
 
       {/* tps */}
-      <span className="w-[30px] shrink-0 text-right font-mono text-[10px] tabular-nums text-foreground/60">
-        {variant.tps && Object.keys(variant.tps).length > 0
-          ? Math.max(...Object.values(variant.tps))
-          : "--"}
+      <span className="w-[36px] shrink-0 text-right font-mono text-[10px] tabular-nums text-foreground/60">
+        {summary.maxTps != null ? summary.maxTps : "--"}
       </span>
 
-      {/* vram */}
+      {/* memory */}
       <span className={cn(
-        "w-[48px] shrink-0 text-right font-mono text-[10px] tabular-nums",
+        "w-[52px] shrink-0 text-right font-mono text-[10px] tabular-nums",
         selected ? "text-foreground/80" : "text-foreground/60"
       )}>
-        {formatVram(variant.vramTotal)}
+        {summary.minVramMb > 0 ? formatVram(summary.minVramMb) : "--"}
       </span>
     </div>
   )

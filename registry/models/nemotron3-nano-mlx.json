@@ -1,15 +1,18 @@
 {
   "id": "mlx-community/nemotron3-nano-mlx",
+  "group": "nemotron3-nano",
+  "family": "nemotron3",
+  "catalogKey": "nemotron3-nano",
   "name": "Nemotron-3-Nano-30B MLX 4-bit",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,
   "repo": "mlx-community/NVIDIA-Nemotron-3-Nano-30B-A3B-4bit",
   "vram": {
-    "model": 21538,
+    "model": 17800,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 4,
+  "kvCacheMbPer1kTokens": 8,
   "defaults": {
     "contextLength": 150000
   },

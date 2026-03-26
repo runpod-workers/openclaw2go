@@ -1,0 +1,7 @@
+{
+  "id": "l40s",
+  "name": "NVIDIA L40S",
+  "vramMb": 49152,
+  "arch": "sm_89",
+  "minCuda": "12.0"
+}

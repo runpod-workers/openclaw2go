@@ -1,7 +1,7 @@
 {
-  "name": "openclaw2go-vllm",
+  "name": "a2go-vllm",
   "description": "OpenClaw AI assistant with vLLM for local LLM inference. Includes Telegram integration.",
-  "imageName": "your-dockerhub-username/openclaw2go-vllm:latest",
+  "imageName": "your-dockerhub-username/a2go-vllm:latest",
   "containerDiskInGb": 50,
   "volumeInGb": 150,
   "volumeMountPath": "/workspace",

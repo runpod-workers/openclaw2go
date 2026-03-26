@@ -1,5 +1,8 @@
 {
   "id": "mlx-community/lfm2-24b-a2b-mlx",
+  "group": "lfm2-24b-a2b",
+  "family": "lfm2",
+  "catalogKey": "lfm2-24b-a2b",
   "name": "LFM2-24B-A2B MLX 4-bit",
   "type": "llm",
   "engine": "mlx-lm",
@@ -9,7 +12,7 @@
     "model": 13400,
     "overhead": 0
   },
-  "kvCacheMbPer1kTokens": 4,
+  "kvCacheMbPer1kTokens": 8,
   "defaults": {
     "contextLength": 128000
   },

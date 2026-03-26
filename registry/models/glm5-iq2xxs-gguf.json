@@ -1,8 +1,11 @@
 {
   "id": "unsloth/glm5-iq2xxs-gguf",
+  "group": "glm5-2bit",
+  "family": "glm5",
+  "catalogKey": "glm5",
   "name": "GLM-5-754B IQ2_XXS (2-bit, 241GB)",
   "type": "llm",
-  "engine": "openclaw2go-llamacpp",
+  "engine": "a2go-llamacpp",
   "bits": 2,
   "repo": "unsloth/GLM-5-GGUF",
   "files": [

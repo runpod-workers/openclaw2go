@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-openclaw-profiles - CLI tool for OpenClaw2Go model/profile management.
+openclaw-profiles - CLI tool for agent2go model/profile management.
 
 Usage:
   openclaw-profiles models                  # List all available models by type
@@ -348,7 +348,7 @@ def cmd_validate(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="OpenClaw2Go model & profile management",
+        description="agent2go model & profile management",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
