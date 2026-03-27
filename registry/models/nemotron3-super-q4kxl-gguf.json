@@ -42,6 +42,7 @@
   "verifiedOn": [
     "h200"
   ],
+  "autoTier": 7,
   "default": false,
   "status": "experimental"
 }

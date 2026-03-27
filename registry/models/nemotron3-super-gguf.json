@@ -42,6 +42,7 @@
   "verifiedOn": [
     "h100-80gb"
   ],
+  "autoTier": 6,
   "default": false,
   "status": "experimental"
 }

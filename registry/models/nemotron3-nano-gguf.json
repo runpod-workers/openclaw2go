@@ -37,6 +37,7 @@
   "tps": {
     "rtx-5090": 289
   },
+  "autoTier": 4,
   "default": false,
   "status": "stable"
 }

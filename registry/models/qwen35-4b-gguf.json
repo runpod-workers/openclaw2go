@@ -47,6 +47,7 @@
     "name": "local-llamacpp",
     "api": "openai-completions"
   },
+  "autoTier": 0,
   "default": false,
   "status": "experimental",
   "tps": {

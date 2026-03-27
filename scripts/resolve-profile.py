@@ -77,7 +77,19 @@ def load_all_json(directory):
 
 
 def detect_gpu():
-    """Detect GPU name and VRAM via nvidia-smi."""
+    """Detect GPU name and VRAM via nvidia-smi.
+
+    Supports GPU_VRAM_OVERRIDE env var (in MB) for testing without a real GPU.
+    """
+    override = os.environ.get("GPU_VRAM_OVERRIDE", "").strip()
+    if override:
+        try:
+            vram_mb = int(override)
+            print(f"GPU_VRAM_OVERRIDE: using {vram_mb} MB", file=sys.stderr)
+            return "Override GPU", vram_mb
+        except ValueError:
+            pass
+
     try:
         out = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
@@ -123,6 +135,36 @@ def get_default_model(models, model_type):
         if model.get("type") == model_type and model.get("status") == "stable":
             return model
     return None
+
+
+def get_best_model_for_vram(models, model_type, gpu_vram_mb):
+    """Select the best model for the given type that fits in available VRAM.
+
+    For LLM models: picks the highest autoTier model whose base VRAM fits,
+    leaving at least enough room for 16k context (minimum).
+    For non-LLM models: same as get_default_model() (unchanged).
+    """
+    if model_type != "llm" or gpu_vram_mb <= 0:
+        return get_default_model(models, model_type)
+
+    # Filter to models with autoTier
+    candidates = []
+    for model_id, model in models.items():
+        if (model.get("type") == model_type
+                and "autoTier" in model):
+            kv_rate = model.get("kvCacheMbPer1kTokens", KV_CACHE_MB_PER_1K_TOKENS)
+            min_kv_cache = 16 * kv_rate  # 16k minimum context
+            base_vram = model["vram"]["model"] + model["vram"]["overhead"]
+            total_needed = base_vram + min_kv_cache
+            if total_needed <= gpu_vram_mb:
+                candidates.append(model)
+
+    if not candidates:
+        return get_default_model(models, model_type)
+
+    # Sort by autoTier descending — highest tier first
+    candidates.sort(key=lambda m: m["autoTier"], reverse=True)
+    return candidates[0]
 
 
 def find_model(value, models, bits=None):
@@ -418,12 +460,16 @@ def main():
 
     else:
         # Auto — default to LLM only (slim). Users opt-in to audio/image explicitly.
-        print("No config specified, defaulting to LLM only.", file=sys.stderr)
-        default_llm = get_default_model(models, "llm")
-        if not default_llm:
-            print("ERROR: no default LLM model found", file=sys.stderr)
+        # VRAM-aware: pick the best LLM that fits the detected GPU.
+        print("No config specified, auto-detecting best LLM for GPU.", file=sys.stderr)
+        best_llm = get_best_model_for_vram(models, "llm", gpu_vram_mb)
+        if not best_llm:
+            print("ERROR: no suitable LLM model found", file=sys.stderr)
             sys.exit(1)
-        auto_config = {"llm": default_llm["id"]}
+        auto_config = {"llm": best_llm["id"]}
+        print(f"Auto-selected LLM: {best_llm['id']} (tier {best_llm.get('autoTier', '?')}, "
+              f"{best_llm['vram']['model'] + best_llm['vram']['overhead']}MB base, "
+              f"GPU has {gpu_vram_mb}MB)", file=sys.stderr)
 
         services, vram_total, computed_context = build_from_models(auto_config, models, engines, gpu_vram_mb)
         roles = [s["role"] for s in services]
