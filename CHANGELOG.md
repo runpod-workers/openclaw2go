@@ -1,5 +1,12 @@
 # openclaw2go
 
+## 0.2.0
+
+### Minor Changes
+
+- 1281be0: Always-on web proxy with redesigned adaptive UI, CI migration to Blacksmith runners, path filters for unified image builds, favicon and title update to a2go, TypeScript build fixes, and CORS restriction to RunPod proxy URL with branch-based Docker tags
+- 1281be0: VRAM-aware auto-detection for model selection: when A2GO_CONFIG is empty, resolve-profile.py now picks the best LLM that fits the detected GPU VRAM instead of always defaulting to GLM-4.7 Flash. Adds autoTier field to 7 models spanning 8GB to 96GB+ GPUs, with Qwen3.5 models covering 8-48GB and Nemotron-3-Super for 56GB+.
+
 ## 0.1.0
 
 ### Minor Changes
