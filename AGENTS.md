@@ -63,6 +63,11 @@ The site/configurator uses 3 global categories: `llm`, `image`, `audio`. Individ
 Exposed on RunPod: 8000 (LLM), 8080 (web proxy), 18789 (OpenClaw gateway), 22 (SSH).
 Internal only: 8001 (audio), 8002 (image), 8003 (vision), 8004 (embedding), 8005 (reranking), 8006 (TTS).
 
+### Changesets (Release Management)
+- This project uses [changesets](https://github.com/changesets/changesets) for versioning and releases. The release workflow (`.github/workflows/release.yml`) only creates a new GitHub release when changeset files exist.
+- **When creating a pull request, always create a changeset entry** by running `npx changeset` in the project root. Choose the appropriate version bump (patch for fixes, minor for features, major for breaking changes) and write a short summary. Commit the generated `.changeset/*.md` file with the PR.
+- Without a changeset, merging to `main` will NOT produce a release — the workflow detects the existing version tag and skips.
+
 ### CI/CD
 - `workflow_dispatch` only works from default branch — feature branch workflows can't be manually triggered until merged to main.
 - Fork CI auto-rebases cherry-picks onto new llama.cpp releases. Tag convention: `{upstream-tag}-openclaw.{patch}`.
