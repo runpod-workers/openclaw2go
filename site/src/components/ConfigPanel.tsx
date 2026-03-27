@@ -177,7 +177,7 @@ export default function ConfigPanel({
 
               {/* Logo */}
               <a
-                href="https://github.com/runpod/a2go"
+                href="https://github.com/runpod-labs/a2go"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex w-[180px] shrink-0 items-center justify-center py-6 transition-opacity hover:opacity-80"

@@ -3,7 +3,7 @@
 # Usage: curl -sSL https://a2go.run/install.sh | bash
 set -euo pipefail
 
-REPO="runpod/a2go"
+REPO="runpod-labs/a2go"
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="a2go"
 

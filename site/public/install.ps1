@@ -3,7 +3,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$Repo = "runpod/a2go"
+$Repo = "runpod-labs/a2go"
 $Binary = "a2go"
 $Asset = "a2go_windows_amd64.exe"
 

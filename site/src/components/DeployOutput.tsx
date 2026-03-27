@@ -276,7 +276,7 @@ function HelpRow() {
       </div>
       <div className="min-w-0 flex-1 max-w-full sm:max-w-[620px] py-1">
         <a
-          href="https://github.com/runpod/a2go/blob/main/docs/troubleshooting-mlx.md"
+          href="https://github.com/runpod-labs/a2go/blob/main/docs/troubleshooting-mlx.md"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 font-mono text-[9px] text-foreground/35 transition-colors hover:text-foreground/60"
