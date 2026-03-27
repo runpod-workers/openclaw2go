@@ -47,12 +47,91 @@ function detectAudioEngine() {
   return null;
 }
 
-const configPayload = {
-  llmBasePath: "/api/llm",
-  audioBasePath: "/api/audio",
-  imageBasePath: "/api/image",
-  imagePublicBaseUrl: process.env.OPENCLAW_IMAGE_PUBLIC_BASE_URL || "",
-  llmModel: process.env.SERVED_MODEL_NAME || "glm-4.7-flash",
+// Build config from resolved profile JSON written by entrypoint
+function loadResolvedProfile() {
+  try {
+    const raw = fs.readFileSync("/tmp/oc_resolved.json", "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+let resolvedProfile = null;
+
+function getConfigPayload() {
+  if (!resolvedProfile) {
+    resolvedProfile = loadResolvedProfile();
+  }
+
+  const base = {
+    llmBasePath: "/api/llm",
+    audioBasePath: "/api/audio",
+    imageBasePath: "/api/image",
+    imagePublicBaseUrl: process.env.OPENCLAW_IMAGE_PUBLIC_BASE_URL || "",
+    podId: process.env.RUNPOD_POD_ID || "",
+  };
+
+  if (!resolvedProfile) {
+    base.services = {};
+    return base;
+  }
+
+  const rp = resolvedProfile;
+
+  // GPU info
+  if (rp.gpuDetected) {
+    base.gpu = { name: rp.gpuDetected.name || "", vramMb: rp.gpuDetected.vramMb || 0 };
+  }
+
+  // Profile info
+  if (rp.profile) {
+    base.profile = {
+      id: rp.profile.id || "",
+      name: rp.profile.name || "",
+      vramTotal: rp.profile.vramTotal || 0,
+    };
+  }
+
+  // Build services map: all roles, marking configured vs not
+  const allRoles = ["llm", "image", "audio", "vision", "embedding", "reranking", "tts"];
+  const services = {};
+  const configuredRoles = new Set();
+
+  if (rp.services) {
+    for (const svc of rp.services) {
+      configuredRoles.add(svc.role);
+      const entry = { configured: true, port: svc.port };
+      const model = svc.model || {};
+      if (model.name) entry.modelName = model.name;
+      if (model.servedAs) entry.servedAs = model.servedAs;
+      if (model.hasVision || model.mmproj) entry.hasVision = true;
+      const overrides = svc.overrides || {};
+      if (overrides.contextLength) entry.contextLength = overrides.contextLength;
+      if (overrides.visionAsLlm) entry.hasVision = true;
+      services[svc.role] = entry;
+    }
+  }
+
+  for (const role of allRoles) {
+    if (!configuredRoles.has(role)) {
+      services[role] = { configured: false };
+    }
+  }
+
+  base.services = services;
+  return base;
+}
+
+// Port map for health probes
+const SERVICE_PORTS = {
+  llm: { port: 8000, path: "/health" },
+  audio: { port: 8001, path: "/v1/models" },
+  image: { port: 8002, path: "/health" },
+  vision: { port: 8003, path: "/health" },
+  embedding: { port: 8004, path: "/health" },
+  reranking: { port: 8005, path: "/health" },
+  tts: { port: 8006, path: "/v1/models" },
 };
 
 const mimeTypes = {
@@ -373,16 +452,35 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
   if (url.pathname === "/config.json") {
-    return sendJson(res, 200, configPayload);
+    return sendJson(res, 200, getConfigPayload());
   }
 
   if (url.pathname === "/health") {
-    const [llm, image, audio] = await Promise.all([
-      probe(new URL("/health", llmBase).toString()),
-      probe(new URL("/health", imageBase).toString()),
-      probe(new URL("/v1/models", audioBase).toString()),
-    ]);
-    return sendJson(res, 200, { llm, image, audio });
+    const cfg = getConfigPayload();
+    const services = cfg.services || {};
+    const probes = {};
+
+    for (const [role, info] of Object.entries(services)) {
+      if (!info.configured) {
+        probes[role] = { configured: false };
+        continue;
+      }
+      const probeDef = SERVICE_PORTS[role];
+      if (!probeDef) continue;
+      const probePort = info.port || probeDef.port;
+      probes[role] = probe(`http://localhost:${probePort}${probeDef.path}`);
+    }
+
+    // Resolve all promises
+    const result = {};
+    for (const [role, val] of Object.entries(probes)) {
+      if (val instanceof Promise) {
+        result[role] = await val;
+      } else {
+        result[role] = val;
+      }
+    }
+    return sendJson(res, 200, result);
   }
 
   if (url.pathname === "/api/audio/tts") {

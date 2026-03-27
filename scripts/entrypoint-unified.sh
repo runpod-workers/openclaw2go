@@ -130,6 +130,8 @@ WEB_PROXY_ENABLED="$(echo "$RESOLVED_JSON" | python3 -c "import sys,json; d=json
 
 echo "Profile: $PROFILE_NAME ($PROFILE_ID)"
 
+echo "$RESOLVED_JSON" > /tmp/oc_resolved.json
+
 # ============================================================
 # Environment defaults
 # ============================================================

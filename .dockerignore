@@ -20,3 +20,7 @@ scripts/entrypoint.sh
 scripts/setup-openclaw.sh
 scripts/start-vllm.sh
 scripts/__pycache__/
+web/node_modules/
+web/vite.config.js
+web/package.json
+web/package-lock.json

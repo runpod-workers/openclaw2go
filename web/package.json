@@ -1,0 +1,11 @@
+{
+  "name": "a2go-web",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}

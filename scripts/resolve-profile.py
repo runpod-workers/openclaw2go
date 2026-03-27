@@ -440,7 +440,7 @@ def main():
 
     # Determine web proxy
     has_multiple = len(services) > 1
-    web_proxy = has_multiple
+    web_proxy = True
 
     output = {
         "profile": {
