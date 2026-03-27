@@ -700,6 +700,8 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
   "gateway": {
     "mode": "local",
     "bind": "lan",
+    "controlUi": { "allowedOrigins": ["*"] },
+    "trustedProxies": ["0.0.0.0/0"],
     "auth": { "mode": "token", "token": "$OPENCLAW_WEB_PASSWORD" },
     "remote": { "token": "$OPENCLAW_WEB_PASSWORD" }
   },

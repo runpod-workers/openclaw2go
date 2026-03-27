@@ -1,0 +1,31 @@
+{
+  "name": "agent2go",
+  "imageName": "runpod/a2go:latest",
+  "containerDiskInGb": 20,
+  "env": [
+    {
+      "key": "A2GO_CONFIG",
+      "value": ""
+    },
+    {
+      "key": "OPENCLAW_WEB_PASSWORD",
+      "value": ""
+    },
+    {
+      "key": "LLAMACPP_API_KEY",
+      "value": ""
+    },
+    {
+      "key": "HF_TOKEN",
+      "value": ""
+    },
+    {
+      "key": "TELEGRAM_BOT_TOKEN",
+      "value": ""
+    },
+    {
+      "key": "GITHUB_TOKEN",
+      "value": ""
+    }
+  ]
+}
