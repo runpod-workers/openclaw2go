@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const repoAPI = "https://api.github.com/repos/runpod/a2go/releases/latest"
+const repoAPI = "https://api.github.com/repos/runpod-labs/a2go/releases/latest"
 
 type ghRelease struct {
 	TagName string `json:"tag_name"`

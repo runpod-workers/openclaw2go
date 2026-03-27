@@ -1,9 +1,9 @@
 #!/bin/bash
 # Install the a2go CLI binary.
-# Usage: curl -sSL https://raw.githubusercontent.com/runpod/a2go/main/scripts/install-cli.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/runpod-labs/a2go/main/scripts/install-cli.sh | bash
 set -euo pipefail
 
-REPO="runpod/a2go"
+REPO="runpod-labs/a2go"
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="a2go"
 

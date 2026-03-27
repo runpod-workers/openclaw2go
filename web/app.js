@@ -66,7 +66,7 @@ function Header({ profile }) {
   const profileText = profile ? `${profile.name || profile.id}` : "";
   return h("div", { className: "header" },
     h("div", { className: "header-brand" },
-      h("a", { href: "https://github.com/runpod/a2go", target: "_blank", rel: "noopener" },
+      h("a", { href: "https://github.com/runpod-labs/a2go", target: "_blank", rel: "noopener" },
         h("img", { src: "/a2go_logo_nobg.png", alt: "agent2go", className: "header-logo" }),
       ),
       h("span", { className: "header-title" }, "agent2go"),

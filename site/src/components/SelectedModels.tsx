@@ -55,7 +55,7 @@ function InfoBlockLink({ label, url, text }: { label: string; url: string; text:
   )
 }
 
-const REPO_URL = 'https://github.com/runpod/a2go'
+const REPO_URL = 'https://github.com/runpod-labs/a2go'
 
 /** TPS info row — shows value when available, or a "help us measure" CTA */
 function InfoBlockTps({ tpsValue, gpuName }: { tpsValue: number | null; gpuName: string | null }) {

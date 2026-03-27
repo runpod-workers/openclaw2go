@@ -239,7 +239,7 @@ function App() {
       {/* Mobile header — logo + framework pill */}
       <div className="flex lg:hidden shrink-0 items-center justify-between border-b border-foreground/[0.06] px-4 py-2">
         <a
-          href="https://github.com/runpod/a2go"
+          href="https://github.com/runpod-labs/a2go"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"

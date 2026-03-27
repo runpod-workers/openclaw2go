@@ -11,7 +11,7 @@ import (
 	"github.com/runpod-labs/a2go/a2go/internal/ui"
 )
 
-const githubRaw = "https://raw.githubusercontent.com/runpod/a2go/main"
+const githubRaw = "https://raw.githubusercontent.com/runpod-labs/a2go/main"
 
 func File(remotePath, localPath string, executable bool) error {
 	url := githubRaw + "/" + remotePath
