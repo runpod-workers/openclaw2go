@@ -152,6 +152,13 @@ if [ -n "${RUNPOD_POD_ID:-}" ] && [ -z "${OPENCLAW_IMAGE_PUBLIC_BASE_URL:-}" ]; 
     export OPENCLAW_IMAGE_PUBLIC_BASE_URL
 fi
 
+# Compute allowed origin for OpenClaw Control UI CORS
+if [ -n "${RUNPOD_POD_ID:-}" ]; then
+    OPENCLAW_ALLOWED_ORIGINS_JSON="[\"https://${RUNPOD_POD_ID}-18789.proxy.runpod.net\"]"
+else
+    OPENCLAW_ALLOWED_ORIGINS_JSON='[]'
+fi
+
 BOT_CMD="openclaw"
 if ! command -v "$BOT_CMD" >/dev/null 2>&1; then
     echo "ERROR: openclaw command not found in PATH"
@@ -700,7 +707,7 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
   "gateway": {
     "mode": "local",
     "bind": "lan",
-    "controlUi": { "allowedOrigins": ["*"] },
+    "controlUi": { "allowedOrigins": $OPENCLAW_ALLOWED_ORIGINS_JSON },
     "trustedProxies": ["0.0.0.0/0"],
     "auth": { "mode": "token", "token": "$OPENCLAW_WEB_PASSWORD" },
     "remote": { "token": "$OPENCLAW_WEB_PASSWORD" }

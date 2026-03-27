@@ -68,7 +68,7 @@ Internal only: 8001 (audio), 8002 (image), 8003 (vision), 8004 (embedding), 8005
 - Fork CI auto-rebases cherry-picks onto new llama.cpp releases. Tag convention: `{upstream-tag}-openclaw.{patch}`.
 - Engine and unified images built per-architecture (amd64/arm64) with multi-arch manifests. Tags: `image:tag-amd64`, `image:tag-arm64`, `image:tag` (manifest).
 - ARM64 builds run on `blacksmith-4vcpu-ubuntu-2404-arm`. amd64 builds run on `blacksmith-4vcpu-ubuntu-2404`. All CI runs on Blacksmith runners.
-- Docker images always tag as `latest` — no version branching. We ship from feature branches directly to production.
+- Docker images from `main` tag as `latest`. Feature branches get their own tag (branch name sanitized: slashes/underscores → hyphens, lowercased). E.g. `feat/update-template` → `a2go:feat-update-template`. Use branch tags to test on RunPod before merging.
 
 ### Catalog Grouping — `catalogKey`
 Every model JSON has a `catalogKey` field that determines which catalog row the model appears in. Models with the same `catalogKey` are grouped into a single `CatalogEntry`. Sub-variants (e.g., GLM 4.7 Flash vs Claude Distill) are detected automatically by comparing group keys within the same catalogKey. When adding a new model:

@@ -33,16 +33,6 @@ The symlink is created by `oc_create_path_symlinks()` in `scripts/entrypoint-com
 
 ### Remote Control UI access
 
-When accessing the Control UI remotely (e.g. via RunPod proxy), you may need to configure allowed origins in `openclaw.json`:
+CORS origins for the Control UI are auto-configured at startup. When `RUNPOD_POD_ID` is set (always available on RunPod pods), the entrypoint writes `"allowedOrigins": ["https://<pod-id>-18789.proxy.runpod.net"]` into `openclaw.json`. When running locally (no `RUNPOD_POD_ID`), the origins array is empty — CORS is not needed for local access.
 
-```json
-{
-  "gateway": {
-    "controlUi": {
-      "allowedOrigins": ["https://<pod-id>-18789.proxy.runpod.net"]
-    }
-  }
-}
-```
-
-Alternatively, for development/testing, set `dangerouslyAllowHostHeaderOriginFallback: true` in the gateway config to allow any origin that matches the `Host` header. This is less secure and should not be used in production.
+For development/testing, you can set `dangerouslyAllowHostHeaderOriginFallback: true` in the gateway config to allow any origin that matches the `Host` header. This is less secure and should not be used in production.
