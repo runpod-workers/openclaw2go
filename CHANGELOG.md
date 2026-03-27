@@ -1,5 +1,11 @@
 # openclaw2go
 
+## 0.3.1
+
+### Patch Changes
+
+- 54c08c3: fix: use correct GitHub org (runpod-labs) in install scripts, CLI self-update, download URLs, and site links
+
 ## 0.3.0
 
 ### Minor Changes
