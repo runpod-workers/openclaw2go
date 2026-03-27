@@ -72,13 +72,13 @@ func runDoctorDocker(cmd *cobra.Command, args []string) error {
 	// Done
 	ui.Banner("Doctor Complete!")
 	fmt.Println()
-	fmt.Println("  Next: start your stack")
+	fmt.Println("  Next: run your stack")
 	fmt.Println()
-	fmt.Println("    a2go start --llm unsloth/GLM-4.7-Flash-GGUF:4bit")
+	fmt.Println("    a2go run --llm unsloth/GLM-4.7-Flash-GGUF:4bit")
 	fmt.Println()
 	fmt.Println("  With image generation:")
 	fmt.Println()
-	fmt.Println("    a2go start --llm unsloth/GLM-4.7-Flash-GGUF:4bit --image disty0/flux2-klein-sdnq")
+	fmt.Println("    a2go run --llm unsloth/GLM-4.7-Flash-GGUF:4bit --image disty0/flux2-klein-sdnq")
 	fmt.Println()
 	return nil
 }
@@ -157,13 +157,13 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	// Done
 	ui.Banner("Doctor Complete!")
 	fmt.Println()
-	fmt.Println("  Next: start your stack")
+	fmt.Println("  Next: run your stack")
 	fmt.Println()
-	fmt.Println("    a2go start --llm mlx-community/Qwen3-30B-A3B-4bit")
+	fmt.Println("    a2go run --llm mlx-community/Qwen3-30B-A3B-4bit")
 	fmt.Println()
 	fmt.Println("  With image generation:")
 	fmt.Println()
-	fmt.Println("    a2go start --llm mlx-community/Qwen3-30B-A3B-4bit --image mlx-community/FLUX.1-schnell-4bit-quantized")
+	fmt.Println("    a2go run --llm mlx-community/Qwen3-30B-A3B-4bit --image mlx-community/FLUX.1-schnell-4bit-quantized")
 	fmt.Println()
 	return nil
 }

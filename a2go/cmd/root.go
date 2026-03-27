@@ -12,7 +12,7 @@ var Version = "dev"
 var rootCmd = &cobra.Command{
 	Use:   "a2go",
 	Short: "agent2go — run local AI on any platform",
-	Long:  "agent2go CLI: install, start, stop, and manage local LLM + image + audio services. Works natively on macOS Apple Silicon and via Docker on Linux/Windows.",
+	Long:  "agent2go CLI: install, run, stop, and manage local LLM + image + audio services. Works natively on macOS Apple Silicon and via Docker on Linux/Windows.",
 }
 
 func Execute() {
@@ -24,7 +24,7 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(doctorCmd)
-	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(restartCmd)
 	rootCmd.AddCommand(statusCmd)

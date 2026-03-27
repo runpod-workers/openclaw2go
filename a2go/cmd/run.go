@@ -32,29 +32,29 @@ var (
 	flagConfig string
 )
 
-var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Start all services",
-	Long: `Start LLM, audio, image servers and the OpenClaw gateway.
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run all services",
+	Long: `Run LLM, audio, image servers and the OpenClaw gateway.
 
 Using flags (recommended):
-  a2go start --llm unsloth/GLM-4.7-Flash-GGUF:4bit
-  a2go start --llm unsloth/GLM-4.7-Flash-GGUF:4bit --audio LiquidAI/LFM2.5-Audio-1.5B-GGUF:4bit
+  a2go run --llm unsloth/GLM-4.7-Flash-GGUF:4bit
+  a2go run --llm unsloth/GLM-4.7-Flash-GGUF:4bit --audio LiquidAI/LFM2.5-Audio-1.5B-GGUF:4bit
 
 Using JSON (same format as Docker A2GO_CONFIG):
-  a2go start --config '{"llm":"unsloth/GLM-4.7-Flash-GGUF:4bit"}'
+  a2go run --config '{"llm":"unsloth/GLM-4.7-Flash-GGUF:4bit"}'
 
 Or set A2GO_CONFIG environment variable.`,
 	Args: cobra.NoArgs,
-	RunE: runStart,
+	RunE: execRun,
 }
 
 func init() {
-	startCmd.Flags().StringVar(&flagLLM, "llm", "", "LLM model (e.g. unsloth/GLM-4.7-Flash-GGUF:4bit)")
-	startCmd.Flags().StringVar(&flagImage, "image", "", "Image model (e.g. disty0/flux2-klein-sdnq)")
-	startCmd.Flags().StringVar(&flagAudio, "audio", "", "Audio model (e.g. LiquidAI/LFM2.5-Audio-1.5B-GGUF:4bit, or 'off' to disable)")
-	startCmd.Flags().StringVar(&flagToken, "token", "changeme", "Auth token for OpenClaw gateway")
-	startCmd.Flags().StringVar(&flagConfig, "config", "", "JSON config (same format as Docker A2GO_CONFIG)")
+	runCmd.Flags().StringVar(&flagLLM, "llm", "", "LLM model (e.g. unsloth/GLM-4.7-Flash-GGUF:4bit)")
+	runCmd.Flags().StringVar(&flagImage, "image", "", "Image model (e.g. disty0/flux2-klein-sdnq)")
+	runCmd.Flags().StringVar(&flagAudio, "audio", "", "Audio model (e.g. LiquidAI/LFM2.5-Audio-1.5B-GGUF:4bit, or 'off' to disable)")
+	runCmd.Flags().StringVar(&flagToken, "token", "changeme", "Auth token for OpenClaw gateway")
+	runCmd.Flags().StringVar(&flagConfig, "config", "", "JSON config (same format as Docker A2GO_CONFIG)")
 }
 
 func resolveConfig() (*config.Config, error) {
@@ -81,27 +81,27 @@ func resolveConfig() (*config.Config, error) {
 		raw = os.Getenv("A2GO_CONFIG")
 	}
 	if raw == "" {
-		return nil, fmt.Errorf("model required\n\n  a2go start --llm unsloth/GLM-4.7-Flash-GGUF:4bit\n  a2go start --llm <llm-model> --audio <audio-model>\n\n  or with JSON: a2go start --config '{\"llm\":\"unsloth/GLM-4.7-Flash-GGUF:4bit\"}'")
+		return nil, fmt.Errorf("model required\n\n  a2go run --llm unsloth/GLM-4.7-Flash-GGUF:4bit\n  a2go run --llm <llm-model> --audio <audio-model>\n\n  or with JSON: a2go run --config '{\"llm\":\"unsloth/GLM-4.7-Flash-GGUF:4bit\"}'")
 	}
 
 	return config.Parse(raw)
 }
 
-func runStart(cmd *cobra.Command, args []string) error {
+func execRun(cmd *cobra.Command, args []string) error {
 	cfg, err := resolveConfig()
 	if err != nil {
 		return err
 	}
 
 	if platform.UseDockerBackend() {
-		return runStartDocker(cfg)
+		return execRunDocker(cfg)
 	}
-	return runStartMlx(cfg)
+	return execRunMlx(cfg)
 }
 
 const containerName = "a2go"
 
-func runStartDocker(cfg *config.Config) error {
+func execRunDocker(cfg *config.Config) error {
 	// Check Docker image exists
 	if !docker.ImageExists(dockerImage) {
 		return fmt.Errorf("docker image not found: %s. run: a2go doctor", dockerImage)
@@ -201,7 +201,7 @@ func runStartDocker(cfg *config.Config) error {
 		docker.StopContainer(containerName)
 		docker.RemoveContainer(containerName)
 		docker.RemoveContainerIDFile()
-		return fmt.Errorf("LLM server failed to start. container has been removed. check the logs above and retry: a2go start --llm %s", cfg.LLM.Model)
+		return fmt.Errorf("LLM server failed to start. container has been removed. check the logs above and retry: a2go run --llm %s", cfg.LLM.Model)
 	}
 	ui.Ok("LLM server ready")
 
@@ -248,7 +248,7 @@ func buildDockerConfigJSON(cfg *config.Config) string {
 	return string(data)
 }
 
-func runStartMlx(cfg *config.Config) error {
+func execRunMlx(cfg *config.Config) error {
 	// Platform gate
 	if !platform.IsMacAppleSilicon() {
 		return fmt.Errorf("macOS Apple Silicon required — detected %s\nFor Linux/Windows, install the CLI and it will use Docker automatically.", platform.Description())

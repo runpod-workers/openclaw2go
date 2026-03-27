@@ -80,13 +80,13 @@ func runStatusDocker() {
 			fmt.Println("  Free those ports before starting: docker ps --filter publish=8000")
 		} else {
 			fmt.Println("  No services running.")
-			fmt.Println("  Start: a2go start --llm <model>")
+			fmt.Println("  Run: a2go run --llm <model>")
 		}
 	default:
 		ui.StatusLine("container", status, containerName)
 		fmt.Println()
 		fmt.Println("  Container exists but is not running.")
-		fmt.Println("  Run: a2go stop && a2go start --llm <model>")
+		fmt.Println("  Run: a2go stop && a2go run --llm <model>")
 	}
 
 	fmt.Println()
@@ -124,7 +124,7 @@ func runStatusMlx() {
 		fmt.Println("  Stop: a2go stop")
 	} else {
 		fmt.Println("  No services running.")
-		fmt.Println("  Start: a2go start --llm <model>")
+		fmt.Println("  Run: a2go run --llm <model>")
 	}
 	fmt.Println()
 }

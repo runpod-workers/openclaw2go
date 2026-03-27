@@ -131,7 +131,7 @@ function buildCliCommand(
   platform: 'linux' | 'windows' | 'mac',
   agentId: string,
   contextOverride?: number | null,
-): { install: string; doctor: string; start: string } {
+): { install: string; doctor: string; run: string } {
   const install = platform === 'windows'
     ? 'irm https://a2go.run/install.ps1 | iex'
     : 'curl -sSL https://a2go.run/install.sh | bash'
@@ -149,11 +149,11 @@ function buildCliCommand(
     flags.push(`--context ${contextOverride}`)
   }
 
-  const start = flags.length > 0
-    ? `a2go start ${flags.join(' ')}`
-    : 'a2go start --llm <model>'
+  const run = flags.length > 0
+    ? `a2go run ${flags.join(' ')}`
+    : 'a2go run --llm <model>'
 
-  return { install, doctor, start }
+  return { install, doctor, run }
 }
 
 function RequirementsList({ requirements }: { requirements: { label: string; href?: string }[] }) {
@@ -294,7 +294,7 @@ function CliSteps({
   requirements,
   setupNote,
 }: {
-  cli: { install: string; doctor: string; start: string }
+  cli: { install: string; doctor: string; run: string }
   requirements: { label: string; href?: string }[]
   setupNote: string
 }) {
@@ -357,7 +357,7 @@ function CliSteps({
           </div>
         </div>
         <div className="min-w-0 flex-1 max-w-full sm:max-w-[620px] flex flex-col gap-2">
-          <InlineCodeBlock code={cli.start} />
+          <InlineCodeBlock code={cli.run} />
           <InfoNote>first run downloads the model — use <code className="text-foreground/80">a2go status</code> to check services, <code className="text-foreground/80">a2go stop</code> to shut down</InfoNote>
         </div>
       </div>

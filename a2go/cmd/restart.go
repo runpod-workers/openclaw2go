@@ -11,7 +11,7 @@ import (
 
 var restartCmd = &cobra.Command{
 	Use:   "restart",
-	Short: "Stop then start all services",
+	Short: "Stop then run all services",
 	Long: `Restart all services. Uses the last config if no new config is provided.
 
   a2go restart                                                  # reuse last config
@@ -33,11 +33,11 @@ func runRestart(cmd *cobra.Command, args []string) error {
 
 	doStop()
 
-	return runStart(cmd, args)
+	return execRun(cmd, args)
 }
 
 func init() {
-	// Share flags with start command
+	// Share flags with run command
 	restartCmd.Flags().StringVar(&flagLLM, "llm", "", "LLM model")
 	restartCmd.Flags().StringVar(&flagImage, "image", "", "Image model")
 	restartCmd.Flags().StringVar(&flagAudio, "audio", "", "Audio model (set to 'off' to disable)")
