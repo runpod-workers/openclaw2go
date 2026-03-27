@@ -1,5 +1,11 @@
 # openclaw2go
 
+## 0.2.1
+
+### Patch Changes
+
+- 6508c10: Fix CLI build by unignoring the a2go/internal/venv Go package from .gitignore
+
 ## 0.2.0
 
 ### Minor Changes
