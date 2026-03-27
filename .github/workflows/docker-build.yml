@@ -2,19 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: ['**']
-    tags: ['*']
-    paths:
-      - 'Dockerfile'
-      - 'Dockerfile.unified'
-      - 'registry/**'
-      - 'scripts/**'
-      - 'openclaw/**'
-      - 'web/**'
-      - 'plugins/**'
-      - 'config/**'
-      - 'models/**'
-      - '.github/workflows/docker-build.yml'
+    tags: ['v*']
   pull_request:
     paths:
       - 'Dockerfile'
@@ -54,22 +42,23 @@ jobs:
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
 
-          # Determine Docker tag from branch name
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # Determine Docker tag:
+          #   release tag (v*) → version + latest
+          #   pull request → sanitized branch name
+          #   workflow_dispatch → latest
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BRANCH="${{ github.head_ref }}"
-          else
-            BRANCH="${GITHUB_REF#refs/heads/}"
-          fi
-          # main → latest, other branches → sanitized branch name
-          if [[ "$BRANCH" == "main" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-          else
-            # Replace slashes and underscores with hyphens, lowercase, trim leading hyphens
             SANITIZED=$(echo "$BRANCH" | tr '/' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^-*//')
             echo "VERSION=$SANITIZED" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
           fi
 
-          echo "ALSO_LATEST=false" >> $GITHUB_ENV
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
             echo "PUSH_IMAGES=false" >> $GITHUB_ENV
           else
@@ -93,6 +82,7 @@ jobs:
             ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/a2go-engines:latest-${{ matrix.arch }}
           tags: |
             ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-${{ matrix.arch }}
+            ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go:latest-{1}', env.DOCKERHUB_REPO, matrix.arch) || '' }}
           platforms: linux/${{ matrix.arch }}
 
   create-manifest:
@@ -106,17 +96,18 @@ jobs:
         run: |
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
 
-          # Determine Docker tag from branch name (must match build job logic)
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # Determine Docker tag (must match build job logic)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            echo "ALSO_LATEST=true" >> $GITHUB_ENV
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BRANCH="${{ github.head_ref }}"
-          else
-            BRANCH="${GITHUB_REF#refs/heads/}"
-          fi
-          if [[ "$BRANCH" == "main" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-          else
             SANITIZED=$(echo "$BRANCH" | tr '/' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^-*//')
             echo "VERSION=$SANITIZED" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+          else
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "ALSO_LATEST=false" >> $GITHUB_ENV
           fi
 
       - name: Login to Docker Hub
@@ -129,5 +120,13 @@ jobs:
         run: |
           docker buildx imagetools create -t \
             ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }} \
+            ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-amd64 \
+            ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-arm64
+
+      - name: Also tag as latest
+        if: env.ALSO_LATEST == 'true'
+        run: |
+          docker buildx imagetools create -t \
+            ${{ env.DOCKERHUB_REPO }}/a2go:latest \
             ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-amd64 \
             ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-arm64
