@@ -28,6 +28,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+!a2go/internal/venv/
 
 # Site build artifacts
 site/node_modules/
