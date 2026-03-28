@@ -9,6 +9,20 @@ import (
 	"github.com/runpod-labs/a2go/a2go/internal/paths"
 )
 
+// hermesAPIKey returns an API key that Hermes won't reject as a placeholder.
+// Hermes blocklists "changeme", "placeholder", "dummy", etc. in has_usable_secret().
+func hermesAPIKey(token string) string {
+	blocked := map[string]bool{
+		"changeme": true, "your_api_key": true, "your-api-key": true,
+		"placeholder": true, "example": true, "dummy": true,
+		"null": true, "none": true,
+	}
+	if blocked[strings.ToLower(token)] {
+		return "a2go-local-" + token
+	}
+	return token
+}
+
 // GenerateConfig writes ~/.hermes/config.yaml and ~/.hermes/.env
 // pointing at the local LLM server.
 func GenerateConfig(llmModelName string, contextWindow int, authToken string) error {
@@ -28,6 +42,8 @@ func GenerateConfig(llmModelName string, contextWindow int, authToken string) er
 		modelID = modelID[:idx]
 	}
 
+	apiKey := hermesAPIKey(authToken)
+
 	// config.yaml
 	configYAML := fmt.Sprintf(`model:
   provider: custom
@@ -41,14 +57,14 @@ memory:
 terminal:
   backend: local
   persistent_shell: true
-`, modelID, authToken, contextWindow)
+`, modelID, apiKey, contextWindow)
 
 	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(configYAML), 0600); err != nil {
 		return fmt.Errorf("failed to write config.yaml: %w", err)
 	}
 
 	// .env
-	dotEnv := fmt.Sprintf("OPENAI_API_KEY=%s\nOPENAI_BASE_URL=http://localhost:8000/v1\n", authToken)
+	dotEnv := fmt.Sprintf("OPENAI_API_KEY=%s\nOPENAI_BASE_URL=http://localhost:8000/v1\n", apiKey)
 
 	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(dotEnv), 0600); err != nil {
 		return fmt.Errorf("failed to write .env: %w", err)

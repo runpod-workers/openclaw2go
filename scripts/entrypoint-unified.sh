@@ -145,6 +145,15 @@ echo "$RESOLVED_JSON" > /tmp/oc_resolved.json
 # Support both LLAMACPP_API_KEY (new) and LLAMA_API_KEY (deprecated)
 LLAMACPP_API_KEY="${LLAMACPP_API_KEY:-${LLAMA_API_KEY:-changeme}}"
 
+# Hermes blocklists placeholder secrets ("changeme", "dummy", etc.)
+# When using Hermes with a placeholder key, substitute a non-blocked value
+# that still matches what the LLM server expects.
+if [ "$AGENT" = "hermes" ] && [ "$LLAMACPP_API_KEY" = "changeme" ]; then
+    LLAMACPP_API_KEY="a2go-local-changeme"
+    OPENCLAW_WEB_PASSWORD="${OPENCLAW_WEB_PASSWORD:-a2go-local-changeme}"
+    echo "Note: Hermes requires non-placeholder API keys. Using 'a2go-local-changeme' instead of 'changeme'."
+fi
+
 OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
 OPENCLAW_WEB_PROXY_PORT="${OPENCLAW_WEB_PROXY_PORT:-8080}"
@@ -825,6 +834,8 @@ EOF
         # Start Hermes gateway (API server on port 8642, foreground mode, backgrounded by us)
         echo ""
         echo "Starting Hermes gateway..."
+        OPENAI_API_KEY="$LLAMACPP_API_KEY" \
+        OPENAI_BASE_URL="http://localhost:${LLM_PORT}/v1" \
         API_SERVER_ENABLED=true \
         API_SERVER_PORT=8642 \
         API_SERVER_HOST=0.0.0.0 \
