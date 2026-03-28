@@ -125,7 +125,7 @@ COPY scripts/openclaw-image-server /usr/local/bin/openclaw-image-server
 COPY scripts/openclaw-tts /usr/local/bin/openclaw-tts
 COPY scripts/openclaw-tts-server /usr/local/bin/openclaw-tts-server
 COPY scripts/openclaw-stt /usr/local/bin/openclaw-stt
-COPY scripts/openclaw-web-proxy /usr/local/bin/openclaw-web-proxy
+COPY scripts/web-proxy /usr/local/bin/web-proxy
 
 RUN chmod +x /opt/openclaw/entrypoint-unified.sh \
     /opt/openclaw/scripts/resolve-profile.py \
@@ -137,7 +137,7 @@ RUN chmod +x /opt/openclaw/entrypoint-unified.sh \
     /usr/local/bin/openclaw-tts \
     /usr/local/bin/openclaw-tts-server \
     /usr/local/bin/openclaw-stt \
-    /usr/local/bin/openclaw-web-proxy
+    /usr/local/bin/web-proxy
 
 EXPOSE 8000 8080 18789 22
 ENTRYPOINT ["/opt/openclaw/entrypoint-unified.sh"]

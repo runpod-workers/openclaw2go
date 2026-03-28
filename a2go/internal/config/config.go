@@ -4,9 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/runpod-labs/a2go/a2go/internal/paths"
 )
+
+// ModelSlug strips the ":quant" suffix from a model reference.
+// Format is "org/repo:quant" (e.g. "mlx-community/Qwen3.5-4B-8bit:8bit").
+// Docker entrypoint parses this internally; MLX needs the bare HuggingFace slug.
+func ModelSlug(model string) string {
+	if i := strings.LastIndex(model, ":"); i > 0 {
+		return model[:i]
+	}
+	return model
+}
 
 type ServiceConfig struct {
 	Model string `json:"model"`

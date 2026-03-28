@@ -13,7 +13,6 @@ on:
       - 'web/**'
       - 'plugins/**'
       - 'config/**'
-      - 'models/**'
       - '.github/workflows/docker-build.yml'
   workflow_dispatch:
 

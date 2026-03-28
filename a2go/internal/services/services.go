@@ -17,12 +17,13 @@ type Service struct {
 }
 
 var (
-	LLM     = Service{"llm", 8000}
-	Audio   = Service{"audio", 8001}
-	Image   = Service{"image", 8002}
-	Gateway = Service{"gateway", 18789}
+	LLM      = Service{"llm", 8000}
+	Audio    = Service{"audio", 8001}
+	Image    = Service{"image", 8002}
+	WebProxy = Service{"web-proxy", 8080}
+	Gateway  = Service{"gateway", 18789}
 
-	All = []Service{LLM, Audio, Image, Gateway}
+	All = []Service{LLM, Audio, Image, WebProxy, Gateway}
 )
 
 func venvEnv() []string {
@@ -97,6 +98,14 @@ func StartImage(model string) (int, error) {
 	return startProcess(Image, filepath.Join(paths.Bin(), "mflux-server"), []string{
 		"--model", model,
 		"--port", "8002",
+	})
+}
+
+func StartWebProxy(audioDir string) (int, error) {
+	return startProcess(WebProxy, "node", []string{
+		filepath.Join(paths.Bin(), "web-proxy"),
+		"--port", "8080",
+		"--audio-dir", audioDir,
 	})
 }
 

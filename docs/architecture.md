@@ -14,7 +14,7 @@ A2GO_CONFIG (env var)
         +-- llama-server (LLM)         port 8000
         +-- llama-audio-server (Audio)  port 8001 (internal)
         +-- openclaw-image-server       port 8002 (internal)
-        +-- openclaw-web-proxy          port 8080
+        +-- web-proxy                   port 8080
         +-- openclaw gateway            port 18789
 ```
 

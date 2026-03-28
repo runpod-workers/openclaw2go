@@ -601,7 +601,7 @@ WEB_PROXY_PID=""
 if [ "$WEB_PROXY_ENABLED" = "true" ]; then
     echo ""
     echo "Starting OpenClaw media web proxy..."
-    openclaw-web-proxy --port "$OPENCLAW_WEB_PROXY_PORT" --web-root "/opt/openclaw/web" > /tmp/openclaw-web-proxy.log 2>&1 &
+    web-proxy --port "$OPENCLAW_WEB_PROXY_PORT" --web-root "/opt/openclaw/web" > /tmp/web-proxy.log 2>&1 &
     WEB_PROXY_PID=$!
 fi
 

@@ -17,6 +17,7 @@ func SkillImageGen() string  { return filepath.Join(Skills(), "image-gen") }
 func Images() string         { return filepath.Join(InstallDir, "images") }
 func Pids() string           { return filepath.Join(InstallDir, "pids") }
 func Logs() string           { return filepath.Join(InstallDir, "logs") }
+func Audio() string          { return filepath.Join(InstallDir, "audio") }
 func Cache() string          { return filepath.Join(InstallDir, "cache") }
 func LastConfig() string     { return filepath.Join(InstallDir, "last-config.json") }
 func ContainerID() string    { return filepath.Join(InstallDir, "container-id") }
@@ -24,7 +25,7 @@ func OpenClawState() string  { return filepath.Join(os.Getenv("HOME"), ".opencla
 
 func EnsureAll() error {
 	dirs := []string{
-		Bin(), Venv(), SkillImageGen(), Images(), Pids(), Logs(), Cache(),
+		Bin(), Venv(), SkillImageGen(), Images(), Audio(), Pids(), Logs(), Cache(),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0755); err != nil {

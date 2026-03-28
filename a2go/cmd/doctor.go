@@ -125,6 +125,7 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	}{
 		{"scripts/mflux-server", filepath.Join(paths.Bin(), "mflux-server")},
 		{"scripts/openclaw-image-gen", filepath.Join(paths.Bin(), "openclaw-image-gen")},
+		{"scripts/web-proxy", filepath.Join(paths.Bin(), "web-proxy")},
 	}
 	for _, s := range scripts {
 		if err := download.File(s.remote, s.local, true); err != nil {

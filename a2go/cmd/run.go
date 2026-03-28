@@ -270,6 +270,7 @@ func execRunMlx(cfg *config.Config) error {
 		name string
 	}{
 		{services.LLM.Port, "LLM"},
+		{services.WebProxy.Port, "Web Proxy"},
 		{services.Gateway.Port, "Gateway"},
 	}
 	if cfg.Image != nil && cfg.Image.Model != "" {
@@ -317,31 +318,30 @@ func execRunMlx(cfg *config.Config) error {
 		os.Exit(0)
 	}()
 
+	// Strip :quant suffix — MLX uses bare HuggingFace slugs
+	llmModel := config.ModelSlug(cfg.LLM.Model)
+
 	// Start LLM
-	llmPid, err := services.StartLLM(cfg.LLM.Model)
+	llmPid, err := services.StartLLM(llmModel)
 	if err != nil {
 		return err
 	}
 	pids = append(pids, llmPid)
 
 	// Start Audio (optional)
-	audioPid := 0
 	if cfg.AudioEnabled() && venv.PythonCanImport("mlx_audio") && !process.PortListening(services.Audio.Port) {
 		pid, err := services.StartAudio()
 		if err == nil {
-			audioPid = pid
 			pids = append(pids, pid)
 		}
 	}
 
 	// Start Image (optional)
-	imagePid := 0
 	if cfg.Image != nil && cfg.Image.Model != "" {
-		pid, err := services.StartImage(cfg.Image.Model)
+		pid, err := services.StartImage(config.ModelSlug(cfg.Image.Model))
 		if err != nil {
 			return err
 		}
-		imagePid = pid
 		pids = append(pids, pid)
 	}
 
@@ -356,6 +356,13 @@ func execRunMlx(cfg *config.Config) error {
 		return fmt.Errorf("LLM server failed to start")
 	}
 	ui.Ok("LLM server ready")
+
+	// Start web proxy
+	wpPid, err := services.StartWebProxy(paths.Audio())
+	if err != nil {
+		return err
+	}
+	pids = append(pids, wpPid)
 
 	// Generate openclaw.json
 	ui.Info("generating openclaw config...")
@@ -381,13 +388,7 @@ func execRunMlx(cfg *config.Config) error {
 	// Ready banner
 	ui.Banner("agent2go — Ready!")
 	fmt.Println()
-	fmt.Printf("  LLM:     http://localhost:8000  (%s)\n", modelName)
-	if audioPid > 0 {
-		fmt.Println("  Audio:   http://localhost:8001")
-	}
-	if imagePid > 0 {
-		fmt.Println("  Image:   http://localhost:8002")
-	}
+	fmt.Printf("  API:     http://localhost:8080  (%s)\n", modelName)
 	fmt.Println("  Gateway: http://localhost:18789")
 	fmt.Println()
 	fmt.Printf("  Logs: %s/\n", paths.Logs())
