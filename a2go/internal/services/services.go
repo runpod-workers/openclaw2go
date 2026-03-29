@@ -28,6 +28,14 @@ var (
 	All = []Service{LLM, Audio, Image, WebProxy, Gateway, HermesGateway}
 )
 
+// GatewayFor returns the gateway service for the given agent framework.
+func GatewayFor(agent string) Service {
+	if agent == "hermes" {
+		return HermesGateway
+	}
+	return Gateway
+}
+
 func venvEnv() []string {
 	env := os.Environ()
 	venvBin := paths.VenvBin()

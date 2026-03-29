@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/runpod-labs/a2go/a2go/internal/config"
 	"github.com/runpod-labs/a2go/a2go/internal/docker"
 	"github.com/runpod-labs/a2go/a2go/internal/paths"
 	"github.com/runpod-labs/a2go/a2go/internal/platform"
@@ -34,6 +35,12 @@ func runStatusDocker() {
 
 	status := docker.ContainerStatus(containerName)
 
+	// Determine gateway port from saved config; fall back to OpenClaw default
+	gwSvc := services.Gateway
+	if savedCfg, err := config.LoadLast(); err == nil {
+		gwSvc = services.GatewayFor(savedCfg.Agent)
+	}
+
 	switch status {
 	case "running":
 		ui.StatusLine("container", "running", containerName)
@@ -42,9 +49,9 @@ func runStatusDocker() {
 			name string
 			port int
 		}{
-			{"llm", 8000},
-			{"web", 8080},
-			{"gateway", 18789},
+			{"llm", services.LLM.Port},
+			{"web", services.WebProxy.Port},
+			{gwSvc.Name, gwSvc.Port},
 		}
 		for _, p := range ports {
 			if process.PortListening(p.port) {
@@ -63,9 +70,9 @@ func runStatusDocker() {
 			name string
 			port int
 		}{
-			{"llm", 8000},
-			{"web", 8080},
-			{"gateway", 18789},
+			{"llm", services.LLM.Port},
+			{"web", services.WebProxy.Port},
+			{gwSvc.Name, gwSvc.Port},
 		}
 		hasConflict := false
 		for _, p := range occupied {

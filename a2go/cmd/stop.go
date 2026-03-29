@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/runpod-labs/a2go/a2go/internal/config"
 	"github.com/runpod-labs/a2go/a2go/internal/docker"
 	"github.com/runpod-labs/a2go/a2go/internal/platform"
 	"github.com/runpod-labs/a2go/a2go/internal/process"
@@ -39,7 +40,14 @@ func doStopDocker() {
 		fmt.Println()
 		fmt.Println("  No a2go container found.")
 		// Check if ports are held by something else
-		for _, port := range []int{8000, 8080, 18789} {
+		portsToCheck := []int{services.LLM.Port, services.WebProxy.Port}
+		if savedCfg, err := config.LoadLast(); err == nil {
+			portsToCheck = append(portsToCheck, services.GatewayFor(savedCfg.Agent).Port)
+		} else {
+			// No saved config; check both gateway ports
+			portsToCheck = append(portsToCheck, services.Gateway.Port, services.HermesGateway.Port)
+		}
+		for _, port := range portsToCheck {
 			if process.PortListening(port) {
 				fmt.Printf("  Note: port %d is in use by another process (not managed by a2go).\n", port)
 				fmt.Printf("  Find it: docker ps --filter publish=%d or lsof -iTCP:%d -sTCP:LISTEN\n", port, port)
@@ -78,7 +86,7 @@ func doStopMlx() {
 	stopped := 0
 
 	// Stop in reverse order: gateway, web-proxy, image, audio, llm
-	order := []services.Service{services.Gateway, services.WebProxy, services.Image, services.Audio, services.LLM}
+	order := []services.Service{services.HermesGateway, services.Gateway, services.WebProxy, services.Image, services.Audio, services.LLM}
 	for _, svc := range order {
 		pid, err := process.ReadPid(svc.Name)
 		if err == nil && process.IsAlive(pid) {

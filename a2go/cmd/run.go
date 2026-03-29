@@ -144,12 +144,9 @@ func execRunDocker(cfg *config.Config) error {
 	}
 
 	// Check ports free — gateway port depends on agent
-	gwPort := services.Gateway.Port
-	gwName := "OpenClaw Gateway"
-	if cfg.Agent == "hermes" {
-		gwPort = services.HermesGateway.Port
-		gwName = "Hermes Gateway"
-	}
+	gwSvc := services.GatewayFor(cfg.Agent)
+	gwPort := gwSvc.Port
+	gwName := gwSvc.Name
 	portChecks := []struct {
 		port int
 		name string
@@ -297,10 +294,7 @@ func execRunMlx(cfg *config.Config) error {
 	}
 
 	// Check ports — gateway port depends on agent
-	mlxGwSvc := services.Gateway
-	if cfg.Agent == "hermes" {
-		mlxGwSvc = services.HermesGateway
-	}
+	mlxGwSvc := services.GatewayFor(cfg.Agent)
 	portChecks := []struct {
 		port int
 		name string
@@ -314,6 +308,12 @@ func execRunMlx(cfg *config.Config) error {
 			port int
 			name string
 		}{services.Image.Port, "Image"})
+	}
+	if cfg.AudioEnabled() {
+		portChecks = append(portChecks, struct {
+			port int
+			name string
+		}{services.Audio.Port, "Audio"})
 	}
 	for _, pc := range portChecks {
 		if process.PortListening(pc.port) {
