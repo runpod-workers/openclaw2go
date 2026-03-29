@@ -1,5 +1,5 @@
 {
-  "_comment": "OpenClaw configuration for Runpod vLLM integration",
+  "_comment": "OpenClaw configuration for RunPod vLLM integration",
   "_instructions": [
     "Replace <POD_ID> with your Runpod pod ID",
     "Replace <VLLM_API_KEY> with your vLLM API key",
