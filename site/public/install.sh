@@ -4,7 +4,6 @@
 set -euo pipefail
 
 REPO="runpod-labs/a2go"
-INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="a2go"
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -23,6 +22,13 @@ if [ "$OS" != "darwin" ] && [ "$OS" != "linux" ]; then
     echo "Unsupported OS: $OS. Use install.ps1 for Windows."
     exit 1
 fi
+
+# Pick install dir: prefer ~/.local/bin (no sudo), fall back to /usr/local/bin
+INSTALL_DIR="$HOME/.local/bin"
+if [ -w "/usr/local/bin" ]; then
+    INSTALL_DIR="/usr/local/bin"
+fi
+mkdir -p "$INSTALL_DIR"
 
 echo "Installing a2go for ${OS}/${ARCH}..."
 
@@ -54,17 +60,28 @@ if file "$TMP" | grep -q "text"; then
 fi
 
 chmod +x "$TMP"
-
-# Install — try without sudo first
-if [ -w "$INSTALL_DIR" ]; then
-    mv "$TMP" "$INSTALL_DIR/$BINARY_NAME"
-else
-    echo "  Need sudo to install to $INSTALL_DIR"
-    sudo mv "$TMP" "$INSTALL_DIR/$BINARY_NAME"
-fi
+mv "$TMP" "$INSTALL_DIR/$BINARY_NAME"
 
 echo ""
-echo "Installed: $(which $BINARY_NAME || echo "$INSTALL_DIR/$BINARY_NAME")"
+echo "Installed: $INSTALL_DIR/$BINARY_NAME"
+
+# Check if install dir is in PATH
+case ":$PATH:" in
+    *":$INSTALL_DIR:"*) ;;
+    *)
+        echo ""
+        echo "  WARNING: $INSTALL_DIR is not in your PATH."
+        echo "  Add it by running:"
+        echo ""
+        SHELL_NAME="$(basename "${SHELL:-/bin/bash}")"
+        case "$SHELL_NAME" in
+            zsh)  echo "    echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.zshrc && source ~/.zshrc" ;;
+            fish) echo "    fish_add_path $INSTALL_DIR" ;;
+            *)    echo "    echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.bashrc && source ~/.bashrc" ;;
+        esac
+        ;;
+esac
+
 echo ""
 echo "Next: a2go doctor"
 echo ""
