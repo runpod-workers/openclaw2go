@@ -50,7 +50,7 @@ jobs:
             echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create GitHub release
+      - name: Create draft GitHub release
         if: steps.check.outputs.should-build == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +58,8 @@ jobs:
           VERSION="${{ steps.check.outputs.version }}"
           gh release create "v${VERSION}" \
             --title "v${VERSION}" \
-            --generate-notes
+            --generate-notes \
+            --draft
 
   build-cli:
     needs: release
@@ -106,3 +107,26 @@ jobs:
           gh release upload "v${{ needs.release.outputs.version }}" \
             "${{ matrix.asset }}" \
             --clobber
+
+  build-docker:
+    needs: release
+    if: needs.release.outputs.should-build == 'true'
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      version: v${{ needs.release.outputs.version }}
+    secrets: inherit
+
+  publish-release:
+    needs: [release, build-cli, build-docker]
+    if: needs.release.outputs.should-build == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: write
+    steps:
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "v${{ needs.release.outputs.version }}" \
+            --draft=false \
+            --repo "${{ github.repository }}"
