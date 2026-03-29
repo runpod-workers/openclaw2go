@@ -40,8 +40,8 @@ function App() {
         // Hydrate state from URL after catalog is available
         const url = parseUrlState()
         if (url.os) setOs(url.os)
-        if (url.fw) {
-          const match = FRAMEWORKS.find((f) => f.id === url.fw && f.available)
+        if (url.agent) {
+          const match = FRAMEWORKS.find((f) => f.id === url.agent && f.available)
           if (match) setFramework(match)
         }
 
@@ -136,7 +136,7 @@ function App() {
       gpu: selectedGpu?.id ?? null,
       vram: selectedVramGb,
       ctx: contextOverride,
-      fw: framework.id !== DEFAULT_FRAMEWORK.id ? framework.id : null,
+      agent: framework.id,
     })
   }, [os, selectedModels, selectedGpu, selectedVramGb, contextOverride, framework])
 

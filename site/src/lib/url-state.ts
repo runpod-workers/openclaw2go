@@ -13,7 +13,7 @@ export interface UrlState {
   gpu: string | null
   vram: number | null
   ctx: number | null
-  fw: string | null
+  agent: string | null
 }
 
 const VALID_OS: Set<string> = new Set(['linux', 'windows', 'mac'])
@@ -49,7 +49,7 @@ export function parseUrlState(): UrlState {
     gpu: params.get('gpu'),
     vram: vram && Number.isFinite(vram) ? vram : null,
     ctx: ctx && Number.isFinite(ctx) && ctx >= 16384 ? ctx : null,
-    fw: params.get('fw'),
+    agent: params.get('agent'),
   }
 }
 
@@ -69,7 +69,7 @@ export function syncUrlState(state: UrlState): void {
   if (state.gpu) params.set('gpu', state.gpu)
   if (state.vram != null) params.set('vram', String(state.vram))
   if (state.ctx != null) params.set('ctx', String(state.ctx))
-  if (state.fw) params.set('fw', state.fw)
+  if (state.agent) params.set('agent', state.agent)
 
   const search = params.toString()
   const url = search ? `${window.location.pathname}?${search}` : window.location.pathname
