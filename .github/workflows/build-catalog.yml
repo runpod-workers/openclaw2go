@@ -6,7 +6,6 @@ on:
     paths:
       - "registry/**"
       - "site/**"
-      - "package.json"
   workflow_dispatch:
 
 permissions:
