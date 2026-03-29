@@ -749,7 +749,7 @@ case "$AGENT" in
     ${TELEGRAM_CONFIG}
   },
   "skills": {
-    "load": { "extraDirs": ["/opt/openclaw/skills"] },
+    "load": { "extraDirs": ["/opt/a2go/skills"] },
     "entries": {
       "openai-image-gen": { "enabled": false },
       "nano-banana-pro": { "enabled": false }
@@ -832,9 +832,9 @@ EOF
         fi
 
         # Copy a2go skills into Hermes skills dir (SKILL.md format is compatible)
-        if [ -d "/opt/openclaw/skills" ]; then
+        if [ -d "/opt/a2go/skills" ]; then
             mkdir -p "$HERMES_DIR/skills"
-            for skill_dir in /opt/openclaw/skills/*/; do
+            for skill_dir in /opt/a2go/skills/*/; do
                 skill_name="$(basename "$skill_dir")"
                 if [ -f "$skill_dir/SKILL.md" ] && [ ! -d "$HERMES_DIR/skills/$skill_name" ]; then
                     cp -r "$skill_dir" "$HERMES_DIR/skills/$skill_name"
@@ -890,14 +890,14 @@ oc_print_ready "LLM API" "$LLM_MODEL_NAME" "$LLM_CONTEXT tokens" "token" \
 if [ -n "$AUDIO_PID" ]; then
     echo ""
     echo "  Audio Server (internal): http://localhost:8001"
-    echo "    - openclaw-tts \"Hello world\" --output /tmp/hello.wav"
-    echo "    - openclaw-stt /path/to/audio.wav"
+    echo "    - a2go tool text-to-speech \"Hello world\" --output /tmp/hello.wav"
+    echo "    - a2go tool speech-to-text /path/to/audio.wav"
 fi
 
 if [ -n "$IMAGE_PID" ]; then
     echo ""
     echo "  Image Server (internal): http://localhost:8002"
-    echo "    - openclaw-image-gen --prompt \"A robot\" --output /tmp/robot.png"
+    echo "    - a2go tool image-generate --prompt \"A robot\" --output /tmp/robot.png"
 fi
 
 if [ -n "$VISION_PID" ]; then

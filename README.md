@@ -72,9 +72,9 @@ a2go models                    # List available models
 a2go fit                       # Show what fits on this GPU
 a2go presets                   # List preset profiles
 a2go registry status           # Registry source + cache info
-openclaw-image-gen --prompt "A cat"   # Generate image
-openclaw-tts "Hello world"            # Text to speech
-openclaw-stt audio.wav                # Speech to text
+a2go tool image-generate --prompt "A cat"   # Generate image
+a2go tool text-to-speech "Hello world"     # Text to speech
+a2go tool speech-to-text audio.wav         # Speech to text
 ```
 
 ### Customize agent behavior

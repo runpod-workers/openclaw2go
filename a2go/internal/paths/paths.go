@@ -12,8 +12,10 @@ func Venv() string           { return filepath.Join(InstallDir, "venv") }
 func VenvBin() string        { return filepath.Join(Venv(), "bin") }
 func VenvPython() string     { return filepath.Join(VenvBin(), "python3") }
 func VenvPip() string        { return filepath.Join(VenvBin(), "pip") }
-func Skills() string         { return filepath.Join(InstallDir, "skills") }
-func SkillImageGen() string  { return filepath.Join(Skills(), "image-gen") }
+func Skills() string              { return filepath.Join(InstallDir, "skills") }
+func SkillImageGenerate() string  { return filepath.Join(Skills(), "image-generate") }
+func SkillTextToSpeech() string   { return filepath.Join(Skills(), "text-to-speech") }
+func SkillSpeechToText() string   { return filepath.Join(Skills(), "speech-to-text") }
 func Images() string         { return filepath.Join(InstallDir, "images") }
 func Pids() string           { return filepath.Join(InstallDir, "pids") }
 func Logs() string           { return filepath.Join(InstallDir, "logs") }
@@ -26,7 +28,7 @@ func HermesState() string    { return filepath.Join(os.Getenv("HOME"), ".hermes"
 
 func EnsureAll() error {
 	dirs := []string{
-		Bin(), Venv(), SkillImageGen(), Images(), Audio(), Pids(), Logs(), Cache(),
+		Bin(), Venv(), SkillImageGenerate(), SkillTextToSpeech(), SkillSpeechToText(), Images(), Audio(), Pids(), Logs(), Cache(),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0755); err != nil {

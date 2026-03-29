@@ -72,7 +72,7 @@ function generateDockerConfig() {
       telegram: { enabled: true },
     },
     skills: {
-      load: { extraDirs: ['/opt/openclaw/skills'] },
+      load: { extraDirs: ['/opt/a2go/skills'] },
       entries: {
         'openai-image-gen': { enabled: false },
         'nano-banana-pro': { enabled: false },

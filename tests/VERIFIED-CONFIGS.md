@@ -8,8 +8,8 @@ Tested configurations for the unified agent2go image. Each entry records the GPU
 2. Set `A2GO_CONFIG` env var to the test config
 3. Verify services start:
    - LLM: `curl http://localhost:8000/health` + `curl http://localhost:8000/v1/models`
-   - Audio: `openclaw-tts "Hello" --output /tmp/test.wav` (if audio enabled)
-   - Image: `openclaw-image-gen --prompt "test" --width 512 --height 512 --output /tmp/test.png` (if image enabled)
+   - Audio: `a2go tool text-to-speech "Hello" --output /tmp/test.wav` (if audio enabled)
+   - Image: `a2go tool image-generate --prompt "test" --width 512 --height 512 --output /tmp/test.png` (if image enabled)
 4. Check VRAM usage: `nvidia-smi`
 
 ## Status Legend

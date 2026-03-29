@@ -40,11 +40,10 @@ RUN mkdir -p /workspace/huggingface \
     /workspace/scripts
 
 # Copy startup scripts + skills + CLI
-COPY openclaw/skills/ /opt/openclaw/skills/
-COPY scripts/openclaw-image-gen /usr/local/bin/openclaw-image-gen
+COPY config/workspace/skills/ /opt/a2go/skills/
 COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
 COPY scripts/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh /usr/local/bin/openclaw-image-gen
+RUN chmod +x /entrypoint.sh
 
 # Copy default OpenClaw workspace files
 COPY config/workspace/ /workspace/openclaw/

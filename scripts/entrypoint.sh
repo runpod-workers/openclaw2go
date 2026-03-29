@@ -91,7 +91,7 @@ if [ ! -f "$OPENCLAW_STATE_DIR/openclaw.json" ]; then
     ${TELEGRAM_CONFIG}
   },
   "skills": {
-    "load": { "extraDirs": ["/opt/openclaw/skills"] }
+    "load": { "extraDirs": ["/opt/a2go/skills"] }
   },
   "gateway": {
     "mode": "local",

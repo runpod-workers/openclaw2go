@@ -114,7 +114,7 @@ ENV LLAMACPP_API_KEY="changeme" \
 # ── Copy application files ────────────────────────────────
 COPY registry/ /opt/openclaw/registry/
 COPY registry/templates/ /opt/openclaw/templates/
-COPY openclaw/skills/ /opt/openclaw/skills/
+COPY config/workspace/skills/ /opt/a2go/skills/
 COPY web/ /opt/openclaw/web/
 COPY plugins/ /opt/openclaw/plugins/
 COPY config/ /opt/openclaw/config/
@@ -124,11 +124,8 @@ COPY scripts/resolve-profile.py /opt/openclaw/scripts/resolve-profile.py
 COPY scripts/vram-budget.py /opt/openclaw/scripts/vram-budget.py
 COPY scripts/openclaw-profiles /usr/local/bin/openclaw-profiles
 COPY scripts/a2go /usr/local/bin/a2go
-COPY scripts/openclaw-image-gen /usr/local/bin/openclaw-image-gen
 COPY scripts/openclaw-image-server /usr/local/bin/openclaw-image-server
-COPY scripts/openclaw-tts /usr/local/bin/openclaw-tts
 COPY scripts/openclaw-tts-server /usr/local/bin/openclaw-tts-server
-COPY scripts/openclaw-stt /usr/local/bin/openclaw-stt
 COPY scripts/web-proxy /usr/local/bin/web-proxy
 
 RUN chmod +x /opt/openclaw/entrypoint-unified.sh \
@@ -136,11 +133,8 @@ RUN chmod +x /opt/openclaw/entrypoint-unified.sh \
     /opt/openclaw/scripts/vram-budget.py \
     /usr/local/bin/openclaw-profiles \
     /usr/local/bin/a2go \
-    /usr/local/bin/openclaw-image-gen \
     /usr/local/bin/openclaw-image-server \
-    /usr/local/bin/openclaw-tts \
     /usr/local/bin/openclaw-tts-server \
-    /usr/local/bin/openclaw-stt \
     /usr/local/bin/web-proxy
 
 EXPOSE 8000 8080 18789 8642 22

@@ -13,14 +13,14 @@ This folder is the assistant's working directory.
 Generate images using FLUX.2 Klein SDNQ (4-bit quantized, runs on RTX 5090).
 
 ```bash
-openclaw-image-gen --prompt "<prompt>" --width 1024 --height 1024 --output /workspace/openclaw/images/output.png
-openclaw-image-gen --prompt "<prompt>" --aspect 16:9 --output /workspace/openclaw/images/output.png
+a2go tool image-generate --prompt "<prompt>" --width 1024 --height 1024 --output /workspace/openclaw/images/output.png
+a2go tool image-generate --prompt "<prompt>" --aspect 16:9 --output /workspace/openclaw/images/output.png
 ```
 
 Default to 1024x1024 if user doesn't specify size. Images saved to `/workspace/openclaw/images/`.
 
 Important:
-- Use `openclaw-image-gen` only. Do not call external image tools (GPT/OpenAI/DALL-E).
+- Use `a2go tool image-generate` only. Do not call external image tools (GPT/OpenAI/DALL-E).
 - After a successful image generation, do not attempt any other image tool.
 
 ## Safety defaults

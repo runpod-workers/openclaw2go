@@ -23,12 +23,31 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.AddGroup(
+		&cobra.Group{ID: "management", Title: "Management:"},
+		&cobra.Group{ID: "tools", Title: "Tools:"},
+		&cobra.Group{ID: "info", Title: "Info:"},
+	)
+
+	doctorCmd.GroupID = "management"
+	runCmd.GroupID = "management"
+	stopCmd.GroupID = "management"
+	restartCmd.GroupID = "management"
+	statusCmd.GroupID = "management"
+
+	toolCmd.GroupID = "tools"
+
+	modelsCmd.GroupID = "info"
+	versionCmd.GroupID = "info"
+	updateCmd.GroupID = "info"
+
 	rootCmd.AddCommand(doctorCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(restartCmd)
 	rootCmd.AddCommand(statusCmd)
-	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(toolCmd)
 	rootCmd.AddCommand(modelsCmd)
+	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(updateCmd)
 }

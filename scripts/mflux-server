@@ -4,7 +4,7 @@ mflux-server - Persistent FLUX image generation server for Apple Silicon (MLX)
 Keeps model loaded in unified memory for instant inference
 
 Starts on port 8002, accepts POST requests with JSON body.
-Same API as openclaw-image-server so openclaw-image-gen works unchanged.
+Same API as openclaw-image-server so a2go tool image-generate works unchanged.
 """
 
 import argparse
