@@ -1,5 +1,11 @@
 # openclaw2go
 
+## 0.7.0
+
+### Minor Changes
+
+- 347e713: feat: unified dev build pipeline with CLI pre-releases on PR branches
+
 ## 0.6.2
 
 ### Patch Changes
