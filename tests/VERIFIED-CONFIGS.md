@@ -30,6 +30,9 @@ Tested configurations for the unified agent2go image. Each entry records the GPU
 | `{"llm":"unsloth/Nemotron-3-Nano-30B-A3B-GGUF"}` | LLM (Nemotron-3-Nano Q4_K_XL) | auto | — | **PASS** | 2026-02-12 | MoE, reasoning + content, slim image |
 | `{"llm":"unsloth/gpt-oss-20b-GGUF"}` | LLM (GPT-OSS-20B Q8_0) | auto | — | **PASS** | 2026-02-12 | Generates output, slim image |
 | `{"llm":"mistralai/ministral3-8b-gguf"}` | LLM (Ministral-3-8B Q8_0) | 131k | 18311 / 32607 MiB | **PASS** | 2026-02-16 | Tool calling works, kvCache=70 MB/1k, ~14 GB free, ~200 tok/s |
+| `{"llm":"jackrong/qwen35-opus-distill-4b-gguf"}` | LLM (Qwen3.5-4B Opus Distill v2 Q8_0) | 16k | 5679 / 32607 MiB | **PASS** | 2026-04-01 | Reasoning + tool calling work, ~178 tok/s |
+| `{"llm":"jackrong/qwen35-opus-distill-9b-gguf"}` | LLM (Qwen3.5-9B Opus Distill v2 Q8_0) | 16k | 9464 / 32607 MiB | **PASS** | 2026-04-01 | Reasoning + tool calling work, ~141 tok/s |
+| `{"llm":"jackrong/qwen35-opus-distill-27b-gguf"}` | LLM (Qwen3.5-27B Opus Distill v2 Q4_K_M) | 16k | 16889 / 32607 MiB | **PASS** | 2026-04-01 | Reasoning + tool calling work, ~71 tok/s |
 | `{"llm":true,"audio":true}` | LLM+Audio | auto (~200k) | ~26 GB | PENDING | — | More context, no image |
 | `{"llm":true}` | LLM only | auto (~200k) | ~22 GB | PENDING | — | Maximum context |
 
