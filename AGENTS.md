@@ -5,6 +5,9 @@ This document exists for non-obvious, error-prone shortcomings in the codebase, 
 
 ---
 
+## Adding Models
+- Use the `/add-model` skill. It covers the full workflow: creating GGUF + MLX configs, validation, testing on RunPod (LLM API, Hermes gateway, OpenClaw gateway), and recording VRAM/tok/s measurements.
+
 ## VRAM & KV Cache
 - `vram.overhead` in model config must include compute graph buffers (~1.5-3GB for large models).
 
