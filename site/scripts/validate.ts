@@ -82,6 +82,17 @@ function validateModel(data: Record<string, unknown>, filepath: string): string[
     errors.push(`${filepath}: id should be in 'provider/name' format, got '${id}'`)
   }
 
+  // LLM and vision models must have contextLength >= 16384 (OpenClaw minimum)
+  if (data.type === 'llm' || data.type === 'vision') {
+    const defaults = data.defaults as Record<string, unknown> | undefined
+    const contextLength = defaults?.contextLength as number | undefined
+    if (contextLength === undefined) {
+      errors.push(`${filepath}: LLM/vision models must have defaults.contextLength`)
+    } else if (contextLength < 16384) {
+      errors.push(`${filepath}: defaults.contextLength is ${contextLength}, minimum is 16384`)
+    }
+  }
+
   return errors
 }
 
@@ -177,6 +188,42 @@ async function main() {
       }
     } else {
       groupFamilyMap.set(group, { family, file })
+    }
+  }
+
+  // Cross-validate: MLX kvCacheMbPer1kTokens should be ~1.5-2.2x GGUF within same group
+  const warnings: string[] = []
+  const groupKvMap = new Map<string, { mlx?: { kv: number; file: string }; gguf?: { kv: number; file: string } }>()
+  for (const [, { data, file }] of allModels) {
+    const group = data.group as string | undefined
+    const kv = data.kvCacheMbPer1kTokens as number | undefined
+    const engine = data.engine as string | undefined
+    if (!group || kv === undefined || !engine) continue
+
+    if (!groupKvMap.has(group)) groupKvMap.set(group, {})
+    const entry = groupKvMap.get(group)!
+
+    if (engine === 'mlx-lm') {
+      entry.mlx = { kv, file }
+    } else if (engine === 'a2go-llamacpp') {
+      if (!entry.gguf) entry.gguf = { kv, file }
+    }
+  }
+
+  for (const [group, { mlx, gguf }] of groupKvMap) {
+    if (!mlx || !gguf || gguf.kv === 0) continue
+    const ratio = mlx.kv / gguf.kv
+    if (ratio < 1.5 || ratio > 2.2) {
+      warnings.push(
+        `Group '${group}': MLX kvCacheMbPer1kTokens (${mlx.kv} in ${mlx.file}) is ${ratio.toFixed(2)}x GGUF (${gguf.kv} in ${gguf.file}), expected 1.5-2.2x`
+      )
+    }
+  }
+
+  if (warnings.length > 0) {
+    console.warn(`\nWarnings (${warnings.length}):`)
+    for (const w of warnings) {
+      console.warn(`  - ${w}`)
     }
   }
 
