@@ -5,6 +5,9 @@ on:
     # Check every 6 hours for new OpenClaw releases
     - cron: '0 */6 * * *'
   workflow_dispatch:
+  # TEMP: remove before merging
+  push:
+    branches: [feat/watch-hermes]
 
 jobs:
   check-and-rebuild:
@@ -72,6 +75,8 @@ jobs:
         run: |
           echo "New OpenClaw version detected: ${{ steps.npm.outputs.version }}"
           echo "${{ steps.npm.outputs.version }}" > .openclaw-version
-          gh workflow run docker-build.yml --ref main
+          # TEMP: dry-run — the -f inputs aren't on main yet. Revert before merging:
+          #   gh workflow run docker-build.yml --ref main -f openclaw_version=${{ steps.npm.outputs.version }}
+          echo "Would trigger: gh workflow run docker-build.yml --ref main -f openclaw_version=${{ steps.npm.outputs.version }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

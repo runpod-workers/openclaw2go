@@ -1,0 +1,46 @@
+name: Watch Hermes Agent Releases
+
+on:
+  schedule:
+    # Check every 6 hours for new Hermes Agent releases
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+  # TEMP: remove before merging
+  push:
+    branches: [feat/watch-hermes]
+
+jobs:
+  check-and-rebuild:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Get latest Hermes Agent release from GitHub
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST=$(gh api repos/NousResearch/hermes-agent/releases/latest --jq '.tag_name')
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Latest Hermes Agent release: $LATEST"
+
+      - name: Check if version is already built
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .hermes-version
+          key: hermes-version-${{ steps.release.outputs.version }}
+
+      - name: Skip if already up to date
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: echo "Hermes Agent ${{ steps.release.outputs.version }} already built, skipping."
+
+      - name: Trigger unified image rebuild
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "New Hermes Agent version detected: ${{ steps.release.outputs.version }}"
+          echo "${{ steps.release.outputs.version }}" > .hermes-version
+          # TEMP: dry-run — the -f inputs aren't on main yet, so workflow_dispatch would reject them.
+          # The actual trigger will work once this branch is merged. Revert before merging:
+          #   gh workflow run docker-build.yml --ref main -f hermes_tag=${{ steps.release.outputs.version }}
+          echo "Would trigger: gh workflow run docker-build.yml --ref main -f hermes_tag=${{ steps.release.outputs.version }}"

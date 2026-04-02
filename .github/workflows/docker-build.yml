@@ -12,7 +12,28 @@ on:
         required: false
         type: boolean
         default: true
+      hermes_tag:
+        description: 'Hermes Agent git tag/branch (default: main)'
+        required: false
+        type: string
+        default: 'main'
+      openclaw_version:
+        description: 'OpenClaw npm version (default: latest)'
+        required: false
+        type: string
+        default: 'latest'
   workflow_dispatch:
+    inputs:
+      hermes_tag:
+        description: 'Hermes Agent git tag/branch (default: main)'
+        required: false
+        type: string
+        default: 'main'
+      openclaw_version:
+        description: 'OpenClaw npm version (default: latest)'
+        required: false
+        type: string
+        default: 'latest'
 
 jobs:
   # Unified image - works on all GPUs with tested CUDA architectures
@@ -67,6 +88,8 @@ jobs:
           push: ${{ env.PUSH_IMAGES == 'true' }}
           build-args: |
             ENGINES_IMAGE=${{ env.DOCKERHUB_REPO }}/a2go-engines:latest-${{ matrix.arch }}
+            HERMES_TAG=${{ inputs.hermes_tag || 'main' }}
+            OPENCLAW_VERSION=${{ inputs.openclaw_version || 'latest' }}
           tags: |
             ${{ env.DOCKERHUB_REPO }}/a2go:${{ env.VERSION }}-${{ matrix.arch }}
             ${{ env.ALSO_LATEST == 'true' && format('{0}/a2go:latest-{1}', env.DOCKERHUB_REPO, matrix.arch) || '' }}

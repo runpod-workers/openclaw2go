@@ -1,4 +1,4 @@
-# Dockerfile.unified - Unified agent2go image
+# Dockerfile.unified — Unified agent2go image
 #
 # Uses pre-built llama.cpp binaries from the engines image (no compilation).
 # Build the engines image first: see engines/Dockerfile and engines-build.yml.
@@ -94,11 +94,13 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 RUN python3 -m pip install --no-cache-dir huggingface_hub
 
 # ── OpenClaw + Claude Code ────────────────────────────────
-RUN npm install -g --prefer-offline --omit=dev @anthropic-ai/claude-code openclaw@latest && \
+ARG OPENCLAW_VERSION=latest
+RUN npm install -g --prefer-offline --omit=dev @anthropic-ai/claude-code openclaw@${OPENCLAW_VERSION} && \
     npm cache clean --force
 
 # ── Hermes Agent ──────────────────────────────────────────
-RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash || true
+ARG HERMES_TAG=main
+RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash -s -- --branch ${HERMES_TAG} || true
 ENV PATH="/root/.local/bin:${PATH}"
 
 WORKDIR /
