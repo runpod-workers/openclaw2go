@@ -1,0 +1,161 @@
+name: Dev Build
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: dev-build-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    if: github.event.action != 'closed'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      pull-requests: read
+    outputs:
+      cli_changed: ${{ steps.filter.outputs.cli }}
+      docker_changed: ${{ steps.filter.outputs.docker }}
+      sanitized_branch: ${{ steps.branch.outputs.sanitized }}
+      is_fork: ${{ steps.fork.outputs.is_fork }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: fork
+        run: |
+          if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            echo "is_fork=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_fork=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            cli:
+              - 'a2go/**'
+            docker:
+              - 'Dockerfile'
+              - 'Dockerfile.unified'
+              - 'registry/**'
+              - 'scripts/**'
+              - 'openclaw/**'
+              - 'web/**'
+              - 'plugins/**'
+              - 'config/**'
+
+      - id: branch
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          SANITIZED=$(echo "$BRANCH" | tr '/' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^-*//')
+          echo "sanitized=$SANITIZED" >> "$GITHUB_OUTPUT"
+
+  build-docker:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docker_changed == 'true' && needs.detect-changes.outputs.is_fork == 'false'
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      version: ${{ needs.detect-changes.outputs.sanitized_branch }}
+      also_latest: false
+    secrets: inherit
+
+  build-cli:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.cli_changed == 'true' && needs.detect-changes.outputs.is_fork == 'false'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            asset: a2go_linux_amd64
+          - goos: linux
+            goarch: arm64
+            asset: a2go_linux_arm64
+          - goos: darwin
+            goarch: arm64
+            asset: a2go_darwin_arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: a2go/go.mod
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          cd a2go
+          go build \
+            -ldflags "-s -w -X github.com/runpod-labs/a2go/a2go/cmd.Version=v0.0.0-dev.${{ needs.detect-changes.outputs.sanitized_branch }}" \
+            -o "../${{ matrix.asset }}" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  publish-dev-release:
+    needs: [detect-changes, build-cli]
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: cli-*
+          merge-multiple: true
+
+      - name: Create or update pre-release
+        run: |
+          TAG="dev-${{ needs.detect-changes.outputs.sanitized_branch }}"
+          BRANCH="${{ github.head_ref }}"
+          PR_NUM="${{ github.event.pull_request.number }}"
+          DOCKER_TAG="${{ needs.detect-changes.outputs.sanitized_branch }}"
+
+          # Delete existing release for this tag (idempotent update)
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+
+          # Create pre-release with install instructions
+          gh release create "$TAG" \
+            --title "Dev: ${BRANCH}" \
+            --prerelease \
+            --notes "$(cat <<EOF
+          Dev build from PR #${PR_NUM} (branch: \`${BRANCH}\`)
+
+          ### Install CLI
+          \`\`\`bash
+          curl -sSL https://a2go.run/install.sh | bash -s -- --version ${TAG}
+          \`\`\`
+
+          ### Docker image
+          \`\`\`bash
+          docker pull runpod/a2go:${DOCKER_TAG}
+          \`\`\`
+          EOF
+          )" \
+            artifacts/*
+
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: write
+    steps:
+      - name: Delete dev pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          SANITIZED=$(echo "$BRANCH" | tr '/' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^-*//')
+          gh release delete "dev-${SANITIZED}" --yes --cleanup-tag --repo "${{ github.repository }}" 2>/dev/null || true

@@ -1,9 +1,9 @@
-# OpenClaw + vLLM Docker Image for Runpod
+# a2go Docker Image for RunPod
 # Pre-configured with everything needed for AI coding assistant
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
-LABEL maintainer="Runpod agent2go"
-LABEL description="agent2go with vLLM for local LLM inference"
+LABEL maintainer="Runpod"
+LABEL description="a2go with llama.cpp for local LLM inference"
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive

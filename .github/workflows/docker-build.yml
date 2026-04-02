@@ -7,17 +7,11 @@ on:
         description: 'Release version tag (e.g. v0.6.0)'
         required: true
         type: string
-  pull_request:
-    paths:
-      - 'Dockerfile'
-      - 'Dockerfile.unified'
-      - 'registry/**'
-      - 'scripts/**'
-      - 'openclaw/**'
-      - 'web/**'
-      - 'plugins/**'
-      - 'config/**'
-      - '.github/workflows/docker-build.yml'
+      also_latest:
+        description: 'Also tag as latest (default: true)'
+        required: false
+        type: boolean
+        default: true
   workflow_dispatch:
 
 jobs:
@@ -46,27 +40,17 @@ jobs:
           echo "DOCKERHUB_REPO=${{ vars.DOCKERHUB_REPO || secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
 
           # Determine Docker tag:
-          #   workflow_call with version input → version + latest
-          #   pull request → sanitized branch name
+          #   workflow_call with version input → version (+ latest if also_latest)
           #   workflow_dispatch → latest
           if [[ -n "${{ inputs.version }}" ]]; then
             echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH="${{ github.head_ref }}"
-            SANITIZED=$(echo "$BRANCH" | tr '/' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^-*//')
-            echo "VERSION=$SANITIZED" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+            echo "ALSO_LATEST=${{ inputs.also_latest }}" >> $GITHUB_ENV
           else
             echo "VERSION=latest" >> $GITHUB_ENV
             echo "ALSO_LATEST=false" >> $GITHUB_ENV
           fi
 
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
-            echo "PUSH_IMAGES=false" >> $GITHUB_ENV
-          else
-            echo "PUSH_IMAGES=true" >> $GITHUB_ENV
-          fi
+          echo "PUSH_IMAGES=true" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         if: env.PUSH_IMAGES == 'true'
@@ -102,12 +86,7 @@ jobs:
           # Determine Docker tag (must match build job logic)
           if [[ -n "${{ inputs.version }}" ]]; then
             echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
-            echo "ALSO_LATEST=true" >> $GITHUB_ENV
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH="${{ github.head_ref }}"
-            SANITIZED=$(echo "$BRANCH" | tr '/' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]' | sed 's/^-*//')
-            echo "VERSION=$SANITIZED" >> $GITHUB_ENV
-            echo "ALSO_LATEST=false" >> $GITHUB_ENV
+            echo "ALSO_LATEST=${{ inputs.also_latest }}" >> $GITHUB_ENV
           else
             echo "VERSION=latest" >> $GITHUB_ENV
             echo "ALSO_LATEST=false" >> $GITHUB_ENV

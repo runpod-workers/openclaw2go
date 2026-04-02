@@ -1,5 +1,10 @@
 # Install a2go CLI for Windows
 # Usage: irm https://a2go.run/install.ps1 | iex
+#        .\install.ps1 -Version dev-feat-foo
+
+param(
+    [string]$Version = ""
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -7,13 +12,18 @@ $Repo = "runpod-labs/a2go"
 $Binary = "a2go"
 $Asset = "a2go_windows_amd64.exe"
 
-# Get latest release tag
-Write-Host "Finding latest release..."
-$Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest"
+# Get release tag
+if ($Version) {
+    Write-Host "Finding release for tag: $Version..."
+    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Version"
+} else {
+    Write-Host "Finding latest release..."
+    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest"
+}
 $Tag = $Release.tag_name
 
 if (-not $Tag) {
-    Write-Host "Could not find latest release."
+    Write-Host "Could not find release."
     Write-Host "Check https://github.com/$Repo/releases"
     exit 1
 }

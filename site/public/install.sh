@@ -1,7 +1,16 @@
 #!/bin/bash
 # Install the a2go CLI binary.
 # Usage: curl -sSL https://a2go.run/install.sh | bash
+#        curl -sSL https://a2go.run/install.sh | bash -s -- --version dev-feat-foo
 set -euo pipefail
+
+VERSION_TAG=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --version) VERSION_TAG="$2"; shift 2 ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
 
 REPO="runpod-labs/a2go"
 BINARY_NAME="a2go"
@@ -32,11 +41,20 @@ mkdir -p "$INSTALL_DIR"
 
 echo "Installing a2go for ${OS}/${ARCH}..."
 
-# Get latest release tag
-LATEST="$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
-if [ -z "$LATEST" ]; then
-    echo "ERROR: Could not determine latest release."
-    exit 1
+# Get release tag
+if [ -n "$VERSION_TAG" ]; then
+    LATEST="$(curl -sSL "https://api.github.com/repos/${REPO}/releases/tags/${VERSION_TAG}" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
+    if [ -z "$LATEST" ]; then
+        echo "ERROR: Could not find release for tag: $VERSION_TAG"
+        echo "Check available releases at https://github.com/${REPO}/releases"
+        exit 1
+    fi
+else
+    LATEST="$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
+    if [ -z "$LATEST" ]; then
+        echo "ERROR: Could not determine latest release."
+        exit 1
+    fi
 fi
 echo "  Version: $LATEST"
 
