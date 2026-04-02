@@ -117,17 +117,7 @@ Hermes is the agent framework that sits on top of the LLM. It must work correctl
      -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "What is the weather in Berlin?"}, {"role": "assistant", "content": null, "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "get_weather", "arguments": "{\"location\": \"Berlin\"}"}}]}, {"role": "tool", "tool_call_id": "call_1", "content": "{\"temp\": 18, \"condition\": \"cloudy\"}"}], "max_tokens": 256}'
    ```
 
-### 5c: Test the agent web UI with `/agent-browser`
-
-Use the `/agent-browser` skill to test the agent's web UI end-to-end:
-
-1. **Open the agent UI** — navigate to the pod's proxy URL on port 8080
-2. **Device pairing** — approve the device when prompted. Use `/agent-browser` to click through the pairing flow in the browser.
-3. **Send a chat message** — verify the agent responds correctly through the web UI
-4. **Test tool calling in the UI** — ask the agent to perform a task that requires tools and verify it works visually
-5. **Test image generation** (if image service is running) — ask the agent to generate an image and verify it renders in the UI
-
-### 5d: Test through OpenClaw gateway (port 18789)
+### 5c: Test through OpenClaw gateway (port 18789)
 
 1. **Device pairing:**
    ```bash
@@ -136,6 +126,16 @@ Use the `/agent-browser` skill to test the agent's web UI end-to-end:
    ```
 
 2. **Full flow** — verify profile resolution, model download, server start, and gateway connectivity all work end-to-end.
+
+### 5d: Test the OpenClaw web UI with `/agent-browser`
+
+OpenClaw has a web UI on port 8080. Hermes is API-only (no web UI). Use the `/agent-browser` skill to test the OpenClaw UI end-to-end:
+
+1. **Open the agent UI** — navigate to the pod's proxy URL on port 8080
+2. **Device pairing** — approve the device when prompted. Use `/agent-browser` to click through the pairing flow in the browser.
+3. **Send a chat message** — verify the agent responds correctly through the web UI
+4. **Test tool calling in the UI** — ask the agent to perform a task that requires tools and verify it works visually
+5. **Test image generation** (if image service is running) — ask the agent to generate an image and verify it renders in the UI
 
 ### 5e: Record measurements
 
