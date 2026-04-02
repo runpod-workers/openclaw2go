@@ -1,0 +1,26 @@
+{
+  "id": "jackrong/qwen35-opus-distill-9b-mlx",
+  "group": "qwen35-9b-opus-distill",
+  "family": "qwen35",
+  "catalogKey": "qwen35-9b",
+  "name": "Qwen3.5-9B Opus Distill v2 MLX 8-bit",
+  "type": "llm",
+  "engine": "mlx-lm",
+  "bits": 8,
+  "repo": "Jackrong/MLX-Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2-8bit",
+  "vram": {
+    "model": 10400,
+    "overhead": 0
+  },
+  "kvCacheMbPer1kTokens": 30,
+  "defaults": {
+    "contextLength": 262000
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
+  "platform": "mlx",
+  "default": false,
+  "status": "experimental"
+}

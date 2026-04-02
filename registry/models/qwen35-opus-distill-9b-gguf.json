@@ -1,0 +1,58 @@
+{
+  "id": "jackrong/qwen35-opus-distill-9b-gguf",
+  "group": "qwen35-9b-opus-distill",
+  "family": "qwen35",
+  "catalogKey": "qwen35-9b",
+  "name": "Qwen3.5-9B Opus Distill v2 Q8_0 (8-bit, 9.5GB, 262K context, multimodal)",
+  "type": "llm",
+  "engine": "a2go-llamacpp",
+  "bits": 8,
+  "repo": "Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2-GGUF",
+  "files": [
+    "Qwen3.5-9B.Q8_0.gguf",
+    "mmproj-BF16.gguf"
+  ],
+  "mmproj": "mmproj-BF16.gguf",
+  "downloadDir": "/workspace/models/Qwen3.5-9B-Opus-Distill-v2-GGUF",
+  "servedAs": "qwen3.5-9b-opus-distill",
+  "vram": {
+    "model": 9500,
+    "overhead": 3200
+  },
+  "kvCacheMbPer1kTokens": 16,
+  "defaults": {
+    "contextLength": 262000,
+    "port": 8000
+  },
+  "startDefaults": {
+    "gpuLayers": "999",
+    "parallel": "1"
+  },
+  "extraStartArgs": [
+    "-fa",
+    "on",
+    "--no-context-shift",
+    "--alias",
+    "qwen3.5-9b-opus-distill",
+    "--temp",
+    "0.6",
+    "--top-p",
+    "0.95",
+    "--top-k",
+    "20",
+    "--override-kv",
+    "qwen35.context_length=int:262000"
+  ],
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "status": "experimental",
+  "tps": {
+    "rtx-5090": 141
+  },
+  "verifiedOn": [
+    "rtx-5090"
+  ]
+}
