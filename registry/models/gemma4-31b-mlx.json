@@ -1,0 +1,26 @@
+{
+  "id": "mlx-community/gemma4-31b-mlx",
+  "group": "gemma4-31b",
+  "family": "gemma4",
+  "catalogKey": "gemma4-31b",
+  "name": "Gemma 4 31B MLX 4-bit",
+  "type": "llm",
+  "engine": "mlx-lm",
+  "bits": 4,
+  "repo": "mlx-community/gemma-4-31b-it-4bit",
+  "vram": {
+    "model": 17000,
+    "overhead": 0
+  },
+  "kvCacheMbPer1kTokens": 75,
+  "defaults": {
+    "contextLength": 262144
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
+  "platform": "mlx",
+  "default": false,
+  "status": "experimental"
+}
