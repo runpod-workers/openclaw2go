@@ -1,5 +1,15 @@
 # openclaw2go
 
+## 0.8.0
+
+### Minor Changes
+
+- dcb9efd: feat: add Qwen3.5 Claude 4.6 Opus Reasoning Distilled v2 models (4B, 9B, 27B) with GGUF and MLX variants
+
+### Patch Changes
+
+- 4f0d6a2: Prune AGENTS.md to only sharp edges and gotchas, removing everything inferable from the codebase
+
 ## 0.7.0
 
 ### Minor Changes
