@@ -38,6 +38,7 @@ RUN git clone --depth 1 --branch ${LLAMACPP_OPENCLAW_TAG} \
     cmake -B build \
         -DGGML_CUDA=ON \
         -DGGML_NATIVE=OFF \
+        -DBUILD_SHARED_LIBS=ON \
         -DCMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
         -DCMAKE_BUILD_TYPE=Release \
         -DLLAMA_BUILD_TESTS=OFF \
