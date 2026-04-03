@@ -1,6 +1,6 @@
 import { cn } from '../lib/utils'
 import type { AgentFramework } from '../lib/frameworks'
-import { FRAMEWORKS } from '../lib/frameworks'
+import { FRAMEWORKS, SUGGEST_AGENT_URL } from '../lib/frameworks'
 
 export default function FrameworkSelector({
   selected,
@@ -10,7 +10,8 @@ export default function FrameworkSelector({
   onSelect?: (fw: AgentFramework) => void
 }) {
   const cols = 3
-  const lastRowStart = Math.floor((FRAMEWORKS.length - 1) / cols) * cols
+  const totalCells = FRAMEWORKS.length + 1 // frameworks + CTA
+  const lastRowStart = Math.floor((totalCells - 1) / cols) * cols
 
   return (
     <div className="grid grid-cols-3">
@@ -46,14 +47,23 @@ export default function FrameworkSelector({
             >
               {fw.name}
             </span>
-            {!fw.available && (
-              <span className="font-mono text-[7px] font-semibold uppercase tracking-[0.12em] text-foreground/15">
-                coming soon
-              </span>
-            )}
           </div>
         )
       })}
+
+      {/* CTA: suggest an agent */}
+      <a
+        href={SUGGEST_AGENT_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center py-3"
+      >
+        <svg className="w-3.5 h-3.5 text-foreground/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </a>
     </div>
   )
 }
@@ -67,7 +77,6 @@ export function FrameworkPill({
   onSelect?: (fw: AgentFramework) => void
 }) {
   const availableFrameworks = FRAMEWORKS.filter((fw) => fw.available)
-  const unavailableCount = FRAMEWORKS.filter((fw) => !fw.available).length
 
   return (
     <div className="flex items-center gap-1">
@@ -85,11 +94,14 @@ export function FrameworkPill({
           {fw.name}
         </button>
       ))}
-      {unavailableCount > 0 && (
-        <span className="font-mono text-[7px] text-foreground/15">
-          +{unavailableCount} soon
-        </span>
-      )}
+      <a
+        href={SUGGEST_AGENT_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-[9px] font-medium tracking-tight px-1.5 py-0.5 text-foreground/30 transition-colors hover:text-foreground/50"
+      >
+        +?
+      </a>
     </div>
   )
 }

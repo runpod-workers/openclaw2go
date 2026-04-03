@@ -1,0 +1,54 @@
+name: Agent Request
+description: Suggest an agent framework to add to agent2go
+title: "[Agent] "
+labels: ["agent-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Agent Request
+
+        Which agent framework should we add next? Tell us about it.
+
+  - type: input
+    id: agent-name
+    attributes:
+      label: Agent Name
+      description: "Name of the agent framework."
+      placeholder: "e.g. SWE-agent, Bolt, Aider, ..."
+    validations:
+      required: true
+
+  - type: input
+    id: agent-url
+    attributes:
+      label: Project URL
+      description: "Link to the agent's repository or website."
+      placeholder: "https://github.com/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this agent?
+      description: "What makes this agent useful? What's your use case?"
+      placeholder: "I'd like this agent because..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: self-host
+    attributes:
+      label: Have you self-hosted this agent before?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: "Anything else we should know (hardware requirements, setup quirks, etc.)."

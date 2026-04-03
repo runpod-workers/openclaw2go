@@ -23,12 +23,9 @@ export const FRAMEWORKS: AgentFramework[] = [
     available: true,
     docsUrl: 'https://hermes-agent.nousresearch.com/docs',
   },
-  {
-    id: 'nanoclaw',
-    name: 'NanoClaw',
-    description: 'Security-focused agent in sandboxed containers',
-    available: false,
-  },
 ]
+
+export const SUGGEST_AGENT_URL =
+  'https://github.com/runpod-labs/a2go/issues/new?template=agent-request.yml'
 
 export const DEFAULT_FRAMEWORK = FRAMEWORKS[0]
