@@ -1,7 +1,7 @@
 # engines/Dockerfile - Pre-built llama.cpp binaries for agent2go
 #
-# Builds a2go-llamacpp — our unified fork merging main + unmerged PRs
-# (audio/TTS, Eagle-3 spec decode, Nemotron-3-Super)
+# Builds a2go-llamacpp — clean mainline rebase (zero cherry-picks).
+# Audio moved to Python media server, no custom audio binaries.
 #
 # The main Dockerfile.unified COPYs from this image — no compilation needed.
 #
@@ -20,10 +20,8 @@ ARG LLAMACPP_OPENCLAW_TAG=main
 # ============================================================
 # Stage 1: Build a2go-llamacpp (unified fork)
 # ============================================================
-# Our fork at github.com/runpod-labs/a2go-llamacpp merges:
-#   - llama.cpp b8475 (LLM, vision, embeddings, reranking, Nemotron-3-Super, Nemotron-Cascade-2)
-#   - PR #18641 (liquid-audio: TTS/STT for LFM2.5)
-#   - PR #18039 (Eagle-3 speculative decoding)
+# Our fork at github.com/runpod-labs/a2go-llamacpp:
+#   Clean mainline rebase (zero cherry-picks)
 FROM nvcr.io/nvidia/cuda-dl-base:25.03-cuda${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS a2go-llamacpp
 
 ARG CUDA_ARCHITECTURES
@@ -77,15 +75,14 @@ RUN git clone --depth 1 https://github.com/ikawrakow/ik_llama.cpp.git && \
 # ============================================================
 FROM ubuntu:24.04
 
-# a2go-llamacpp engine (unified: LLM, Audio, Vision, Embeddings, TTS, etc.)
+# a2go-llamacpp engine (LLM, Vision, Embeddings, TTS)
+# Audio (LFM2.5) moved to Python media server — no more custom audio binaries
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-server /opt/engines/a2go-llamacpp/bin/
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-cli /opt/engines/a2go-llamacpp/bin/
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-tts /opt/engines/a2go-llamacpp/bin/
-COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-liquid-audio-cli /opt/engines/a2go-llamacpp/bin/
-COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-liquid-audio-server /opt/engines/a2go-llamacpp/bin/
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/*.so* /opt/engines/a2go-llamacpp/lib/
 
 RUN chmod +x /opt/engines/a2go-llamacpp/bin/*
 
 # Metadata
-LABEL org.opencontainers.image.description="Pre-built llama.cpp engines for agent2go (unified fork)"
+LABEL org.opencontainers.image.description="Pre-built llama.cpp engines for agent2go (mainline rebase)"
