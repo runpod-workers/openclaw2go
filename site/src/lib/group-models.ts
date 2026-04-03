@@ -326,3 +326,127 @@ export function entryHasOs(entry: CatalogEntry, os: OsPlatform | null): boolean 
   if (!os) return true
   return entry.groups.some((g) => g.variants.some((v) => v.os.includes(os)))
 }
+
+// ─── FamilyEntry: grouped by family ─────────────────────────────────────────
+
+export interface FamilyEntry {
+  family: string
+  displayName: string
+  type: 'llm' | 'image' | 'audio'
+  hasVision: boolean
+  capabilities: string[]
+  maxContextLength?: number
+  entries: CatalogEntry[]      // sorted by min VRAM ascending (≈ by param size)
+  sizeLabels: string[]         // one per entry, e.g., ["4B", "9B", "27B", ...]
+  isMultiSize: boolean         // true when entries.length > 1
+}
+
+/** Build FamilyEntry[] from existing CatalogEntry[].
+ *  Families with a single entry pass through transparently. */
+export function buildFamilyEntries(allEntries: CatalogEntry[]): FamilyEntry[] {
+  const byFamily = new Map<string, CatalogEntry[]>()
+  for (const entry of allEntries) {
+    const arr = byFamily.get(entry.family) ?? []
+    arr.push(entry)
+    byFamily.set(entry.family, arr)
+  }
+
+  const familyEntries: FamilyEntry[] = []
+
+  for (const [family, entries] of byFamily) {
+    // Sort entries by smallest VRAM (proxy for parameter count)
+    entries.sort((a, b) => {
+      const aMin = minEntryVram(a)
+      const bMin = minEntryVram(b)
+      return aMin - bMin
+    })
+
+    const isMultiSize = entries.length > 1
+
+    // Derive family display name and per-entry size labels
+    let displayName: string
+    let sizeLabels: string[]
+
+    if (isMultiSize) {
+      const names = entries.map((e) => e.displayName)
+      const prefix = longestCommonPrefix(names).replace(/[-\s]+$/, '')
+      displayName = prefix.length > 3 ? prefix : entries[0].displayName
+      sizeLabels = entries.map((e) => {
+        const label = e.displayName.slice(prefix.length).replace(/^[-\s]+/, '')
+        return label || e.catalogKey
+      })
+    } else {
+      displayName = entries[0].displayName
+      sizeLabels = ['']
+    }
+
+    // Aggregate stats across all entries
+    let hasVision = false
+    const capabilities: string[] = []
+    let maxContextLength: number | undefined
+
+    for (const entry of entries) {
+      if (entry.hasVision) hasVision = true
+      for (const cap of entry.capabilities) {
+        if (!capabilities.includes(cap)) capabilities.push(cap)
+      }
+      if (entry.maxContextLength != null) {
+        maxContextLength = maxContextLength != null
+          ? Math.max(maxContextLength, entry.maxContextLength)
+          : entry.maxContextLength
+      }
+    }
+
+    familyEntries.push({
+      family,
+      displayName,
+      type: entries[0].type as 'llm' | 'image' | 'audio',
+      hasVision,
+      capabilities,
+      maxContextLength,
+      entries,
+      sizeLabels,
+      isMultiSize,
+    })
+  }
+
+  familyEntries.sort((a, b) =>
+    a.displayName.localeCompare(b.displayName, undefined, { numeric: true }),
+  )
+
+  return familyEntries
+}
+
+/** Get the minimum VRAM across all variants of a catalog entry */
+function minEntryVram(entry: CatalogEntry): number {
+  let min = Infinity
+  for (const g of entry.groups) {
+    for (const v of g.variants) {
+      if (v.vramTotal < min) min = v.vramTotal
+    }
+  }
+  return min === Infinity ? 0 : min
+}
+
+/** OS-aware summary stats for a family entry (aggregated across all sizes) */
+export function getFamilyEntrySummary(
+  fe: FamilyEntry,
+  os: OsPlatform | null,
+): { maxTps?: number; minVramMb: number } {
+  let minVramMb = Infinity
+  let bestTps: number | undefined
+
+  for (const entry of fe.entries) {
+    const s = getEntrySummary(entry, os)
+    if (s.minVramMb > 0 && s.minVramMb < minVramMb) minVramMb = s.minVramMb
+    if (s.maxTps != null && (bestTps == null || s.maxTps > bestTps)) bestTps = s.maxTps
+  }
+
+  return { maxTps: bestTps, minVramMb: minVramMb === Infinity ? 0 : minVramMb }
+}
+
+/** Check if any entry in a family has a variant for the given OS */
+export function familyEntryHasOs(fe: FamilyEntry, os: OsPlatform | null): boolean {
+  if (!os) return true
+  return fe.entries.some((e) => entryHasOs(e, os))
+}

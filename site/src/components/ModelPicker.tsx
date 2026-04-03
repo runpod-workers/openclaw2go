@@ -1,11 +1,11 @@
 import { cn } from '../lib/utils'
 import type { OsPlatform } from '../lib/catalog'
 import { formatVram, formatContext } from '../lib/catalog'
-import type { CatalogEntry } from '../lib/group-models'
-import { getEntrySummary } from '../lib/group-models'
+import type { FamilyEntry } from '../lib/group-models'
+import { getFamilyEntrySummary } from '../lib/group-models'
 
 export default function CatalogEntryCard({
-  entry,
+  familyEntry,
   selected,
   onToggle,
   wouldExceed,
@@ -13,7 +13,7 @@ export default function CatalogEntryCard({
   os,
   accentColor,
 }: {
-  entry: CatalogEntry
+  familyEntry: FamilyEntry
   selected: boolean
   onToggle: () => void
   wouldExceed: boolean
@@ -21,7 +21,7 @@ export default function CatalogEntryCard({
   os: OsPlatform | null
   accentColor: string
 }) {
-  const summary = getEntrySummary(entry, os)
+  const summary = getFamilyEntrySummary(familyEntry, os)
 
   return (
     <div
@@ -64,7 +64,7 @@ export default function CatalogEntryCard({
         wouldExceed && !selected && "pointer-events-none opacity-20",
         dimmed && !selected && "opacity-35",
       )}
-      data-model-type={entry.type}
+      data-model-type={familyEntry.type}
       data-selected={selected || undefined}
       style={selected ? { boxShadow: `inset 3px 0 0 ${accentColor}` } : undefined}
     >
@@ -75,20 +75,20 @@ export default function CatalogEntryCard({
           "text-[11px]",
           selected ? "text-foreground" : "text-foreground/90"
         )}
-        title={entry.displayName}
+        title={familyEntry.displayName}
       >
-        {entry.displayName}
+        {familyEntry.displayName}
       </span>
 
       {/* vision badge */}
-      {entry.hasVision && (
+      {familyEntry.hasVision && (
         <span className="shrink-0 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[8px] font-medium text-foreground/50">
           vision
         </span>
       )}
 
       {/* capability badges (tts, stt) */}
-      {entry.capabilities?.map((cap) => (
+      {familyEntry.capabilities?.map((cap) => (
         <span key={cap} className="shrink-0 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[8px] font-medium text-foreground/50">
           {cap}
         </span>
@@ -96,7 +96,7 @@ export default function CatalogEntryCard({
 
       {/* context */}
       <span className="w-[36px] shrink-0 text-right font-mono text-[10px] tabular-nums text-foreground/60">
-        {entry.maxContextLength ? formatContext(entry.maxContextLength) : "--"}
+        {familyEntry.maxContextLength ? formatContext(familyEntry.maxContextLength) : "--"}
       </span>
 
       {/* tps */}

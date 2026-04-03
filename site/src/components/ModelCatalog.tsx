@@ -8,7 +8,7 @@ import SectionHeader from './SectionHeader'
 import FrameworkSelector from './FrameworkSelector'
 import type { CatalogModel, OsPlatform } from '../lib/catalog'
 import type { AgentFramework } from '../lib/frameworks'
-import { getEntrySummary, getVariantForOs, type CatalogEntry } from '../lib/group-models'
+import { getFamilyEntrySummary, getVariantForOs, type FamilyEntry } from '../lib/group-models'
 
 type SortColumn = 'name' | 'ctx' | 'tps' | 'memory'
 type SortDirection = 'asc' | 'desc'
@@ -64,7 +64,7 @@ function SortableColumnHeader({
 }
 
 export default function ModelCatalog({
-  entries,
+  familyEntries,
   os,
   onOsChange,
   selectedModelIds,
@@ -77,7 +77,7 @@ export default function ModelCatalog({
   framework,
   onFrameworkSelect,
 }: {
-  entries: CatalogEntry[]
+  familyEntries: FamilyEntry[]
   os: OsPlatform | null
   onOsChange: (os: OsPlatform) => void
   selectedModelIds: Set<string>
@@ -111,18 +111,18 @@ export default function ModelCatalog({
 
   const visibleTypes = useMemo(() => getVisibleTypes(filters.task), [filters.task])
 
-  /** Pre-compute summaries for all entries so we don't call getEntrySummary per-render */
+  /** Pre-compute summaries for all family entries */
   const summaryMap = useMemo(() => {
     const map = new Map<string, { maxTps?: number; minVramMb: number }>()
-    for (const entry of entries) {
-      map.set(entry.catalogKey, getEntrySummary(entry, os))
+    for (const fe of familyEntries) {
+      map.set(fe.family, getFamilyEntrySummary(fe, os))
     }
     return map
-  }, [entries, os])
+  }, [familyEntries, os])
 
   /** Sort filtered entries by the active column/direction */
   const sortEntries = useCallback(
-    (filtered: CatalogEntry[]): CatalogEntry[] => {
+    (filtered: FamilyEntry[]): FamilyEntry[] => {
       if (sort.column === 'name') {
         const dir = sort.direction === 'asc' ? 1 : -1
         return [...filtered].sort((a, b) =>
@@ -131,8 +131,8 @@ export default function ModelCatalog({
       }
       const dir = sort.direction === 'asc' ? 1 : -1
       return [...filtered].sort((a, b) => {
-        const sa = summaryMap.get(a.catalogKey)
-        const sb = summaryMap.get(b.catalogKey)
+        const sa = summaryMap.get(a.family)
+        const sb = summaryMap.get(b.family)
         let va: number | undefined
         let vb: number | undefined
         if (sort.column === 'ctx') {
@@ -155,33 +155,38 @@ export default function ModelCatalog({
     [sort, summaryMap]
   )
 
-  /** Check if any model in an entry is currently selected */
-  const isEntrySelected = useCallback(
-    (entry: CatalogEntry) =>
-      entry.groups.some((g) => g.variants.some((v) => selectedModelIds.has(v.model.id))),
+  /** Check if any model in a family entry is currently selected */
+  const isFamilySelected = useCallback(
+    (fe: FamilyEntry) =>
+      fe.entries.some((entry) =>
+        entry.groups.some((g) => g.variants.some((v) => selectedModelIds.has(v.model.id)))
+      ),
     [selectedModelIds]
   )
 
   const filterEntries = useCallback(
-    (allEntries: CatalogEntry[], type: SectionKey): CatalogEntry[] => {
+    (allFamilies: FamilyEntry[], type: SectionKey): FamilyEntry[] => {
       if (!visibleTypes.has(type)) return []
-      let result = allEntries.filter((e) => e.type === type)
+      let result = allFamilies.filter((fe) => fe.type === type)
       if (searchLower) {
         result = result.filter(
-          (e) =>
-            e.displayName.toLowerCase().includes(searchLower) ||
-            e.groups.some((g) =>
-              g.variants.some((v) => v.repo.toLowerCase().includes(searchLower))
+          (fe) =>
+            fe.displayName.toLowerCase().includes(searchLower) ||
+            fe.entries.some((entry) =>
+              entry.displayName.toLowerCase().includes(searchLower) ||
+              entry.groups.some((g) =>
+                g.variants.some((v) => v.repo.toLowerCase().includes(searchLower))
+              )
             )
         )
       }
       // Apply LLM-specific filters
       if (type === 'llm') {
         if (filters.contextMin !== null) {
-          result = result.filter((e) => e.maxContextLength != null && e.maxContextLength >= filters.contextMin!)
+          result = result.filter((fe) => fe.maxContextLength != null && fe.maxContextLength >= filters.contextMin!)
         }
         if (filters.task === 'vision') {
-          result = result.filter((e) => e.hasVision)
+          result = result.filter((fe) => fe.hasVision)
         }
       }
       return result
@@ -192,30 +197,35 @@ export default function ModelCatalog({
   const modelSections = useMemo(
     () =>
       [
-        { key: "llm" as SectionKey, label: "LLM", items: sortEntries(filterEntries(entries, 'llm')), color: SECTION_COLORS.llm },
-        { key: "image" as SectionKey, label: "Image", items: sortEntries(filterEntries(entries, 'image')), color: SECTION_COLORS.image },
-        { key: "audio" as SectionKey, label: "Audio", items: sortEntries(filterEntries(entries, 'audio')), color: SECTION_COLORS.audio },
+        { key: "llm" as SectionKey, label: "LLM", items: sortEntries(filterEntries(familyEntries, 'llm')), color: SECTION_COLORS.llm },
+        { key: "image" as SectionKey, label: "Image", items: sortEntries(filterEntries(familyEntries, 'image')), color: SECTION_COLORS.image },
+        { key: "audio" as SectionKey, label: "Audio", items: sortEntries(filterEntries(familyEntries, 'audio')), color: SECTION_COLORS.audio },
       ].filter((s) => s.items.length > 0),
-    [filterEntries, sortEntries, entries]
+    [filterEntries, sortEntries, familyEntries]
   )
 
-  /** Click an entry → resolve to best variant for current OS and default quant, then toggle */
-  const handleEntryToggle = useCallback(
-    (entry: CatalogEntry) => {
-      // Check if any variant of this entry is currently selected
-      for (const group of entry.groups) {
-        const selectedVariant = group.variants.find((v) =>
-          selectedModelIds.has(v.model.id)
-        )
-        if (selectedVariant) {
-          // Deselect
-          onToggleModel(selectedVariant.model)
-          return
+  /** Click a family row → resolve to best variant for current OS and default quant, then toggle */
+  const handleFamilyToggle = useCallback(
+    (fe: FamilyEntry) => {
+      // Check if any variant of any entry in this family is currently selected
+      for (const entry of fe.entries) {
+        for (const group of entry.groups) {
+          const selectedVariant = group.variants.find((v) =>
+            selectedModelIds.has(v.model.id)
+          )
+          if (selectedVariant) {
+            // Deselect
+            onToggleModel(selectedVariant.model)
+            return
+          }
         }
       }
 
-      // Select: prefer smallest quant (groups sorted by bits ascending) for current OS
-      const sv = entry.subVariants[0]
+      // Select: pick the first (smallest) entry, prefer smallest quant for current OS
+      const firstEntry = fe.entries[0]
+      if (!firstEntry) return
+
+      const sv = firstEntry.subVariants[0]
       if (!sv) return
 
       // First group with a variant for current OS (smallest bits first)
@@ -306,21 +316,21 @@ export default function ModelCatalog({
                   {section.label}
                 </span>
               </div>
-              {section.items.map((entry) => {
-                const selected = isEntrySelected(entry)
-                const summary = summaryMap.get(entry.catalogKey) ?? { minVramMb: 0 }
+              {section.items.map((fe) => {
+                const selected = isFamilySelected(fe)
+                const summary = summaryMap.get(fe.family) ?? { minVramMb: 0 }
                 const wouldExceed =
                   effectiveVramMb > 0 &&
                   !selected &&
                   summary.minVramMb > remainingVramMb
-                const dimmed = !selected && lockedTypes.has(entry.type)
+                const dimmed = !selected && lockedTypes.has(fe.type)
 
                 return (
                   <CatalogEntryCard
-                    key={entry.catalogKey}
-                    entry={entry}
+                    key={fe.family}
+                    familyEntry={fe}
                     selected={selected}
-                    onToggle={() => handleEntryToggle(entry)}
+                    onToggle={() => handleFamilyToggle(fe)}
                     wouldExceed={wouldExceed}
                     dimmed={dimmed}
                     os={os}

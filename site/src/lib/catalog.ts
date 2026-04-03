@@ -27,14 +27,14 @@ export interface CatalogModel {
   capabilities?: string[]
 }
 
-export interface GpuInfo {
+export interface DeviceInfo {
   id: string
   name: string
   vramMb: number
   os: OsPlatform[]
 }
 
-const MAC_GPUS: GpuInfo[] = [
+const MAC_DEVICES: DeviceInfo[] = [
   { id: 'apple-m4-16gb', name: 'm4 16gb', vramMb: 16384, os: ['mac'] },
   { id: 'apple-m3-pro-18gb', name: 'm3 pro', vramMb: 18432, os: ['mac'] },
   { id: 'apple-m4-24gb', name: 'm4 24gb', vramMb: 24576, os: ['mac'] },
@@ -46,18 +46,8 @@ const MAC_GPUS: GpuInfo[] = [
 ]
 
 export const VRAM_PRESETS = [8, 16, 24, 32, 48, 80, 128, 141, 192, 256, 288, 384, 512]
-export const GPU_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8] as const
-export type GpuCount = (typeof GPU_COUNTS)[number]
-
-/** Minimum GPU count needed to fit the given VRAM (in MB) on a single GPU's VRAM.
- *  Mac/Apple Silicon does not support multi-GPU scaling — always returns 1. */
-export function getMinGpuCount(totalVramMb: number, gpu: { vramMb: number; os: OsPlatform[] }): GpuCount {
-  if (gpu.vramMb <= 0) return 1
-  const isMac = gpu.os.includes('mac')
-  if (isMac) return 1
-  const needed = Math.ceil(totalVramMb / gpu.vramMb)
-  return Math.max(1, Math.min(needed, 8)) as GpuCount
-}
+export const DEVICE_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8] as const
+export type DeviceCount = (typeof DEVICE_COUNTS)[number]
 
 // deterministic pastel color per model id
 const MODEL_PASTELS: Record<string, string> = {}
@@ -80,6 +70,10 @@ export function getModelColor(modelId: string): { bg: string; border: string; te
 
 export function formatVram(mb: number): string {
   const gb = mb / 1024
+  if (gb >= 1000) {
+    const tb = gb / 1024
+    return `${tb % 1 === 0 ? tb.toFixed(0) : tb.toFixed(1)} tb`
+  }
   return `${gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1)} gb`
 }
 
@@ -115,9 +109,9 @@ export function getModelsForOs(os: OsPlatform | null, allModels: CatalogModel[])
   return allModels.filter((m) => m.os.includes(os))
 }
 
-export function getGpusForOs(os: OsPlatform | null, allGpus: GpuInfo[]): GpuInfo[] {
-  if (!os) return allGpus
-  return allGpus.filter((g) => g.os.includes(os))
+export function getDevicesForOs(os: OsPlatform | null, allDevices: DeviceInfo[]): DeviceInfo[] {
+  if (!os) return allDevices
+  return allDevices.filter((g) => g.os.includes(os))
 }
 
 interface RawModel {
@@ -141,7 +135,7 @@ interface RawModel {
   [key: string]: unknown
 }
 
-interface RawGpu {
+interface RawDevice {
   id: string
   name: string
   vramMb: number
@@ -150,10 +144,10 @@ interface RawGpu {
 
 interface RawCatalog {
   models: RawModel[]
-  gpus: RawGpu[]
+  gpus: RawDevice[]
 }
 
-export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: GpuInfo[] }> {
+export async function fetchCatalog(): Promise<{ models: CatalogModel[]; devices: DeviceInfo[] }> {
   const res = await fetch(`${import.meta.env.BASE_URL}v1/catalog.json`)
   if (!res.ok) throw new Error(`Failed to load catalog: ${res.status}`)
   const raw: RawCatalog = await res.json()
@@ -212,17 +206,17 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; gpus: Gp
     return [ggufEntry]
   })
 
-  const gpus: GpuInfo[] = [
+  const devices: DeviceInfo[] = [
     ...raw.gpus.map((g) => ({
       id: g.id,
       name: g.name.replace('NVIDIA ', '').replace(/^RTX\s+/i, '').replace(/\s+\d+GB$/i, '').toLowerCase(),
       vramMb: g.vramMb,
       os: ['linux', 'windows'] as OsPlatform[],
     })),
-    ...MAC_GPUS,
+    ...MAC_DEVICES,
   ]
 
-  gpus.sort((a, b) => a.vramMb - b.vramMb)
+  devices.sort((a, b) => a.vramMb - b.vramMb)
 
-  return { models, gpus }
+  return { models, devices }
 }

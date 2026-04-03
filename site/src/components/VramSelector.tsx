@@ -128,16 +128,16 @@ export default function VramGauge({
       <div className="flex flex-wrap items-center gap-1.5">
         {presets.map((gb) => {
           const isSelected = selectedGb === gb
-          const exceedsGpu = maxGb != null && gb > maxGb
+          const exceedsDevice = maxGb != null && gb > maxGb
 
           return (
             <button
               key={gb}
-              onClick={() => !exceedsGpu && onSelectPreset(gb)}
-              disabled={exceedsGpu}
+              onClick={() => !exceedsDevice && onSelectPreset(gb)}
+              disabled={exceedsDevice}
               className={cn(
                 "px-2.5 py-1 font-mono text-[10px] font-medium tabular-nums transition-all duration-150",
-                exceedsGpu
+                exceedsDevice
                   ? "text-foreground/15 cursor-not-allowed"
                   : isSelected
                     ? "bg-foreground/10 text-foreground"

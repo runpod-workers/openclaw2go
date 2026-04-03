@@ -10,7 +10,8 @@ export interface UrlState {
   llm: ModelParam | null
   image: ModelParam | null
   audio: ModelParam | null
-  gpu: string | null
+  device: string | null
+  deviceCount: number | null
   vram: number | null
   ctx: number | null
   agent: string | null
@@ -41,12 +42,16 @@ export function parseUrlState(): UrlState {
   const ctxRaw = params.get('ctx')
   const ctx = ctxRaw ? Number(ctxRaw) : null
 
+  const deviceCountRaw = params.get('deviceCount')
+  const deviceCount = deviceCountRaw ? Number(deviceCountRaw) : null
+
   return {
     os,
     llm: parseModelParam(params, 'llm'),
     image: parseModelParam(params, 'image'),
     audio: parseModelParam(params, 'audio'),
-    gpu: params.get('gpu'),
+    device: params.get('device'),
+    deviceCount: deviceCount && Number.isInteger(deviceCount) && deviceCount >= 1 && deviceCount <= 8 ? deviceCount : null,
     vram: vram && Number.isFinite(vram) ? vram : null,
     ctx: ctx && Number.isFinite(ctx) && ctx >= 16384 ? ctx : null,
     agent: params.get('agent'),
@@ -66,7 +71,8 @@ export function syncUrlState(state: UrlState): void {
   for (const role of MODEL_ROLES) {
     syncModelParam(params, role, state[role])
   }
-  if (state.gpu) params.set('gpu', state.gpu)
+  if (state.device) params.set('device', state.device)
+  if (state.deviceCount != null && state.deviceCount > 1) params.set('deviceCount', String(state.deviceCount))
   if (state.vram != null) params.set('vram', String(state.vram))
   if (state.ctx != null) params.set('ctx', String(state.ctx))
   if (state.agent) params.set('agent', state.agent)
