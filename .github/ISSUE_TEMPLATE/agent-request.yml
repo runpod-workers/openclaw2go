@@ -15,7 +15,7 @@ body:
     attributes:
       label: agent name
       description: "name of the agent."
-      placeholder: "e.g. SWE-agent, Bolt, Aider, ..."
+      placeholder: "e.g. OpenClaw, Hermes, ..."
     validations:
       required: true
 
