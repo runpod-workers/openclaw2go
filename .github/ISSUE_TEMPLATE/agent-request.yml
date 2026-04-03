@@ -1,20 +1,20 @@
-name: Agent Request
-description: Suggest an agent framework to add to agent2go
-title: "[Agent] "
+name: agent request
+description: suggest an agent to add to a2go
+title: "[agent] "
 labels: ["agent-request"]
 body:
   - type: markdown
     attributes:
       value: |
-        ## Agent Request
+        ## agent request
 
-        Which agent framework should we add next? Tell us about it.
+        which agent should we add next? tell us about it.
 
   - type: input
     id: agent-name
     attributes:
-      label: Agent Name
-      description: "Name of the agent framework."
+      label: agent name
+      description: "name of the agent."
       placeholder: "e.g. SWE-agent, Bolt, Aider, ..."
     validations:
       required: true
@@ -22,8 +22,8 @@ body:
   - type: input
     id: agent-url
     attributes:
-      label: Project URL
-      description: "Link to the agent's repository or website."
+      label: project url
+      description: "link to the agent's repository or website."
       placeholder: "https://github.com/..."
     validations:
       required: true
@@ -31,8 +31,8 @@ body:
   - type: textarea
     id: why
     attributes:
-      label: Why this agent?
-      description: "What makes this agent useful? What's your use case?"
+      label: why this agent?
+      description: "what makes this agent useful? what's your use case?"
       placeholder: "I'd like this agent because..."
     validations:
       required: true
@@ -40,15 +40,15 @@ body:
   - type: dropdown
     id: self-host
     attributes:
-      label: Have you self-hosted this agent before?
+      label: have you self-hosted this agent before?
       options:
-        - "Yes"
-        - "No"
+        - "yes"
+        - "no"
     validations:
       required: true
 
   - type: textarea
     id: notes
     attributes:
-      label: Additional context
-      description: "Anything else we should know (hardware requirements, setup quirks, etc.)."
+      label: additional context
+      description: "anything else we should know (hardware requirements, setup quirks, etc.)."
