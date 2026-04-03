@@ -7,7 +7,7 @@
 # Don't exit on error - we want the container to stay alive for debugging.
 set +e
 
-source /opt/openclaw/entrypoint-common.sh
+source /opt/a2go/entrypoint-common.sh
 
 # ============================================================
 # Symlink ~/.openclaw -> /workspace/.openclaw FIRST
@@ -105,10 +105,10 @@ echo ""
 echo "Fetching model registry..."
 FETCHED_DIR="$(a2go registry fetch)" || true
 if [ -n "$FETCHED_DIR" ] && [ -d "$FETCHED_DIR" ]; then
-    export OPENCLAW_REGISTRY_DIR="$FETCHED_DIR"
+    export A2GO_REGISTRY_DIR="$FETCHED_DIR"
     echo "Using registry: $FETCHED_DIR"
 else
-    echo "Using baked-in registry: ${OPENCLAW_REGISTRY_DIR:-/opt/openclaw/registry}"
+    echo "Using baked-in registry: ${A2GO_REGISTRY_DIR:-/opt/a2go/registry}"
 fi
 
 # ============================================================
@@ -117,7 +117,7 @@ fi
 echo ""
 echo "Resolving profile..."
 
-RESOLVED_JSON="$(python3 /opt/openclaw/scripts/resolve-profile.py)" || {
+RESOLVED_JSON="$(python3 /opt/a2go/scripts/resolve-profile.py)" || {
     echo "ERROR: Profile resolution failed."
     echo "Container staying alive for debugging. SSH in and check A2GO_CONFIG."
     sleep infinity
@@ -145,34 +145,41 @@ echo "$RESOLVED_JSON" > /tmp/oc_resolved.json
 # Support both LLAMACPP_API_KEY (new) and LLAMA_API_KEY (deprecated)
 LLAMACPP_API_KEY="${LLAMACPP_API_KEY:-${LLAMA_API_KEY:-changeme}}"
 
+# ── Canonical A2GO_* env vars with backward-compat fallback to OPENCLAW_* ──
+# Users can set either; A2GO_* takes precedence. Old names supported forever.
+A2GO_AUTH_TOKEN="${A2GO_AUTH_TOKEN:-${OPENCLAW_WEB_PASSWORD:-changeme}}"
+A2GO_STATE_DIR="${A2GO_STATE_DIR:-${OPENCLAW_STATE_DIR:-$HOME/.openclaw}}"
+A2GO_WORKSPACE="${A2GO_WORKSPACE:-${OPENCLAW_WORKSPACE:-/workspace/openclaw}}"
+A2GO_WEB_PROXY_PORT="${A2GO_WEB_PROXY_PORT:-8080}"
+
 # Hermes blocklists placeholder secrets ("changeme", "dummy", etc.)
 # When using Hermes with a placeholder key, substitute a non-blocked value
 # that still matches what the LLM server expects.
 if [ "$AGENT" = "hermes" ] && [ "$LLAMACPP_API_KEY" = "changeme" ]; then
     LLAMACPP_API_KEY="a2go-local-changeme"
-    OPENCLAW_WEB_PASSWORD="${OPENCLAW_WEB_PASSWORD:-a2go-local-changeme}"
+    A2GO_AUTH_TOKEN="${A2GO_AUTH_TOKEN:-a2go-local-changeme}"
     echo "Note: Hermes requires non-placeholder API keys. Using 'a2go-local-changeme' instead of 'changeme'."
 fi
 
-OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
-OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-/workspace/openclaw}"
-OPENCLAW_WEB_PROXY_PORT="${OPENCLAW_WEB_PROXY_PORT:-8080}"
+# Bridge to agent-specific env vars — agents read these, not A2GO_*
+OPENCLAW_STATE_DIR="$A2GO_STATE_DIR"
+OPENCLAW_WORKSPACE="$A2GO_WORKSPACE"
+OPENCLAW_WEB_PASSWORD="$A2GO_AUTH_TOKEN"
 
-OPENCLAW_WEB_PASSWORD="${OPENCLAW_WEB_PASSWORD:-changeme}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
-export OPENCLAW_STATE_DIR OPENCLAW_WORKSPACE OPENCLAW_WEB_PROXY_PORT
+export OPENCLAW_STATE_DIR OPENCLAW_WORKSPACE A2GO_WEB_PROXY_PORT
 
-if [ -n "${RUNPOD_POD_ID:-}" ] && [ -z "${OPENCLAW_IMAGE_PUBLIC_BASE_URL:-}" ]; then
-    OPENCLAW_IMAGE_PUBLIC_BASE_URL="https://${RUNPOD_POD_ID}-${OPENCLAW_WEB_PROXY_PORT}.proxy.runpod.net"
-    export OPENCLAW_IMAGE_PUBLIC_BASE_URL
+if [ -n "${RUNPOD_POD_ID:-}" ] && [ -z "${A2GO_IMAGE_PUBLIC_BASE_URL:-}" ]; then
+    A2GO_IMAGE_PUBLIC_BASE_URL="https://${RUNPOD_POD_ID}-${A2GO_WEB_PROXY_PORT}.proxy.runpod.net"
+    export A2GO_IMAGE_PUBLIC_BASE_URL
 fi
 
 # Compute allowed origin for OpenClaw Control UI CORS
 if [ -n "${RUNPOD_POD_ID:-}" ]; then
-    OPENCLAW_ALLOWED_ORIGINS_JSON="[\"https://${RUNPOD_POD_ID}-18789.proxy.runpod.net\"]"
+    A2GO_ALLOWED_ORIGINS_JSON="[\"https://${RUNPOD_POD_ID}-18789.proxy.runpod.net\"]"
 else
-    OPENCLAW_ALLOWED_ORIGINS_JSON='[]'
+    A2GO_ALLOWED_ORIGINS_JSON='[]'
 fi
 
 BOT_CMD="openclaw"
@@ -206,6 +213,10 @@ LLAMA_PID=""
 LLM_PORT=""
 LLM_MODEL_NAME=""
 LLM_CONTEXT=""
+
+# Accumulate media plugins for the unified a2go-media-server
+MEDIA_PLUGINS_JSON="[]"
+MEDIA_SERVER_PORT=8001
 
 # ============================================================
 # Download models and start services from resolved profile
@@ -400,23 +411,16 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             echo "{\"engine\":\"$engine_id\",\"type\":\"$ENGINE_TYPE\",\"port\":$port,\"model\":\"$MODEL_SERVED_AS\"}" > /tmp/oc_audio_engine
 
             if [ "$ENGINE_TYPE" = "python-venv" ]; then
-                # ── Python-based audio (e.g. Qwen3-TTS serving as audio role) ──
-                echo "Starting Audio server (Python venv)..."
-                echo "  Binary: $ENGINE_BINARY"
+                # ── Python-based audio → accumulate for unified media server ──
+                echo "Registering Audio plugin for unified media server..."
+                echo "  Engine: $engine_id"
                 echo "  Model dir: $MODEL_DOWNLOAD_DIR"
-                echo "  Port: $port"
-
-                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
-                    source "$ENGINE_VENV/bin/activate"
-                fi
-
-                "$ENGINE_BINARY" --model-dir "$MODEL_DOWNLOAD_DIR" --port "$port" \
-                    > /tmp/audio-server.log 2>&1 &
-                echo "$!" > /tmp/oc_audio_pid
-
-                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
-                    deactivate 2>/dev/null || true
-                fi
+                MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
+import sys, json
+plugins = json.load(sys.stdin)
+plugins.append({'engine': '$engine_id', 'role': 'audio', 'model_dir': '$MODEL_DOWNLOAD_DIR'})
+json.dump(plugins, sys.stdout)
+")"
             else
                 # ── Native audio TTS/STT via llama-liquid-audio-server ──
                 FIRST_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f1)"
@@ -448,21 +452,16 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             ;;
 
         image)
-            # ── Image generation via Python venv (Diffusers) ──
-            echo "Starting Image generation server..."
+            # ── Image generation → accumulate for unified media server ──
+            echo "Registering Image plugin for unified media server..."
+            echo "  Engine: $engine_id"
             echo "  Model: $MODEL_REPO"
-            echo "  Port: $port (GPU accelerated)"
-
-            if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
-                source "$ENGINE_VENV/bin/activate"
-            fi
-
-            "$ENGINE_BINARY" --model "$MODEL_REPO" --port "$port" > /tmp/image-server.log 2>&1 &
-            echo "$!" > /tmp/oc_image_pid
-
-            if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
-                deactivate 2>/dev/null || true
-            fi
+            MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
+import sys, json
+plugins = json.load(sys.stdin)
+plugins.append({'engine': '$engine_id', 'role': 'image', 'model': '$MODEL_REPO'})
+json.dump(plugins, sys.stdout)
+")"
             ;;
 
         vision)
@@ -559,23 +558,16 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             echo "{\"engine\":\"$engine_id\",\"type\":\"$ENGINE_TYPE\",\"port\":$port,\"model\":\"$MODEL_SERVED_AS\"}" > /tmp/oc_tts_engine
 
             if [ "$ENGINE_TYPE" = "python-venv" ]; then
-                # ── Qwen3-TTS via shared pytorch venv ──
-                echo "Starting TTS server (Qwen3-TTS)..."
-                echo "  Binary: $ENGINE_BINARY"
+                # ── Qwen3-TTS → accumulate for unified media server ──
+                echo "Registering TTS plugin for unified media server..."
+                echo "  Engine: $engine_id"
                 echo "  Model dir: $MODEL_DOWNLOAD_DIR"
-                echo "  Port: $port"
-
-                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
-                    source "$ENGINE_VENV/bin/activate"
-                fi
-
-                "$ENGINE_BINARY" --model-dir "$MODEL_DOWNLOAD_DIR" --port "$port" \
-                    > /tmp/tts-server.log 2>&1 &
-                echo "$!" > /tmp/oc_tts_pid
-
-                if [ -n "$ENGINE_VENV" ] && [ -d "$ENGINE_VENV" ]; then
-                    deactivate 2>/dev/null || true
-                fi
+                MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
+import sys, json
+plugins = json.load(sys.stdin)
+plugins.append({'engine': '$engine_id', 'role': 'tts', 'model_dir': '$MODEL_DOWNLOAD_DIR'})
+json.dump(plugins, sys.stdout)
+")"
             else
                 # ── Native TTS via llama-tts binary (OuteTTS) ──
                 FIRST_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f1)"
@@ -614,6 +606,34 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
 
 done < /tmp/oc_services.txt
 
+# ── Start unified media server if any Python media plugins were registered ──
+MEDIA_PID=""
+MEDIA_PLUGIN_COUNT="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")"
+if [ "$MEDIA_PLUGIN_COUNT" -gt 0 ]; then
+    echo ""
+    echo "Starting unified media server with $MEDIA_PLUGIN_COUNT plugin(s) on port $MEDIA_SERVER_PORT..."
+
+    # Write media server config
+    echo "{\"plugins\": $MEDIA_PLUGINS_JSON}" > /tmp/a2go_media_config.json
+
+    # Write metadata for web-proxy detection
+    echo "{\"unified\":true,\"port\":$MEDIA_SERVER_PORT,\"plugins\":$MEDIA_PLUGIN_COUNT}" > /tmp/a2go_media_engine
+
+    # Activate PyTorch venv and start the media server
+    if [ -d "/opt/engines/pytorch/venv" ]; then
+        source /opt/engines/pytorch/venv/bin/activate
+    fi
+
+    a2go-media-server --config /tmp/a2go_media_config.json --port "$MEDIA_SERVER_PORT" \
+        > /tmp/media-server.log 2>&1 &
+    MEDIA_PID=$!
+    echo "$MEDIA_PID" > /tmp/a2go_media_pid
+
+    if [ -d "/opt/engines/pytorch/venv" ]; then
+        deactivate 2>/dev/null || true
+    fi
+fi
+
 # Read PIDs and metadata from temp files
 LLAMA_PID="$(cat /tmp/oc_llm_pid 2>/dev/null || echo "")"
 LLM_PORT="$(cat /tmp/oc_llm_port 2>/dev/null || echo "8000")"
@@ -633,7 +653,7 @@ WEB_PROXY_PID=""
 if [ "$WEB_PROXY_ENABLED" = "true" ]; then
     echo ""
     echo "Starting OpenClaw media web proxy..."
-    web-proxy --port "$OPENCLAW_WEB_PROXY_PORT" --web-root "/opt/openclaw/web" > /tmp/web-proxy.log 2>&1 &
+    web-proxy --port "$A2GO_WEB_PROXY_PORT" --web-root "/opt/a2go/web" > /tmp/web-proxy.log 2>&1 &
     WEB_PROXY_PID=$!
 fi
 
@@ -694,10 +714,10 @@ case "$AGENT" in
 
         # Install tool_result hook plugins into workspace (if bundled)
         OPENCLAW_EXT_DIR="$OPENCLAW_WORKSPACE/.openclaw/extensions"
-        if [ -d "/opt/openclaw/plugins/toolresult-images" ]; then
+        if [ -d "/opt/a2go/plugins/toolresult-images" ]; then
             mkdir -p "$OPENCLAW_EXT_DIR"
             if [ ! -d "$OPENCLAW_EXT_DIR/toolresult-images" ]; then
-                cp -r "/opt/openclaw/plugins/toolresult-images" "$OPENCLAW_EXT_DIR/"
+                cp -r "/opt/a2go/plugins/toolresult-images" "$OPENCLAW_EXT_DIR/"
             fi
         fi
 
@@ -762,10 +782,10 @@ case "$AGENT" in
   "gateway": {
     "mode": "local",
     "bind": "lan",
-    "controlUi": { "allowedOrigins": $OPENCLAW_ALLOWED_ORIGINS_JSON },
+    "controlUi": { "allowedOrigins": $A2GO_ALLOWED_ORIGINS_JSON },
     "trustedProxies": ["0.0.0.0/0"],
-    "auth": { "mode": "token", "token": "$OPENCLAW_WEB_PASSWORD" },
-    "remote": { "token": "$OPENCLAW_WEB_PASSWORD" }
+    "auth": { "mode": "token", "token": "$A2GO_AUTH_TOKEN" },
+    "remote": { "token": "$A2GO_AUTH_TOKEN" }
   },
   "logging": { "level": "info" }
 }
@@ -774,13 +794,13 @@ EOF
         fi
 
         IMAGE_BASE_URL_FILE="$OPENCLAW_WORKSPACE/image-base-url.txt"
-        if [ -n "${OPENCLAW_IMAGE_PUBLIC_BASE_URL:-}" ] && [ ! -f "$IMAGE_BASE_URL_FILE" ]; then
-            echo "$OPENCLAW_IMAGE_PUBLIC_BASE_URL" > "$IMAGE_BASE_URL_FILE"
+        if [ -n "${A2GO_IMAGE_PUBLIC_BASE_URL:-}" ] && [ ! -f "$IMAGE_BASE_URL_FILE" ]; then
+            echo "$A2GO_IMAGE_PUBLIC_BASE_URL" > "$IMAGE_BASE_URL_FILE"
         fi
 
         # Copy workspace identity for OpenClaw
-        if [ -f "/opt/openclaw/config/workspace/IDENTITY.md" ] && [ ! -f "$OPENCLAW_WORKSPACE/IDENTITY.md" ]; then
-            cp /opt/openclaw/config/workspace/IDENTITY.md "$OPENCLAW_WORKSPACE/"
+        if [ -f "/opt/a2go/config/workspace/IDENTITY.md" ] && [ ! -f "$OPENCLAW_WORKSPACE/IDENTITY.md" ]; then
+            cp /opt/a2go/config/workspace/IDENTITY.md "$OPENCLAW_WORKSPACE/"
         fi
 
         # Auto-fix config
@@ -793,8 +813,8 @@ EOF
         # Start OpenClaw gateway
         echo ""
         echo "Starting OpenClaw gateway..."
-        OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_WEB_PASSWORD" \
-        "$BOT_CMD" gateway --auth token --token "$OPENCLAW_WEB_PASSWORD" &
+        OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR A2GO_GATEWAY_TOKEN="$A2GO_AUTH_TOKEN" \
+        "$BOT_CMD" gateway --auth token --token "$A2GO_AUTH_TOKEN" &
         GATEWAY_PID=$!
         ;;
 
@@ -827,8 +847,8 @@ OPENAI_BASE_URL=http://localhost:${LLM_PORT}/v1
 EOF
 
         # Copy workspace identity for Hermes
-        if [ -f "/opt/openclaw/config/workspace/hermes/SOUL.md" ] && [ ! -f "$HERMES_DIR/SOUL.md" ]; then
-            cp /opt/openclaw/config/workspace/hermes/SOUL.md "$HERMES_DIR/"
+        if [ -f "/opt/a2go/config/workspace/hermes/SOUL.md" ] && [ ! -f "$HERMES_DIR/SOUL.md" ]; then
+            cp /opt/a2go/config/workspace/hermes/SOUL.md "$HERMES_DIR/"
         fi
 
         # Copy a2go skills into Hermes skills dir (SKILL.md format is compatible)
@@ -851,7 +871,7 @@ EOF
         API_SERVER_ENABLED=true \
         API_SERVER_PORT=8642 \
         API_SERVER_HOST=0.0.0.0 \
-        API_SERVER_KEY="$OPENCLAW_WEB_PASSWORD" \
+        API_SERVER_KEY="$A2GO_AUTH_TOKEN" \
         "$HERMES_CMD" gateway run &
         GATEWAY_PID=$!
         ;;
@@ -862,7 +882,7 @@ esac
 # ============================================================
 MEDIA_PROXY_URL=""
 if [ -n "${RUNPOD_POD_ID:-}" ]; then
-    MEDIA_PROXY_URL="https://${RUNPOD_POD_ID}-${OPENCLAW_WEB_PROXY_PORT}.proxy.runpod.net"
+    MEDIA_PROXY_URL="https://${RUNPOD_POD_ID}-${A2GO_WEB_PROXY_PORT}.proxy.runpod.net"
 fi
 
 # Build VRAM summary from resolved profile
@@ -883,21 +903,22 @@ echo ""
 oc_print_ready "LLM API" "$LLM_MODEL_NAME" "$LLM_CONTEXT tokens" "token" \
     "$VRAM_SUMMARY" \
     "Profile: $PROFILE_NAME ($PROFILE_ID)" \
-    "Media UI (local): http://localhost:${OPENCLAW_WEB_PROXY_PORT}" \
+    "Media UI (local): http://localhost:${A2GO_WEB_PROXY_PORT}" \
     "${MEDIA_PROXY_URL:+Media UI (public): ${MEDIA_PROXY_URL}}"
 
 # Print service details
-if [ -n "$AUDIO_PID" ]; then
+if [ -n "$MEDIA_PID" ]; then
     echo ""
-    echo "  Audio Server (internal): http://localhost:8001"
+    echo "  Media Server (unified): http://localhost:${MEDIA_SERVER_PORT}"
+    echo "    - a2go tool image-generate --prompt \"A robot\" --output /tmp/robot.png"
     echo "    - a2go tool text-to-speech \"Hello world\" --output /tmp/hello.wav"
-    echo "    - a2go tool speech-to-text /path/to/audio.wav"
 fi
 
-if [ -n "$IMAGE_PID" ]; then
+if [ -n "$AUDIO_PID" ]; then
     echo ""
-    echo "  Image Server (internal): http://localhost:8002"
-    echo "    - a2go tool image-generate --prompt \"A robot\" --output /tmp/robot.png"
+    echo "  Audio Server (native, internal): http://localhost:8001"
+    echo "    - a2go tool text-to-speech \"Hello world\" --output /tmp/hello.wav"
+    echo "    - a2go tool speech-to-text /path/to/audio.wav"
 fi
 
 if [ -n "$VISION_PID" ]; then
@@ -930,7 +951,7 @@ fi
 
 if [ "$WEB_PROXY_ENABLED" = "true" ]; then
     echo ""
-    echo "  Media UI: http://localhost:${OPENCLAW_WEB_PROXY_PORT}"
+    echo "  Media UI: http://localhost:${A2GO_WEB_PROXY_PORT}"
 fi
 
 # ============================================================
@@ -939,6 +960,7 @@ fi
 cleanup() {
     echo "Shutting down..."
     [ -n "$GATEWAY_PID" ] && kill $GATEWAY_PID 2>/dev/null
+    [ -n "$MEDIA_PID" ] && kill $MEDIA_PID 2>/dev/null
     [ -n "$IMAGE_PID" ] && kill $IMAGE_PID 2>/dev/null
     [ -n "$AUDIO_PID" ] && kill $AUDIO_PID 2>/dev/null
     [ -n "$VISION_PID" ] && kill $VISION_PID 2>/dev/null

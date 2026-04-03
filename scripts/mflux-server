@@ -24,7 +24,7 @@ server_port = 8002
 model_name = None
 
 IMAGE_OUTPUT_DIR = os.environ.get(
-    "OPENCLAW_IMAGE_OUTPUT_DIR",
+    "A2GO_IMAGE_OUTPUT_DIR",
     os.path.expanduser("~/.a2go/images"),
 )
 

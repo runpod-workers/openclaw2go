@@ -29,10 +29,10 @@ generator_device = None
 last_image_path = None
 server_port = 8002
 
-IMAGE_OUTPUT_DIR = os.environ.get("OPENCLAW_IMAGE_OUTPUT_DIR", "/workspace/openclaw/images")
-IMAGE_PUBLIC_BASE_URL = os.environ.get("OPENCLAW_IMAGE_PUBLIC_BASE_URL")
+IMAGE_OUTPUT_DIR = os.environ.get("A2GO_IMAGE_OUTPUT_DIR", "/workspace/openclaw/images")
+IMAGE_PUBLIC_BASE_URL = os.environ.get("A2GO_IMAGE_PUBLIC_BASE_URL")
 IMAGE_PUBLIC_BASE_URL_FILE = os.environ.get(
-    "OPENCLAW_IMAGE_PUBLIC_BASE_URL_FILE",
+    "A2GO_IMAGE_PUBLIC_BASE_URL_FILE",
     "/workspace/openclaw/image-base-url.txt",
 )
 

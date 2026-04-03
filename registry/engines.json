@@ -13,14 +13,14 @@
   "image-gen": {
     "id": "image-gen",
     "name": "Image Generation (Diffusers + SDNQ)",
-    "binary": "/usr/local/bin/openclaw-image-server",
+    "binary": "/usr/local/bin/a2go-image-server",
     "venvPath": "/opt/engines/pytorch/venv",
     "type": "python-venv"
   },
   "qwen3-tts": {
     "id": "qwen3-tts",
     "name": "Qwen3-TTS (PyTorch)",
-    "binary": "/usr/local/bin/openclaw-tts-server",
+    "binary": "/usr/local/bin/a2go-tts-server",
     "venvPath": "/opt/engines/pytorch/venv",
     "type": "python-venv"
   },
@@ -40,6 +40,13 @@
     "id": "mflux",
     "name": "mflux Image Gen (Mac)",
     "binary": "~/.a2go/bin/mflux-server",
+    "type": "python-venv"
+  },
+  "a2go-media": {
+    "id": "a2go-media",
+    "name": "Unified Media Server (FastAPI)",
+    "binary": "/usr/local/bin/a2go-media-server",
+    "venvPath": "/opt/engines/pytorch/venv",
     "type": "python-venv"
   }
 }

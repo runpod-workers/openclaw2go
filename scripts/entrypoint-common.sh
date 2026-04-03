@@ -9,7 +9,7 @@ oc_init_web_ui() {
         WEB_UI_BASE="https://<pod-id>-18789.proxy.runpod.net"
     fi
 
-    WEB_UI_TOKEN="${OPENCLAW_WEB_PASSWORD:-changeme}"
+    WEB_UI_TOKEN="${A2GO_AUTH_TOKEN:-${OPENCLAW_WEB_PASSWORD:-changeme}}"
     WEB_UI_URL="${WEB_UI_BASE}/?token=${WEB_UI_TOKEN}"
 }
 
@@ -63,13 +63,13 @@ oc_sync_gateway_auth() {
         return
     fi
 
-    OPENCLAW_GATEWAY_AUTH_MODE="$mode" python3 - <<'PY'
+    A2GO_GATEWAY_AUTH_MODE="$mode" python3 - <<'PY'
 import json
 import os
 
 cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw")), "openclaw.json")
-mode = os.environ.get("OPENCLAW_GATEWAY_AUTH_MODE", "token")
-token = os.environ.get("OPENCLAW_WEB_PASSWORD", "changeme")
+mode = os.environ.get("A2GO_GATEWAY_AUTH_MODE", "token")
+token = os.environ.get("A2GO_AUTH_TOKEN", os.environ.get("OPENCLAW_WEB_PASSWORD", "changeme"))
 
 with open(cfg, "r", encoding="utf-8") as f:
     data = json.load(f)
@@ -115,12 +115,12 @@ oc_sync_skills_disable() {
         return
     fi
 
-    OPENCLAW_DISABLED_SKILLS="$skills" python3 - <<'PY'
+    A2GO_DISABLED_SKILLS="$skills" python3 - <<'PY'
 import json
 import os
 
 cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw")), "openclaw.json")
-raw = os.environ.get("OPENCLAW_DISABLED_SKILLS", "")
+raw = os.environ.get("A2GO_DISABLED_SKILLS", "")
 skills = [s.strip() for s in raw.split(",") if s.strip()]
 
 if not skills:

@@ -15,18 +15,18 @@ function readArg(flag, fallback) {
   return fallback;
 }
 
-const host = readArg("--host", process.env.OPENCLAW_WEB_PROXY_HOST || "0.0.0.0");
+const host = readArg("--host", process.env.A2GO_WEB_PROXY_HOST || "0.0.0.0");
 const port = parseInt(
-  readArg("--port", process.env.OPENCLAW_WEB_PROXY_PORT || "8080"),
+  readArg("--port", process.env.A2GO_WEB_PROXY_PORT || "8080"),
   10,
 );
-const webRoot = readArg("--web-root", process.env.OPENCLAW_WEB_ROOT || "/opt/openclaw/web");
-const llmBase = readArg("--llm-url", process.env.OPENCLAW_LLM_URL || "http://localhost:8000");
-const audioBase = readArg("--audio-url", process.env.OPENCLAW_AUDIO_URL || "http://localhost:8001");
-const imageBase = readArg("--image-url", process.env.OPENCLAW_IMAGE_URL || "http://localhost:8002");
+const webRoot = readArg("--web-root", process.env.A2GO_WEB_ROOT || "/opt/a2go/web");
+const llmBase = readArg("--llm-url", process.env.A2GO_LLM_URL || "http://localhost:8000");
+const audioBase = readArg("--audio-url", process.env.A2GO_AUDIO_URL || "http://localhost:8001");
+const imageBase = readArg("--image-url", process.env.A2GO_IMAGE_URL || "http://localhost:8002");
 const audioOutputDir = readArg(
   "--audio-dir",
-  process.env.OPENCLAW_AUDIO_OUTPUT_DIR || "/workspace/openclaw/audio",
+  process.env.A2GO_AUDIO_OUTPUT_DIR || "/workspace/openclaw/audio",
 );
 
 const TTS_VOICES = {
@@ -36,9 +36,25 @@ const TTS_VOICES = {
   "UK female": "Perform TTS. Use the UK female voice.",
 };
 
-// Auto-detect audio engine type from entrypoint metadata
+// Auto-detect unified media server from entrypoint metadata
+function detectUnifiedMedia() {
+  try {
+    return JSON.parse(fs.readFileSync("/tmp/a2go_media_engine", "utf-8"));
+  } catch {}
+  return null;
+}
+
+const unifiedMedia = detectUnifiedMedia();
+const mediaBase = unifiedMedia
+  ? `http://localhost:${unifiedMedia.port || 8001}`
+  : null;
+
+if (unifiedMedia) {
+  console.log(`[WebProxy] Unified media server detected at ${mediaBase}`);
+}
+
+// Auto-detect audio engine type from entrypoint metadata (legacy/native)
 function detectAudioEngine() {
-  const fs = require("fs");
   for (const p of ["/tmp/oc_audio_engine", "/tmp/oc_tts_engine"]) {
     try {
       return JSON.parse(fs.readFileSync(p, "utf-8"));
@@ -68,7 +84,7 @@ function getConfigPayload() {
     llmBasePath: "/api/llm",
     audioBasePath: "/api/audio",
     imageBasePath: "/api/image",
-    imagePublicBaseUrl: process.env.OPENCLAW_IMAGE_PUBLIC_BASE_URL || "",
+    imagePublicBaseUrl: process.env.A2GO_IMAGE_PUBLIC_BASE_URL || "",
     podId: process.env.RUNPOD_POD_ID || "",
   };
 
@@ -124,15 +140,23 @@ function getConfigPayload() {
 }
 
 // Port map for health probes
-const SERVICE_PORTS = {
-  llm: { port: 8000, path: "/health" },
-  audio: { port: 8001, path: "/v1/models" },
-  image: { port: 8002, path: "/health" },
-  vision: { port: 8003, path: "/health" },
-  embedding: { port: 8004, path: "/health" },
-  reranking: { port: 8005, path: "/health" },
-  tts: { port: 8006, path: "/v1/models" },
-};
+const SERVICE_PORTS = unifiedMedia
+  ? {
+      llm: { port: 8000, path: "/health" },
+      media: { port: unifiedMedia.port || 8001, path: "/health" },
+      vision: { port: 8003, path: "/health" },
+      embedding: { port: 8004, path: "/health" },
+      reranking: { port: 8005, path: "/health" },
+    }
+  : {
+      llm: { port: 8000, path: "/health" },
+      audio: { port: 8001, path: "/v1/models" },
+      image: { port: 8002, path: "/health" },
+      vision: { port: 8003, path: "/health" },
+      embedding: { port: 8004, path: "/health" },
+      reranking: { port: 8005, path: "/health" },
+      tts: { port: 8006, path: "/v1/models" },
+    };
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -340,11 +364,26 @@ async function callAudioServer(payload) {
 }
 
 async function handleTts(text, voice) {
+  // Unified media server handles TTS when available
+  if (unifiedMedia) {
+    const url = new URL("/tts/v1/audio/speech", mediaBase);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: text, voice: voice || "alloy" }),
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new Error(errText || `TTS error (${response.status})`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  }
+
   const engineMeta = detectAudioEngine();
   const isOpenAI = engineMeta?.type === "python-venv";
 
   if (isOpenAI) {
-    // OpenAI-compatible /v1/audio/speech (Qwen3-TTS, etc.)
+    // Legacy: OpenAI-compatible /v1/audio/speech (standalone TTS server)
     const url = new URL("/v1/audio/speech", audioBase);
     const response = await fetch(url, {
       method: "POST",
@@ -532,10 +571,12 @@ const server = http.createServer(async (req, res) => {
     return proxyRequest(req, res, llmBase, "/api/llm");
   }
   if (url.pathname.startsWith("/api/audio/")) {
-    return proxyRequest(req, res, audioBase, "/api/audio");
+    // Unified media server handles audio when available, otherwise fall back to legacy
+    return proxyRequest(req, res, mediaBase || audioBase, "/api/audio");
   }
   if (url.pathname.startsWith("/api/image/")) {
-    return proxyRequest(req, res, imageBase, "/api/image");
+    // Unified media server handles image when available, otherwise fall back to legacy
+    return proxyRequest(req, res, mediaBase || imageBase, "/api/image");
   }
   if (url.pathname.startsWith("/audio/")) {
     const filename = decodeURIComponent(url.pathname.slice("/audio/".length));
@@ -545,7 +586,8 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/generate" || url.pathname.startsWith("/images/") || url.pathname === "/latest") {
-    return proxyRequest(req, res, imageBase, "");
+    // Unified media server serves these flat routes directly
+    return proxyRequest(req, res, mediaBase || imageBase, "");
   }
 
   if (req.method === "GET" || req.method === "HEAD") {

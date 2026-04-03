@@ -188,9 +188,9 @@ func execRunDocker(cfg *config.Config) error {
 		Name:  containerName,
 		GPUs:  "all",
 		Env: map[string]string{
-			"A2GO_CONFIG":    configJSON,
-			"OPENCLAW_WEB_PASSWORD": cfg.GetAuthToken(),
-			"LLAMACPP_API_KEY":      cfg.GetAuthToken(),
+			"A2GO_CONFIG":     configJSON,
+			"A2GO_AUTH_TOKEN":  cfg.GetAuthToken(),
+			"LLAMACPP_API_KEY": cfg.GetAuthToken(),
 		},
 		Ports: []string{
 			"8000:8000",

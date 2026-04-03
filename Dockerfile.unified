@@ -34,17 +34,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -f /usr/lib/python*/EXTERNALLY-MANAGED \
     && rm -rf /var/lib/apt/lists/*
 
-# Shared PyTorch venv for image-gen + Qwen3-TTS
+# Shared PyTorch venv for a2go-media-server (image-gen + Qwen3-TTS)
 # PyTorch cu128 required for RTX 5090 (Blackwell sm_120), works on all others too
 # Diffusers from git required for Flux2KleinPipeline
 # qwen-tts + soundfile for Qwen3-TTS, flash-attn for performance (optional)
+# fastapi + uvicorn for the unified media server
 RUN python3 -m venv /opt/engines/pytorch/venv && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
         torch --index-url https://download.pytorch.org/whl/cu128 && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
         sdnq git+https://github.com/huggingface/diffusers.git \
         transformers accelerate safetensors \
-        qwen-tts soundfile && \
+        qwen-tts soundfile \
+        fastapi "uvicorn[standard]" && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
         flash-attn --no-build-isolation || true && \
     find /opt/engines/pytorch/venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \
@@ -107,37 +109,41 @@ WORKDIR /
 
 # ── Environment defaults ──────────────────────────────────
 ENV LLAMACPP_API_KEY="changeme" \
-    OPENCLAW_WEB_PASSWORD="changeme" \
-    OPENCLAW_WORKSPACE="/workspace/openclaw" \
-    OPENCLAW_REGISTRY_DIR="/opt/openclaw/registry" \
-    OPENCLAW_REGISTRY_OFFLINE="" \
-    OPENCLAW_REGISTRY_TTL_SECONDS="3600"
+    A2GO_AUTH_TOKEN="changeme" \
+    A2GO_STATE_DIR="" \
+    A2GO_WORKSPACE="" \
+    A2GO_REGISTRY_DIR="/opt/a2go/registry" \
+    A2GO_REGISTRY_OFFLINE="" \
+    A2GO_REGISTRY_TTL_SECONDS="3600"
 
 # ── Copy application files ────────────────────────────────
-COPY registry/ /opt/openclaw/registry/
-COPY registry/templates/ /opt/openclaw/templates/
+COPY registry/ /opt/a2go/registry/
+COPY registry/templates/ /opt/a2go/templates/
 COPY config/workspace/skills/ /opt/a2go/skills/
-COPY web/ /opt/openclaw/web/
-COPY plugins/ /opt/openclaw/plugins/
-COPY config/ /opt/openclaw/config/
-COPY scripts/entrypoint-common.sh /opt/openclaw/entrypoint-common.sh
-COPY scripts/entrypoint-unified.sh /opt/openclaw/entrypoint-unified.sh
-COPY scripts/resolve-profile.py /opt/openclaw/scripts/resolve-profile.py
-COPY scripts/vram-budget.py /opt/openclaw/scripts/vram-budget.py
-COPY scripts/openclaw-profiles /usr/local/bin/openclaw-profiles
+COPY web/ /opt/a2go/web/
+COPY plugins/ /opt/a2go/plugins/
+COPY config/ /opt/a2go/config/
+COPY scripts/entrypoint-common.sh /opt/a2go/entrypoint-common.sh
+COPY scripts/entrypoint-unified.sh /opt/a2go/entrypoint-unified.sh
+COPY scripts/resolve-profile.py /opt/a2go/scripts/resolve-profile.py
+COPY scripts/vram-budget.py /opt/a2go/scripts/vram-budget.py
+COPY scripts/a2go-profiles /usr/local/bin/a2go-profiles
 COPY scripts/a2go /usr/local/bin/a2go
-COPY scripts/openclaw-image-server /usr/local/bin/openclaw-image-server
-COPY scripts/openclaw-tts-server /usr/local/bin/openclaw-tts-server
+COPY scripts/a2go-image-server /usr/local/bin/a2go-image-server
+COPY scripts/a2go-tts-server /usr/local/bin/a2go-tts-server
+COPY scripts/a2go-media-server /usr/local/bin/a2go-media-server
+COPY scripts/media_plugins/ /usr/local/lib/media_plugins/
 COPY scripts/web-proxy /usr/local/bin/web-proxy
 
-RUN chmod +x /opt/openclaw/entrypoint-unified.sh \
-    /opt/openclaw/scripts/resolve-profile.py \
-    /opt/openclaw/scripts/vram-budget.py \
-    /usr/local/bin/openclaw-profiles \
+RUN chmod +x /opt/a2go/entrypoint-unified.sh \
+    /opt/a2go/scripts/resolve-profile.py \
+    /opt/a2go/scripts/vram-budget.py \
+    /usr/local/bin/a2go-profiles \
     /usr/local/bin/a2go \
-    /usr/local/bin/openclaw-image-server \
-    /usr/local/bin/openclaw-tts-server \
+    /usr/local/bin/a2go-image-server \
+    /usr/local/bin/a2go-tts-server \
+    /usr/local/bin/a2go-media-server \
     /usr/local/bin/web-proxy
 
-EXPOSE 8000 8080 18789 8642 22
-ENTRYPOINT ["/opt/openclaw/entrypoint-unified.sh"]
+EXPOSE 8000 8001 8080 18789 8642 22
+ENTRYPOINT ["/opt/a2go/entrypoint-unified.sh"]

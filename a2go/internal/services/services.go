@@ -19,13 +19,16 @@ type Service struct {
 
 var (
 	LLM            = Service{"llm", 8000}
-	Audio          = Service{"audio", 8001}
-	Image          = Service{"image", 8002}
+	Media          = Service{"media", 8001}
 	WebProxy       = Service{"web-proxy", 8080}
 	Gateway        = Service{"gateway", 18789}
 	HermesGateway  = Service{"hermes-gateway", 8642}
 
-	All = []Service{LLM, Audio, Image, WebProxy, Gateway, HermesGateway}
+	// Deprecated: use Media instead. Kept for backward compat in macOS MLX mode.
+	Audio          = Service{"audio", 8001}
+	Image          = Service{"image", 8002}
+
+	All = []Service{LLM, Media, WebProxy, Gateway, HermesGateway}
 )
 
 // GatewayFor returns the gateway service for the given agent framework.
@@ -49,7 +52,7 @@ func venvEnv() []string {
 		result = append(result, e)
 	}
 	result = append(result, "PATH="+newPath)
-	result = append(result, "OPENCLAW_IMAGE_OUTPUT_DIR="+paths.Images())
+	result = append(result, "A2GO_IMAGE_OUTPUT_DIR="+paths.Images())
 	return result
 }
 
@@ -125,7 +128,7 @@ func StartGateway(authToken string) (int, error) {
 		"gateway", "--auth", "token", "--token", authToken,
 	},
 		"OPENCLAW_STATE_DIR="+stateDir,
-		"OPENCLAW_GATEWAY_TOKEN="+authToken,
+		"A2GO_GATEWAY_TOKEN="+authToken,
 	)
 }
 

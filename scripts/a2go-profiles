@@ -19,7 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REGISTRY_DIR = Path(os.environ.get("OPENCLAW_REGISTRY_DIR", "/opt/openclaw/registry"))
+REGISTRY_DIR = Path(os.environ.get("A2GO_REGISTRY_DIR", "/opt/a2go/registry"))
 
 KV_CACHE_MB_PER_1K_TOKENS = 40
 
