@@ -29,13 +29,6 @@ const audioOutputDir = readArg(
   process.env.A2GO_AUDIO_OUTPUT_DIR || "/workspace/openclaw/audio",
 );
 
-const TTS_VOICES = {
-  "US male": "Perform TTS. Use the US male voice.",
-  "UK male": "Perform TTS. Use the UK male voice.",
-  "US female": "Perform TTS. Use the US female voice.",
-  "UK female": "Perform TTS. Use the UK female voice.",
-};
-
 // Auto-detect unified media server from entrypoint metadata
 function detectUnifiedMedia() {
   try {
@@ -297,79 +290,11 @@ function proxyRequest(req, res, targetBase, stripPrefix) {
   res.on("close", () => proxyReq.destroy());
 }
 
-async function parseSse(response, handlers) {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    return;
-  }
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) {
-      break;
-    }
-    buffer += decoder.decode(value, { stream: true });
-    let idx = buffer.indexOf("\n");
-    while (idx !== -1) {
-      const line = buffer.slice(0, idx).trim();
-      buffer = buffer.slice(idx + 1);
-      idx = buffer.indexOf("\n");
-      if (!line.startsWith("data:")) {
-        continue;
-      }
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") {
-        continue;
-      }
-      try {
-        const data = JSON.parse(payload);
-        handlers(data);
-      } catch {
-        // ignore invalid json chunk
-      }
-    }
-  }
-}
-
-function pcmToWav(pcmBuffer, sampleRate = 24000, channels = 1, bitDepth = 16) {
-  const blockAlign = (channels * bitDepth) / 8;
-  const byteRate = sampleRate * blockAlign;
-  const header = Buffer.alloc(44);
-  header.write("RIFF", 0);
-  header.writeUInt32LE(36 + pcmBuffer.length, 4);
-  header.write("WAVE", 8);
-  header.write("fmt ", 12);
-  header.writeUInt32LE(16, 16);
-  header.writeUInt16LE(1, 20);
-  header.writeUInt16LE(channels, 22);
-  header.writeUInt32LE(sampleRate, 24);
-  header.writeUInt32LE(byteRate, 28);
-  header.writeUInt16LE(blockAlign, 32);
-  header.writeUInt16LE(bitDepth, 34);
-  header.write("data", 36);
-  header.writeUInt32LE(pcmBuffer.length, 40);
-  return Buffer.concat([header, pcmBuffer]);
-}
-
-async function callAudioServer(payload) {
-  const url = new URL("/v1/chat/completions", audioBase);
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || `audio server error (${response.status})`);
-  }
-  return response;
-}
-
 async function handleTts(text, voice) {
-  // Unified media server handles TTS when available
+  // Unified media server handles TTS — uses flat /v1/audio/speech route
+  // which works for any audio plugin role (both "tts" and "audio")
   if (unifiedMedia) {
-    const url = new URL("/tts/v1/audio/speech", mediaBase);
+    const url = new URL("/v1/audio/speech", mediaBase);
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -404,64 +329,40 @@ async function handleTts(text, voice) {
     return Buffer.from(await response.arrayBuffer());
   }
 
-  // LFM2.5-Audio native streaming API
-  const prompt = TTS_VOICES[voice] || TTS_VOICES["US male"];
-  const payload = {
-    model: "",
-    messages: [
-      { role: "system", content: prompt },
-      { role: "user", content: text },
-    ],
-    stream: true,
-    max_tokens: 4096,
-  };
-  const response = await callAudioServer(payload);
-  const chunks = [];
-  await parseSse(response, (data) => {
-    const delta = data?.choices?.[0]?.delta || {};
-    const audio = delta.audio;
-    if (audio && audio.data) {
-      chunks.push(Buffer.from(audio.data, "base64"));
-    }
-  });
-  const pcm = Buffer.concat(chunks);
-  return pcmToWav(pcm);
+  throw new Error("No TTS service available. Configure an audio model with a2go run --audio.");
 }
 
 async function handleStt(audioBase64, format) {
+  // Unified media server handles STT via /v1/audio/transcriptions
+  if (unifiedMedia) {
+    const audioBuffer = Buffer.from(audioBase64, "base64");
+    const boundary = "----a2go" + Date.now();
+    const parts = [
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${format || "wav"}"\r\nContent-Type: audio/${format || "wav"}\r\n\r\n`,
+      audioBuffer,
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nlfm2\r\n--${boundary}--\r\n`,
+    ];
+    const body = Buffer.concat(parts.map((p) => (typeof p === "string" ? Buffer.from(p) : p)));
+    const url = new URL("/v1/audio/transcriptions", mediaBase);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+      body,
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new Error(errText || `STT error (${response.status})`);
+    }
+    const result = await response.json();
+    return (result.text || "").trim();
+  }
+
   const engineMeta = detectAudioEngine();
   if (engineMeta?.type === "python-venv") {
     throw new Error(`STT not supported by ${engineMeta.engine || "current engine"} (TTS-only). Use LFM2.5-Audio for STT.`);
   }
 
-  // LFM2.5-Audio native streaming API
-  const payload = {
-    model: "",
-    messages: [
-      { role: "system", content: "Perform ASR." },
-      {
-        role: "user",
-        content: [
-          {
-            type: "input_audio",
-            input_audio: { data: audioBase64, format: format || "wav" },
-          },
-        ],
-      },
-    ],
-    stream: true,
-    max_tokens: 4096,
-    temperature: 0,
-  };
-  const response = await callAudioServer(payload);
-  let text = "";
-  await parseSse(response, (data) => {
-    const delta = data?.choices?.[0]?.delta || {};
-    if (typeof delta.content === "string") {
-      text += delta.content;
-    }
-  });
-  return text.trim();
+  throw new Error("No STT service available. Configure an audio model with a2go run --audio.");
 }
 
 function probe(url) {

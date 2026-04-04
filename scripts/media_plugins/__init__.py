@@ -9,4 +9,5 @@ To add a new media plugin:
 PLUGIN_REGISTRY = {
     "image-gen": "media_plugins.image_gen.ImageGenPlugin",
     "qwen3-tts": "media_plugins.tts_qwen3.Qwen3TTSPlugin",
+    "lfm2-audio": "media_plugins.audio_lfm2.LFM2AudioPlugin",
 }

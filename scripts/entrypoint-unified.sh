@@ -216,7 +216,7 @@ LLM_CONTEXT=""
 
 # Accumulate media plugins for the unified a2go-media-server
 MEDIA_PLUGINS_JSON="[]"
-MEDIA_SERVER_PORT=8001
+MEDIA_SERVER_PORT="${A2GO_WEB_PROXY_PORT:-8080}"
 
 # ============================================================
 # Download models and start services from resolved profile
@@ -254,7 +254,6 @@ while IFS='|' read -r idx role model_id engine_id port model_json engine_json ov
     ENGINE_VENV="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('venvPath',''))")"
     ENGINE_TYPE="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('type',''))")"
     ENGINE_BINARY_TTS="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('binaryTts',''))")"
-    ENGINE_BINARY_AUDIO="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('binaryAudio',''))")"
 
     # Get overrides
     CONTEXT_LENGTH="$(echo "$overrides_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('contextLength',''))")"
@@ -410,45 +409,16 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             # Write audio engine metadata so CLI tools can auto-detect the API
             echo "{\"engine\":\"$engine_id\",\"type\":\"$ENGINE_TYPE\",\"port\":$port,\"model\":\"$MODEL_SERVED_AS\"}" > /tmp/oc_audio_engine
 
-            if [ "$ENGINE_TYPE" = "python-venv" ]; then
-                # ── Python-based audio → accumulate for unified media server ──
-                echo "Registering Audio plugin for unified media server..."
-                echo "  Engine: $engine_id"
-                echo "  Model dir: $MODEL_DOWNLOAD_DIR"
-                MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
+            # ── Audio → accumulate for unified media server ──
+            echo "Registering Audio plugin for unified media server..."
+            echo "  Engine: $engine_id"
+            echo "  Model dir: $MODEL_DOWNLOAD_DIR"
+            MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
 import sys, json
 plugins = json.load(sys.stdin)
 plugins.append({'engine': '$engine_id', 'role': 'audio', 'model_dir': '$MODEL_DOWNLOAD_DIR'})
 json.dump(plugins, sys.stdout)
 ")"
-            else
-                # ── Native audio TTS/STT via llama-liquid-audio-server ──
-                FIRST_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f1)"
-                SECOND_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f2)"
-                THIRD_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f3)"
-                FOURTH_FILE="$(echo "$MODEL_FILES" | cut -d'|' -f4)"
-
-                # Use audio-specific binary from engine if available
-                AUDIO_BINARY="${ENGINE_BINARY_AUDIO:-$ENGINE_BINARY}"
-
-                echo "Starting Audio server (TTS/STT)..."
-                echo "  Binary: $AUDIO_BINARY"
-                echo "  Model: $MODEL_DOWNLOAD_DIR/$FIRST_FILE"
-                echo "  Port: $port (GPU accelerated)"
-
-                env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
-                    "$AUDIO_BINARY" \
-                    -m "$MODEL_DOWNLOAD_DIR/$FIRST_FILE" \
-                    -mm "$MODEL_DOWNLOAD_DIR/$SECOND_FILE" \
-                    -mv "$MODEL_DOWNLOAD_DIR/$THIRD_FILE" \
-                    --tts-speaker-file "$MODEL_DOWNLOAD_DIR/$FOURTH_FILE" \
-                    -ngl 99 \
-                    --host 0.0.0.0 \
-                    --port "$port" \
-                    2>&1 &
-
-                echo "$!" > /tmp/oc_audio_pid
-            fi
             ;;
 
         image)
@@ -611,15 +581,12 @@ MEDIA_PID=""
 MEDIA_PLUGIN_COUNT="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")"
 if [ "$MEDIA_PLUGIN_COUNT" -gt 0 ]; then
     echo ""
-    echo "Starting unified media server with $MEDIA_PLUGIN_COUNT plugin(s) on port $MEDIA_SERVER_PORT..."
+    echo "Starting unified server with $MEDIA_PLUGIN_COUNT plugin(s) on port $MEDIA_SERVER_PORT..."
 
     # Write media server config
     echo "{\"plugins\": $MEDIA_PLUGINS_JSON}" > /tmp/a2go_media_config.json
 
-    # Write metadata for web-proxy detection
-    echo "{\"unified\":true,\"port\":$MEDIA_SERVER_PORT,\"plugins\":$MEDIA_PLUGIN_COUNT}" > /tmp/a2go_media_engine
-
-    # Activate PyTorch venv and start the media server
+    # Activate PyTorch venv and start the unified server
     if [ -d "/opt/engines/pytorch/venv" ]; then
         source /opt/engines/pytorch/venv/bin/activate
     fi
@@ -628,6 +595,7 @@ if [ "$MEDIA_PLUGIN_COUNT" -gt 0 ]; then
     MEDIA_PYTHON="${VIRTUAL_ENV:-/opt/engines/pytorch/venv}/bin/python3"
     "$MEDIA_PYTHON" /usr/local/bin/a2go-media-server \
         --config /tmp/a2go_media_config.json --port "$MEDIA_SERVER_PORT" \
+        --web-root "/opt/a2go/web" --llm-url "http://localhost:$LLM_PORT" \
         > /tmp/media-server.log 2>&1 &
     MEDIA_PID=$!
     echo "$MEDIA_PID" > /tmp/a2go_media_pid
@@ -644,21 +612,13 @@ LLM_MODEL_NAME="$(cat /tmp/oc_llm_model_name 2>/dev/null || echo "glm-4.7-flash"
 LLM_CONTEXT="$(cat /tmp/oc_llm_context 2>/dev/null || echo "150000")"
 LLM_PROVIDER_NAME="$(cat /tmp/oc_llm_provider 2>/dev/null || echo "local-llamacpp")"
 LLM_HAS_VISION="$(cat /tmp/oc_llm_vision 2>/dev/null || echo "false")"
-AUDIO_PID="$(cat /tmp/oc_audio_pid 2>/dev/null || echo "")"
 IMAGE_PID="$(cat /tmp/oc_image_pid 2>/dev/null || echo "")"
 VISION_PID="$(cat /tmp/oc_vision_pid 2>/dev/null || echo "")"
 EMBEDDING_PID="$(cat /tmp/oc_embedding_pid 2>/dev/null || echo "")"
 RERANKING_PID="$(cat /tmp/oc_reranking_pid 2>/dev/null || echo "")"
 TTS_PID="$(cat /tmp/oc_tts_pid 2>/dev/null || echo "")"
 
-# Start web proxy if enabled
-WEB_PROXY_PID=""
-if [ "$WEB_PROXY_ENABLED" = "true" ]; then
-    echo ""
-    echo "Starting OpenClaw media web proxy..."
-    web-proxy --port "$A2GO_WEB_PROXY_PORT" --web-root "/opt/a2go/web" > /tmp/web-proxy.log 2>&1 &
-    WEB_PROXY_PID=$!
-fi
+# Web proxy functionality is now built into the unified media server
 
 # ============================================================
 # Wait for LLM health check
@@ -885,7 +845,7 @@ esac
 # ============================================================
 MEDIA_PROXY_URL=""
 if [ -n "${RUNPOD_POD_ID:-}" ]; then
-    MEDIA_PROXY_URL="https://${RUNPOD_POD_ID}-${A2GO_WEB_PROXY_PORT}.proxy.runpod.net"
+    MEDIA_PROXY_URL="https://${RUNPOD_POD_ID}-${MEDIA_SERVER_PORT}.proxy.runpod.net"
 fi
 
 # Build VRAM summary from resolved profile
@@ -906,7 +866,7 @@ echo ""
 oc_print_ready "LLM API" "$LLM_MODEL_NAME" "$LLM_CONTEXT tokens" "token" \
     "$VRAM_SUMMARY" \
     "Profile: $PROFILE_NAME ($PROFILE_ID)" \
-    "Media UI (local): http://localhost:${A2GO_WEB_PROXY_PORT}" \
+    "Media UI (local): http://localhost:${MEDIA_SERVER_PORT}" \
     "${MEDIA_PROXY_URL:+Media UI (public): ${MEDIA_PROXY_URL}}"
 
 # Print service details
@@ -914,12 +874,6 @@ if [ -n "$MEDIA_PID" ]; then
     echo ""
     echo "  Media Server (unified): http://localhost:${MEDIA_SERVER_PORT}"
     echo "    - a2go tool image-generate --prompt \"A robot\" --output /tmp/robot.png"
-    echo "    - a2go tool text-to-speech \"Hello world\" --output /tmp/hello.wav"
-fi
-
-if [ -n "$AUDIO_PID" ]; then
-    echo ""
-    echo "  Audio Server (native, internal): http://localhost:8001"
     echo "    - a2go tool text-to-speech \"Hello world\" --output /tmp/hello.wav"
     echo "    - a2go tool speech-to-text /path/to/audio.wav"
 fi
@@ -952,10 +906,8 @@ if [ "$LLM_HAS_VISION" = "true" ]; then
     echo "  Vision (via LLM): Multimodal model with image understanding on port $LLM_PORT"
 fi
 
-if [ "$WEB_PROXY_ENABLED" = "true" ]; then
-    echo ""
-    echo "  Media UI: http://localhost:${A2GO_WEB_PROXY_PORT}"
-fi
+echo ""
+echo "  Media UI: http://localhost:${MEDIA_SERVER_PORT}"
 
 # ============================================================
 # Handle shutdown
@@ -965,12 +917,10 @@ cleanup() {
     [ -n "$GATEWAY_PID" ] && kill $GATEWAY_PID 2>/dev/null
     [ -n "$MEDIA_PID" ] && kill $MEDIA_PID 2>/dev/null
     [ -n "$IMAGE_PID" ] && kill $IMAGE_PID 2>/dev/null
-    [ -n "$AUDIO_PID" ] && kill $AUDIO_PID 2>/dev/null
     [ -n "$VISION_PID" ] && kill $VISION_PID 2>/dev/null
     [ -n "$EMBEDDING_PID" ] && kill $EMBEDDING_PID 2>/dev/null
     [ -n "$RERANKING_PID" ] && kill $RERANKING_PID 2>/dev/null
     [ -n "$TTS_PID" ] && kill $TTS_PID 2>/dev/null
-    [ -n "$WEB_PROXY_PID" ] && kill $WEB_PROXY_PID 2>/dev/null
     [ -n "$LLAMA_PID" ] && kill $LLAMA_PID 2>/dev/null
     exit 0
 }

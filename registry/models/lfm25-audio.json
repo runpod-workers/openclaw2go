@@ -3,46 +3,32 @@
   "group": "lfm25-audio",
   "family": "lfm25-audio",
   "catalogKey": "lfm25-audio",
-  "name": "LFM2.5-Audio-1.5B GGUF Q4_0",
+  "name": "LFM2.5-Audio-1.5B (TTS + STT)",
   "type": "audio",
   "capabilities": [
     "tts",
     "stt"
   ],
-  "engine": "a2go-llamacpp",
-  "bits": 4,
-  "repo": "LiquidAI/LFM2.5-Audio-1.5B-GGUF",
-  "files": [
-    "LFM2.5-Audio-1.5B-Q4_0.gguf",
-    "mmproj-LFM2.5-Audio-1.5B-Q4_0.gguf",
-    "vocoder-LFM2.5-Audio-1.5B-Q4_0.gguf",
-    "tokenizer-LFM2.5-Audio-1.5B-Q4_0.gguf"
-  ],
-  "downloadDir": "/workspace/models/LFM2.5-Audio-GGUF",
+  "engine": "lfm2-audio",
+  "bits": 16,
+  "repo": "LiquidAI/LFM2.5-Audio-1.5B",
+  "files": [],
+  "downloadDir": "/workspace/models/LFM2.5-Audio-1.5B",
+  "downloadMode": "repo",
+  "servedAs": "lfm2.5-audio",
   "vram": {
-    "model": 2000,
-    "overhead": 100
+    "model": 3500,
+    "overhead": 500
   },
   "defaults": {
     "port": 8001
   },
-  "startArgs": [
-    "-m",
-    "{modelPath}/{files[0]}",
-    "-mm",
-    "{modelPath}/{files[1]}",
-    "-mv",
-    "{modelPath}/{files[2]}",
-    "--tts-speaker-file",
-    "{modelPath}/{files[3]}",
-    "-ngl",
-    "99",
-    "--host",
-    "0.0.0.0",
-    "--port",
-    "{port}"
-  ],
   "startDefaults": {},
+  "extraStartArgs": [],
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-tts"
+  },
   "default": true,
   "status": "stable"
 }

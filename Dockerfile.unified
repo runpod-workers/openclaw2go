@@ -34,10 +34,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -f /usr/lib/python*/EXTERNALLY-MANAGED \
     && rm -rf /var/lib/apt/lists/*
 
-# Shared PyTorch venv for a2go-media-server (image-gen + Qwen3-TTS)
+# Shared PyTorch venv for a2go-media-server (image-gen + Qwen3-TTS + LFM2-Audio)
 # PyTorch cu128 required for RTX 5090 (Blackwell sm_120), works on all others too
 # Diffusers from git required for Flux2KleinPipeline
-# qwen-tts + soundfile for Qwen3-TTS, flash-attn for performance (optional)
+# qwen-tts + soundfile for Qwen3-TTS, liquid-audio for LFM2.5-Audio
+# flash-attn for performance (optional)
 # fastapi + uvicorn for the unified media server
 RUN python3 -m venv /opt/engines/pytorch/venv && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
@@ -45,8 +46,8 @@ RUN python3 -m venv /opt/engines/pytorch/venv && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
         sdnq git+https://github.com/huggingface/diffusers.git \
         transformers accelerate safetensors \
-        qwen-tts soundfile \
-        fastapi "uvicorn[standard]" && \
+        qwen-tts liquid-audio soundfile \
+        fastapi "uvicorn[standard]" httpx && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
         flash-attn --no-build-isolation || true && \
     find /opt/engines/pytorch/venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \

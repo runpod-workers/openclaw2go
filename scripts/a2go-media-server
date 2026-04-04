@@ -1,46 +1,52 @@
 #!/usr/bin/env python3
 """
-a2go-media-server — Unified media server for non-LLM workloads.
+a2go-media-server — Unified server for all non-LLM services.
 
-Loads media plugins (image gen, TTS, STT) based on a JSON config file
-and serves them all on a single port via FastAPI.
+Serves media plugins (image gen, TTS, STT), the web UI, LLM reverse proxy,
+CLI adapter endpoints, and aggregated health — all on a single port.
 
 Usage:
-    a2go-media-server --config /tmp/a2go_media_config.json --port 8001
+    a2go-media-server --config /tmp/a2go_media_config.json --port 8080 \
+        --web-root /opt/a2go/web --llm-url http://localhost:8000
 """
 
 import argparse
+import base64
 import importlib
+import io
 import json
 import os
 import sys
 
 # Add plugin search paths so media_plugins can be imported.
-# In dev: plugins are next to this script (scripts/media_plugins/).
-# In Docker: plugins are at /usr/local/lib/media_plugins/.
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 for _path in [_script_dir, "/usr/local/lib"]:
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+import httpx
+from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from media_plugins import PLUGIN_REGISTRY
 
 
+# ---------------------------------------------------------------------------
+# Plugin loading (unchanged from before)
+# ---------------------------------------------------------------------------
+
 def load_plugin_class(class_path: str):
-    """Import and return a plugin class from a dotted path like 'media_plugins.image_gen.ImageGenPlugin'."""
     module_path, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_path)
     return getattr(module, class_name)
 
 
-def build_app(config: dict, port: int) -> FastAPI:
-    """Build the FastAPI app with all configured plugins."""
+def build_app(config: dict, port: int, llm_url: str, web_root: str) -> FastAPI:
     app = FastAPI(title="a2go media server")
     plugins = []
 
+    # ── Load media plugins ──
     for plugin_config in config.get("plugins", []):
         engine_id = plugin_config["engine"]
         class_path = PLUGIN_REGISTRY.get(engine_id)
@@ -52,15 +58,11 @@ def build_app(config: dict, port: int) -> FastAPI:
         try:
             cls = load_plugin_class(class_path)
             plugin = cls()
-
-            # Pass port to plugin if it has the attribute
             if hasattr(plugin, "_server_port"):
                 plugin._server_port = port
-
             plugin.load_model(plugin_config)
             plugins.append(plugin)
 
-            # Mount under /{role}/ prefix
             role = plugin.role
             app.include_router(plugin.router(), prefix=f"/{role}", tags=[role])
             print(f"[MediaServer] Mounted /{role}/ endpoints for {engine_id}")
@@ -70,18 +72,34 @@ def build_app(config: dict, port: int) -> FastAPI:
             traceback.print_exc()
             print(f"[MediaServer] Skipping '{engine_id}', continuing with remaining plugins")
 
-    # Backward-compatible flat routes — mount each plugin's router a second
-    # time without a prefix so e.g. POST /generate and POST /v1/audio/speech
-    # still work alongside the canonical /image/generate and /tts/v1/audio/speech.
+    # Backward-compatible flat routes
     for plugin in plugins:
         app.include_router(plugin.router(), tags=[f"{plugin.role}-compat"])
 
-    # Aggregated health endpoint (registered last so it wins over plugin /health)
+    # ── Aggregated health (probes LLM + gateway + media plugins) ──
     @app.get("/health")
     async def health():
-        result = {"status": "ok", "plugins": {}}
+        result = {"plugins": {}}
         for p in plugins:
             result["plugins"][p.role] = p.health()
+
+        # Probe LLM server
+        try:
+            async with httpx.AsyncClient(timeout=2) as c:
+                r = await c.get(f"{llm_url}/health")
+                result["llm"] = {"ok": r.status_code < 500, "status": r.status_code}
+        except Exception:
+            result["llm"] = {"ok": False, "status": None}
+
+        # Probe agent gateways
+        for name, gw_port in [("openclaw", 18789), ("hermes", 8642)]:
+            try:
+                async with httpx.AsyncClient(timeout=2) as c:
+                    r = await c.get(f"http://localhost:{gw_port}/health")
+                    result[name] = {"ok": r.status_code < 500, "status": r.status_code}
+            except Exception:
+                pass  # don't report unconfigured gateways
+
         return result
 
     # Plugin list
@@ -89,21 +107,171 @@ def build_app(config: dict, port: int) -> FastAPI:
     async def list_plugins():
         return [{"name": p.name, "role": p.role} for p in plugins]
 
+    # ── System config (replaces web-proxy /config.json) ──
+    @app.get("/config.json")
+    async def config_json():
+        return _load_config(port)
+
+    # ── CLI adapter: TTS ──
+    @app.post("/api/audio/tts")
+    async def cli_tts(request: Request):
+        data = await request.json()
+        text = (data.get("text") or "").strip()
+        if not text:
+            return JSONResponse(status_code=400, content={"error": "text required"})
+        voice = (data.get("voice") or "alloy").strip()
+
+        # Forward to the flat /v1/audio/speech endpoint on this server
+        async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{port}", timeout=300) as c:
+            r = await c.post("/v1/audio/speech", json={"input": text, "voice": voice})
+        if r.status_code != 200:
+            return JSONResponse(status_code=r.status_code, content={"error": r.text})
+        return Response(content=r.content, media_type="audio/wav")
+
+    # ── CLI adapter: STT ──
+    @app.post("/api/audio/stt")
+    async def cli_stt(request: Request):
+        data = await request.json()
+        raw = data.get("audioBase64") or data.get("audio") or ""
+        fmt = data.get("format", "wav")
+        if not raw:
+            return JSONResponse(status_code=400, content={"error": "audioBase64 required"})
+
+        # Strip data URI prefix if present
+        if raw.startswith("data:"):
+            _, raw = raw.split(",", 1)
+
+        audio_bytes = base64.b64decode(raw)
+
+        # Forward as multipart to /v1/audio/transcriptions on this server
+        async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{port}", timeout=300) as c:
+            r = await c.post(
+                "/v1/audio/transcriptions",
+                files={"file": (f"audio.{fmt}", io.BytesIO(audio_bytes), f"audio/{fmt}")},
+                data={"model": "auto"},
+            )
+        if r.status_code != 200:
+            return JSONResponse(status_code=r.status_code, content={"error": r.text})
+        result = r.json()
+        return JSONResponse(content={"text": result.get("text", "")})
+
+    # ── CLI adapter: image generate ──
+    @app.post("/api/image/generate")
+    async def cli_image_generate(request: Request):
+        data = await request.json()
+        # Forward to the flat /generate endpoint on this server
+        async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{port}", timeout=300) as c:
+            r = await c.post("/generate", json=data)
+        return JSONResponse(status_code=r.status_code, content=r.json())
+
+    # ── LLM reverse proxy ──
+    @app.api_route("/api/llm/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+    async def llm_proxy(request: Request, path: str):
+        target = f"{llm_url}/{path}"
+        if request.url.query:
+            target += f"?{request.url.query}"
+
+        body = await request.body()
+        headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
+
+        async with httpx.AsyncClient(timeout=300) as c:
+            r = await c.request(
+                request.method, target, content=body, headers=headers,
+            )
+
+        return Response(
+            content=r.content,
+            status_code=r.status_code,
+            media_type=r.headers.get("content-type"),
+        )
+
+    # ── Static web UI (must be last — catch-all) ──
+    if web_root and os.path.isdir(web_root):
+        # Serve index.html for the root path
+        index_path = os.path.join(web_root, "index.html")
+
+        @app.get("/")
+        async def serve_index():
+            if os.path.isfile(index_path):
+                return FileResponse(index_path, media_type="text/html")
+            return Response(status_code=404)
+
+        app.mount("/", StaticFiles(directory=web_root), name="static")
+        print(f"[MediaServer] Serving web UI from {web_root}")
+
     return app
 
 
+def _load_config(port: int) -> dict:
+    """Build /config.json payload from resolved profile."""
+    base = {
+        "llmBasePath": "/api/llm",
+        "audioBasePath": "/api/audio",
+        "imageBasePath": "/api/image",
+        "imagePublicBaseUrl": os.environ.get("A2GO_IMAGE_PUBLIC_BASE_URL", ""),
+        "podId": os.environ.get("RUNPOD_POD_ID", ""),
+    }
+
+    try:
+        with open("/tmp/oc_resolved.json", "r", encoding="utf-8") as f:
+            rp = json.load(f)
+    except Exception:
+        base["services"] = {}
+        return base
+
+    if rp.get("gpuDetected"):
+        base["gpu"] = {"name": rp["gpuDetected"].get("name", ""), "vramMb": rp["gpuDetected"].get("vramMb", 0)}
+    if rp.get("profile"):
+        base["profile"] = {
+            "id": rp["profile"].get("id", ""),
+            "name": rp["profile"].get("name", ""),
+            "vramTotal": rp["profile"].get("vramTotal", 0),
+        }
+
+    all_roles = ["llm", "image", "audio", "vision", "embedding", "reranking", "tts"]
+    services = {}
+    configured = set()
+
+    for svc in rp.get("services", []):
+        role = svc.get("role")
+        configured.add(role)
+        entry = {"configured": True, "port": svc.get("port")}
+        model = svc.get("model", {})
+        if model.get("name"):
+            entry["modelName"] = model["name"]
+        if model.get("servedAs"):
+            entry["servedAs"] = model["servedAs"]
+        if model.get("hasVision") or model.get("mmproj"):
+            entry["hasVision"] = True
+        overrides = svc.get("overrides", {})
+        if overrides.get("contextLength"):
+            entry["contextLength"] = overrides["contextLength"]
+        if overrides.get("visionAsLlm"):
+            entry["hasVision"] = True
+        services[role] = entry
+
+    for role in all_roles:
+        if role not in configured:
+            services[role] = {"configured": False}
+
+    base["services"] = services
+    return base
+
+
 def main():
-    parser = argparse.ArgumentParser(description="a2go unified media server")
-    parser.add_argument("--config", required=True, help="Path to JSON config file")
+    parser = argparse.ArgumentParser(description="a2go unified server")
+    parser.add_argument("--config", required=True, help="Path to JSON plugin config")
     parser.add_argument("--host", default="0.0.0.0", help="Bind host")
-    parser.add_argument("--port", type=int, default=8001, help="Bind port")
+    parser.add_argument("--port", type=int, default=8080, help="Bind port")
+    parser.add_argument("--web-root", default="/opt/a2go/web", help="Static web UI directory")
+    parser.add_argument("--llm-url", default="http://localhost:8000", help="LLM server URL")
     args = parser.parse_args()
 
     with open(args.config, "r", encoding="utf-8") as f:
         config = json.load(f)
 
     print(f"[MediaServer] Building app with {len(config.get('plugins', []))} plugin(s)")
-    app = build_app(config, args.port)
+    app = build_app(config, args.port, args.llm_url, args.web_root)
 
     import uvicorn
     print(f"[MediaServer] Starting on http://{args.host}:{args.port}")

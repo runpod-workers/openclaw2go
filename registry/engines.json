@@ -41,6 +41,13 @@
     "binary": "~/.a2go/bin/mflux-server",
     "type": "python-venv"
   },
+  "lfm2-audio": {
+    "id": "lfm2-audio",
+    "name": "LFM2.5-Audio (liquid-audio)",
+    "binary": "/usr/local/bin/a2go-media-server",
+    "venvPath": "/opt/engines/pytorch/venv",
+    "type": "python-venv"
+  },
   "a2go-media": {
     "id": "a2go-media",
     "name": "Unified Media Server (FastAPI)",
