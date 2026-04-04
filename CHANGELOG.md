@@ -1,5 +1,11 @@
 # openclaw2go
 
+## 0.12.1
+
+### Patch Changes
+
+- 7c94692: fix: install go cli binary in docker image, rename python registry tool
+
 ## 0.12.0
 
 ### Minor Changes
