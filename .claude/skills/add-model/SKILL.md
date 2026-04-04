@@ -70,6 +70,10 @@ The CI builds images tagged as `runpod/a2go:{branch-name}` (slashes/underscores 
 
 Use the `/runpodctl` skill to deploy a Runpod GPU pod with the branch-tagged image. Test on **every supported GPU where the model fits** — at minimum RTX 4090, RTX 5090, and RTX 3090.
 
+**CRITICAL: NEVER delete or stop a pod to "fix" something.** Pods take a long time to provision. Always fix issues on the running pod:
+- If the engine doesn't support a model architecture, **build from source on the pod** (install `cmake cuda-nvcc-12-8 cuda-cudart-dev-12-8 libcublas-dev-12-8`, clone the repo, build with `-DGGML_CUDA=ON -DBUILD_SHARED_LIBS=ON`, run the freshly built binary).
+- To free VRAM from the default model: `kill -STOP` the entrypoint bash process first (freezes it, prevents container exit), then kill `llama-server`. Run test servers on a different port (e.g., 8100).
+
 ### 5a: Test through the LLM API (port 8000)
 
 1. **Basic chat completion** — simple factual question:

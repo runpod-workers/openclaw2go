@@ -1,0 +1,56 @@
+{
+  "id": "unsloth/gemma4-e2b-gguf",
+  "group": "gemma4-e2b",
+  "family": "gemma4",
+  "catalogKey": "gemma4-e2b",
+  "name": "Gemma 4 E2B Q8_0 (8-bit, ~5GB, 128K context, multimodal)",
+  "type": "llm",
+  "engine": "a2go-llamacpp",
+  "bits": 8,
+  "repo": "unsloth/gemma-4-E2B-it-GGUF",
+  "files": [
+    "gemma-4-E2B-it-Q8_0.gguf",
+    "mmproj-BF16.gguf"
+  ],
+  "mmproj": "mmproj-BF16.gguf",
+  "downloadDir": "/workspace/models/gemma-4-E2B-it-GGUF",
+  "servedAs": "gemma-4-e2b",
+  "vram": {
+    "model": 5300,
+    "overhead": 500
+  },
+  "kvCacheMbPer1kTokens": 10,
+  "defaults": {
+    "contextLength": 131072,
+    "port": 8000
+  },
+  "startDefaults": {
+    "gpuLayers": "999",
+    "parallel": "1"
+  },
+  "extraStartArgs": [
+    "-fa",
+    "on",
+    "--no-context-shift",
+    "--alias",
+    "gemma-4-e2b",
+    "--temp",
+    "1.0",
+    "--top-p",
+    "0.95",
+    "--top-k",
+    "64"
+  ],
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-completions"
+  },
+  "tps": {
+    "rtx-5090": 203
+  },
+  "default": false,
+  "status": "experimental",
+  "verifiedOn": [
+    "rtx-5090"
+  ]
+}

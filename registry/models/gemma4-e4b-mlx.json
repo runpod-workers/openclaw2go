@@ -1,0 +1,26 @@
+{
+  "id": "mlx-community/gemma4-e4b-mlx",
+  "group": "gemma4-e4b",
+  "family": "gemma4",
+  "catalogKey": "gemma4-e4b",
+  "name": "Gemma 4 E4B MLX 8-bit",
+  "type": "llm",
+  "engine": "mlx-lm",
+  "bits": 8,
+  "repo": "mlx-community/gemma-4-e4b-it-8bit",
+  "vram": {
+    "model": 9000,
+    "overhead": 0
+  },
+  "kvCacheMbPer1kTokens": 30,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
+  "platform": "mlx",
+  "default": false,
+  "status": "experimental"
+}
