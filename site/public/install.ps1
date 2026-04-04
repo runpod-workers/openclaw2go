@@ -13,14 +13,27 @@ $Binary = "a2go"
 $Asset = "a2go_windows_amd64.exe"
 
 # Get release tag
+# Uses GitHub's /releases/latest redirect instead of the API to avoid
+# the 60-request/hour unauthenticated rate limit.
 if ($Version) {
-    Write-Host "Finding release for tag: $Version..."
-    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Version"
+    $Tag = $Version
+    Write-Host "Using specified version: $Tag"
 } else {
     Write-Host "Finding latest release..."
-    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest"
+    $request = [System.Net.HttpWebRequest]::Create("https://github.com/$Repo/releases/latest")
+    $request.AllowAutoRedirect = $true
+    $request.Method = "HEAD"
+    $request.UserAgent = "a2go-installer"
+    try {
+        $response = $request.GetResponse()
+        $Tag = ($response.ResponseUri.AbsolutePath -split '/')[-1]
+        $response.Close()
+    } catch {
+        Write-Host "Could not determine latest release: $_"
+        Write-Host "Check https://github.com/$Repo/releases"
+        exit 1
+    }
 }
-$Tag = $Release.tag_name
 
 if (-not $Tag) {
     Write-Host "Could not find release."

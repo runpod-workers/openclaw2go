@@ -1,7 +1,6 @@
 package selfupdate
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,39 +11,38 @@ import (
 	"strings"
 )
 
-const repoAPI = "https://api.github.com/repos/runpod-labs/a2go/releases/latest"
-
-type ghRelease struct {
-	TagName string `json:"tag_name"`
-}
+// repoLatest is the GitHub releases/latest URL. GitHub 302-redirects this to
+// /releases/tag/{tag}, so we can extract the tag from the final URL without
+// hitting the API (which has a 60-request/hour unauthenticated rate limit).
+const repoLatest = "https://github.com/runpod-labs/a2go/releases/latest"
 
 // FetchLatestVersion returns the latest release tag (e.g. "v0.3.0") from GitHub.
+// It uses the /releases/latest redirect to avoid API rate limits.
 func FetchLatestVersion() (string, error) {
-	req, err := http.NewRequest("GET", repoAPI, nil)
+	req, err := http.NewRequest("HEAD", repoLatest, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("User-Agent", "a2go")
-	req.Header.Set("Accept", "application/vnd.github+json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to reach GitHub API: %w", err)
+		return "", fmt.Errorf("failed to reach GitHub: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GitHub API returned %d", resp.StatusCode)
+	// After following redirects, the final URL contains the tag.
+	// e.g. https://github.com/runpod-labs/a2go/releases/tag/v0.10.0
+	finalURL := resp.Request.URL.String()
+	idx := strings.LastIndex(finalURL, "/")
+	if idx < 0 || idx == len(finalURL)-1 {
+		return "", fmt.Errorf("could not parse tag from redirect URL: %s", finalURL)
 	}
-
-	var rel ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return "", fmt.Errorf("failed to parse release JSON: %w", err)
+	tag := finalURL[idx+1:]
+	if tag == "" {
+		return "", fmt.Errorf("empty tag in redirect URL: %s", finalURL)
 	}
-	if rel.TagName == "" {
-		return "", fmt.Errorf("no tag_name in release response")
-	}
-	return rel.TagName, nil
+	return tag, nil
 }
 
 // IsNewer returns true if latest is a newer semver than current.

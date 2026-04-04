@@ -42,17 +42,16 @@ mkdir -p "$INSTALL_DIR"
 echo "Installing a2go for ${OS}/${ARCH}..."
 
 # Get release tag
+# Uses GitHub's /releases/latest redirect instead of the API to avoid
+# the 60-request/hour unauthenticated rate limit.
 if [ -n "$VERSION_TAG" ]; then
-    LATEST="$(curl -sSL "https://api.github.com/repos/${REPO}/releases/tags/${VERSION_TAG}" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
-    if [ -z "$LATEST" ]; then
-        echo "ERROR: Could not find release for tag: $VERSION_TAG"
-        echo "Check available releases at https://github.com/${REPO}/releases"
-        exit 1
-    fi
+    LATEST="$VERSION_TAG"
 else
-    LATEST="$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
+    _url="$(curl -fsSL -o /dev/null -w '%{url_effective}' "https://github.com/${REPO}/releases/latest")"
+    LATEST="${_url##*/}"
     if [ -z "$LATEST" ]; then
         echo "ERROR: Could not determine latest release."
+        echo "Check available releases at https://github.com/${REPO}/releases"
         exit 1
     fi
 fi
