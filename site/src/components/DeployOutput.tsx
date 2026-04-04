@@ -210,7 +210,7 @@ function buildCloudConfig(
       agentId === 'hermes'
         ? { port: '8642', protocol: 'http', service: 'Hermes Gateway', note: null }
         : { port: '18789', protocol: 'http', service: 'OpenClaw', note: null },
-      { port: '8080', protocol: 'http', service: 'Image serving', note: 'required for generated images' },
+      { port: '8080', protocol: 'http', service: 'Media proxy', note: 'required for image gen, TTS, and web UI' },
       { port: '8000', protocol: 'http', service: 'LLM API', note: 'optional — direct model access + llama.cpp chat UI' },
     ],
   }
