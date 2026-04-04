@@ -1,5 +1,16 @@
 # openclaw2go
 
+## 0.11.0
+
+### Minor Changes
+
+- 40d9d5c: feat: add Gemma 4 model family (31B, 26B-A4B, E4B, E2B) with GGUF and MLX configs
+- 07cd1a4: unified media server with plugin architecture, a2go env var rename
+
+### Patch Changes
+
+- 89c0380: Fix layout shift caused by scrollbar appearing/disappearing in the config panel when selecting models.
+
 ## 0.10.0
 
 ### Minor Changes
