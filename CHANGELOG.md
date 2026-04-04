@@ -1,5 +1,11 @@
 # openclaw2go
 
+## 0.12.2
+
+### Patch Changes
+
+- 0a1cc70: fix: read llm port before starting media server
+
 ## 0.12.1
 
 ### Patch Changes
