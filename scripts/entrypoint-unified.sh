@@ -624,7 +624,10 @@ if [ "$MEDIA_PLUGIN_COUNT" -gt 0 ]; then
         source /opt/engines/pytorch/venv/bin/activate
     fi
 
-    a2go-media-server --config /tmp/a2go_media_config.json --port "$MEDIA_SERVER_PORT" \
+    # Use venv python explicitly to ensure FastAPI/torch are available
+    MEDIA_PYTHON="${VIRTUAL_ENV:-/opt/engines/pytorch/venv}/bin/python3"
+    "$MEDIA_PYTHON" /usr/local/bin/a2go-media-server \
+        --config /tmp/a2go_media_config.json --port "$MEDIA_SERVER_PORT" \
         > /tmp/media-server.log 2>&1 &
     MEDIA_PID=$!
     echo "$MEDIA_PID" > /tmp/a2go_media_pid

@@ -140,10 +140,13 @@ function getConfigPayload() {
 }
 
 // Port map for health probes
+const mediaPort = unifiedMedia ? (unifiedMedia.port || 8001) : null;
 const SERVICE_PORTS = unifiedMedia
   ? {
       llm: { port: 8000, path: "/health" },
-      media: { port: unifiedMedia.port || 8001, path: "/health" },
+      audio: { port: mediaPort, path: "/health" },
+      image: { port: mediaPort, path: "/health" },
+      tts: { port: mediaPort, path: "/health" },
       vision: { port: 8003, path: "/health" },
       embedding: { port: 8004, path: "/health" },
       reranking: { port: 8005, path: "/health" },
