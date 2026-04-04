@@ -1,5 +1,19 @@
 # openclaw2go
 
+## 0.12.0
+
+### Minor Changes
+
+- 368a723: feat: LFM2.5-Audio unified media server plugin using liquid-audio
+
+  Replaces the broken native llama-liquid-audio-server approach with a Python-based
+  media plugin using LiquidAI's `liquid-audio` library. Both TTS and STT work through
+  the unified media server on port 8001.
+
+### Patch Changes
+
+- 16f8f39: fix: avoid GitHub API rate limit in install scripts and self-update
+
 ## 0.11.0
 
 ### Minor Changes
