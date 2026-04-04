@@ -48,13 +48,13 @@ def build_app(config: dict, port: int, llm_url: str, web_root: str) -> FastAPI:
 
     # ── Load media plugins ──
     for plugin_config in config.get("plugins", []):
-        engine_id = plugin_config["engine"]
-        class_path = PLUGIN_REGISTRY.get(engine_id)
+        plugin_id = plugin_config.get("plugin") or plugin_config.get("engine")
+        class_path = PLUGIN_REGISTRY.get(plugin_id)
         if not class_path:
-            print(f"[MediaServer] WARNING: unknown engine '{engine_id}', skipping")
+            print(f"[MediaServer] WARNING: unknown plugin '{plugin_id}', skipping")
             continue
 
-        print(f"[MediaServer] Loading plugin: {engine_id}")
+        print(f"[MediaServer] Loading plugin: {plugin_id}")
         try:
             cls = load_plugin_class(class_path)
             plugin = cls()
@@ -65,10 +65,10 @@ def build_app(config: dict, port: int, llm_url: str, web_root: str) -> FastAPI:
 
             role = plugin.role
             app.include_router(plugin.router(), prefix=f"/{role}", tags=[role])
-            print(f"[MediaServer] Mounted /{role}/ endpoints for {engine_id}")
+            print(f"[MediaServer] Mounted /{role}/ endpoints for {plugin_id}")
         except Exception as exc:
             import traceback
-            print(f"[MediaServer] ERROR: plugin '{engine_id}' failed to load: {exc}")
+            print(f"[MediaServer] ERROR: plugin '{plugin_id}' failed to load: {exc}")
             traceback.print_exc()
             print(f"[MediaServer] Skipping '{engine_id}', continuing with remaining plugins")
 

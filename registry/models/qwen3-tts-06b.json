@@ -8,7 +8,8 @@
   "capabilities": [
     "tts"
   ],
-  "engine": "qwen3-tts",
+  "engine": "a2go-media",
+  "plugin": "qwen3-tts",
   "bits": 16,
   "repo": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
   "files": [],

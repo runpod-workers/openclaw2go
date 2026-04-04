@@ -19,7 +19,7 @@ const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 const MODELS_DIR = join(REPO_ROOT, 'registry', 'models')
 const GPUS_DIR = join(REPO_ROOT, 'registry', 'gpus')
 
-const ALLOWED_ENGINES = new Set(['a2go-llamacpp', 'image-gen', 'qwen3-tts', 'lfm2-audio', 'mlx-lm', 'mlx-audio', 'mflux'])
+const ALLOWED_ENGINES = new Set(['a2go-llamacpp', 'a2go-media', 'mlx-lm', 'mlx-audio', 'mflux'])
 const ALLOWED_TYPES = new Set(['llm', 'audio', 'image', 'vision', 'embedding', 'reranking', 'tts'])
 const ALLOWED_STATUSES = new Set(['stable', 'experimental', 'deprecated'])
 

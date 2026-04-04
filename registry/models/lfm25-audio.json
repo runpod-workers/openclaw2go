@@ -9,7 +9,8 @@
     "tts",
     "stt"
   ],
-  "engine": "lfm2-audio",
+  "engine": "a2go-media",
+  "plugin": "lfm2-audio",
   "bits": 16,
   "repo": "LiquidAI/LFM2.5-Audio-1.5B",
   "files": [],
