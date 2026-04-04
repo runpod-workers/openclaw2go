@@ -49,20 +49,26 @@ def build_app(config: dict, port: int) -> FastAPI:
             continue
 
         print(f"[MediaServer] Loading plugin: {engine_id}")
-        cls = load_plugin_class(class_path)
-        plugin = cls()
+        try:
+            cls = load_plugin_class(class_path)
+            plugin = cls()
 
-        # Pass port to plugin if it has the attribute
-        if hasattr(plugin, "_server_port"):
-            plugin._server_port = port
+            # Pass port to plugin if it has the attribute
+            if hasattr(plugin, "_server_port"):
+                plugin._server_port = port
 
-        plugin.load_model(plugin_config)
-        plugins.append(plugin)
+            plugin.load_model(plugin_config)
+            plugins.append(plugin)
 
-        # Mount under /{role}/ prefix
-        role = plugin.role
-        app.include_router(plugin.router(), prefix=f"/{role}", tags=[role])
-        print(f"[MediaServer] Mounted /{role}/ endpoints for {engine_id}")
+            # Mount under /{role}/ prefix
+            role = plugin.role
+            app.include_router(plugin.router(), prefix=f"/{role}", tags=[role])
+            print(f"[MediaServer] Mounted /{role}/ endpoints for {engine_id}")
+        except Exception as exc:
+            import traceback
+            print(f"[MediaServer] ERROR: plugin '{engine_id}' failed to load: {exc}")
+            traceback.print_exc()
+            print(f"[MediaServer] Skipping '{engine_id}', continuing with remaining plugins")
 
     # Backward-compatible flat routes — mount each plugin's router a second
     # time without a prefix so e.g. POST /generate and POST /v1/audio/speech

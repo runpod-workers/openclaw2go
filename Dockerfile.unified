@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # fastapi + uvicorn for the unified media server
 RUN python3 -m venv /opt/engines/pytorch/venv && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
-        torch --index-url https://download.pytorch.org/whl/cu128 && \
+        torch torchaudio --index-url https://download.pytorch.org/whl/cu128 && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
         sdnq git+https://github.com/huggingface/diffusers.git \
         transformers accelerate safetensors \
