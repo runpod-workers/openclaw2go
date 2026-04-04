@@ -27,7 +27,7 @@ tts_model = None
 device = None
 server_port = 8006
 
-AUDIO_OUTPUT_DIR = os.environ.get("OPENCLAW_AUDIO_OUTPUT_DIR", "/workspace/openclaw/audio")
+AUDIO_OUTPUT_DIR = os.environ.get("A2GO_AUDIO_OUTPUT_DIR", "/workspace/openclaw/audio")
 
 # Default voice mapping (OpenAI-compatible voice names → Qwen3-TTS speaker names)
 # Qwen3-TTS CustomVoice speakers: aiden, dylan, eric, ono_anna, ryan, serena, sohee, uncle_fu, vivian

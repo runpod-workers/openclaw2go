@@ -1,7 +1,7 @@
 #!/bin/bash
 # entrypoint.sh - OpenClaw + vLLM startup script for Runpod
 set -e
-source /opt/openclaw/entrypoint-common.sh
+source /opt/a2go/entrypoint-common.sh
 
 echo "============================================"
 echo "  OpenClaw + vLLM Startup"
@@ -16,13 +16,17 @@ GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.90}"
 TOOL_CALL_PARSER="${TOOL_CALL_PARSER:-hermes}"
 TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-auto}"
 HF_HOME="${HF_HOME:-/workspace/huggingface}"
-OPENCLAW_WEB_PASSWORD="${OPENCLAW_WEB_PASSWORD:-changeme}"
+# Canonical A2GO_* vars with backward-compat fallback to OPENCLAW_*
+A2GO_AUTH_TOKEN="${A2GO_AUTH_TOKEN:-${OPENCLAW_WEB_PASSWORD:-changeme}}"
+A2GO_STATE_DIR="${A2GO_STATE_DIR:-${OPENCLAW_STATE_DIR:-$HOME/.openclaw}}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+
+# Bridge to agent-specific env vars
+OPENCLAW_WEB_PASSWORD="$A2GO_AUTH_TOKEN"
+OPENCLAW_STATE_DIR="$A2GO_STATE_DIR"
 
 # Symlink ~/.openclaw -> /workspace/.openclaw on RunPod (before setting defaults)
 oc_create_path_symlinks
-
-OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 
 export HF_HOME
 export OPENCLAW_STATE_DIR

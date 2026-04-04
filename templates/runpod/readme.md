@@ -7,7 +7,7 @@ Run open source AI agents on GPU pods. a2go bundles local LLM inference, image g
 1. Go to [a2go.run](https://a2go.run) and pick models for your GPU
 2. Copy the generated `A2GO_CONFIG` JSON
 3. Paste it into the `A2GO_CONFIG` environment variable when deploying this template
-4. Set `OPENCLAW_WEB_PASSWORD` and `LLAMACPP_API_KEY` to secure your pod
+4. Set `A2GO_AUTH_TOKEN` and `LLAMACPP_API_KEY` to secure your pod
 5. Deploy - the pod auto-downloads models and starts all services
 
 ## Auto-Detect Mode
@@ -41,7 +41,7 @@ Models are cached in `/workspace/models/` and persist across pod restarts.
 
 | Variable | Description |
 |----------|-------------|
-| `OPENCLAW_WEB_PASSWORD` | Auth token for the control UI |
+| `A2GO_AUTH_TOKEN` | Auth token for the control UI + API |
 | `LLAMACPP_API_KEY` | Protects the OpenAI-compatible LLM endpoint |
 
 ### Recommended
@@ -62,7 +62,7 @@ Models are cached in `/workspace/models/` and persist across pod restarts.
 
 Replace `<pod-id>` with your pod ID:
 
-- **Control UI**: `https://<pod-id>-18789.proxy.runpod.net/?token=<OPENCLAW_WEB_PASSWORD>`
+- **Control UI**: `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`
 - **Web Proxy**: `https://<pod-id>-8080.proxy.runpod.net`
 - **LLM API**: `https://<pod-id>-8000.proxy.runpod.net/v1`
 

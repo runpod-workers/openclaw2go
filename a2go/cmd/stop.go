@@ -85,8 +85,8 @@ func doStopMlx() {
 
 	stopped := 0
 
-	// Stop in reverse order: gateway, web-proxy, image, audio, llm
-	order := []services.Service{services.HermesGateway, services.Gateway, services.WebProxy, services.Image, services.Audio, services.LLM}
+	// Stop in reverse order: gateway, web-proxy, media (or legacy image/audio), llm
+	order := []services.Service{services.HermesGateway, services.Gateway, services.WebProxy, services.Media, services.Image, services.Audio, services.LLM}
 	for _, svc := range order {
 		pid, err := process.ReadPid(svc.Name)
 		if err == nil && process.IsAlive(pid) {

@@ -203,14 +203,14 @@ function buildCloudConfig(
     image: 'runpod/a2go:latest',
     envVars: [
       { key: 'A2GO_CONFIG', value: configJSON },
-      { key: 'OPENCLAW_WEB_PASSWORD', value: 'changeme' },
+      { key: 'A2GO_AUTH_TOKEN', value: 'changeme' },
       { key: 'LLAMACPP_API_KEY', value: 'changeme' },
     ],
     ports: [
       agentId === 'hermes'
         ? { port: '8642', protocol: 'http', service: 'Hermes Gateway', note: null }
         : { port: '18789', protocol: 'http', service: 'OpenClaw', note: null },
-      { port: '8080', protocol: 'http', service: 'Image serving', note: 'required for generated images' },
+      { port: '8080', protocol: 'http', service: 'Media proxy', note: 'required for image gen, TTS, and web UI' },
       { port: '8000', protocol: 'http', service: 'LLM API', note: 'optional — direct model access + llama.cpp chat UI' },
     ],
   }

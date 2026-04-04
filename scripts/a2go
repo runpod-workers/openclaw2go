@@ -31,7 +31,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-REGISTRY_DIR = Path(os.environ.get("OPENCLAW_REGISTRY_DIR", "/opt/openclaw/registry"))
+REGISTRY_DIR = Path(os.environ.get("A2GO_REGISTRY_DIR", "/opt/a2go/registry"))
 KV_CACHE_MB_PER_1K_TOKENS = 40
 
 # ── Registry fetch constants ─────────────────────────────────
@@ -315,7 +315,7 @@ def _merge_registry(catalog, baked_in_dir, cache_dir):
     _log(f"Profiles: {p_accepted} external accepted, {p_skipped} skipped")
 
     # Write fetch metadata
-    url = os.environ.get("OPENCLAW_REGISTRY_URL", DEFAULT_REGISTRY_URL)
+    url = os.environ.get("A2GO_REGISTRY_URL", DEFAULT_REGISTRY_URL)
     CACHE_META.write_text(json.dumps({
         "fetchedAt": time.time(),
         "url": url,
@@ -584,12 +584,12 @@ def cmd_registry_fetch(args):
     baked_in_dir = REGISTRY_DIR
 
     # Check if offline mode
-    if os.environ.get("OPENCLAW_REGISTRY_OFFLINE", "").lower() == "true":
+    if os.environ.get("A2GO_REGISTRY_OFFLINE", "").lower() == "true":
         _log("Offline mode — using baked-in registry")
         return
 
-    url = os.environ.get("OPENCLAW_REGISTRY_URL", DEFAULT_REGISTRY_URL)
-    ttl = int(os.environ.get("OPENCLAW_REGISTRY_TTL_SECONDS", "3600"))
+    url = os.environ.get("A2GO_REGISTRY_URL", DEFAULT_REGISTRY_URL)
+    ttl = int(os.environ.get("A2GO_REGISTRY_TTL_SECONDS", "3600"))
 
     # Check cache freshness (unless --force)
     if not force and _is_cache_fresh(ttl) and (CACHE_DIR / "models").is_dir():

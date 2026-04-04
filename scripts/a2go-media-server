@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""
+a2go-media-server — Unified media server for non-LLM workloads.
+
+Loads media plugins (image gen, TTS, STT) based on a JSON config file
+and serves them all on a single port via FastAPI.
+
+Usage:
+    a2go-media-server --config /tmp/a2go_media_config.json --port 8001
+"""
+
+import argparse
+import importlib
+import json
+import os
+import sys
+
+# Add plugin search paths so media_plugins can be imported.
+# In dev: plugins are next to this script (scripts/media_plugins/).
+# In Docker: plugins are at /usr/local/lib/media_plugins/.
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+for _path in [_script_dir, "/usr/local/lib"]:
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
+from media_plugins import PLUGIN_REGISTRY
+
+
+def load_plugin_class(class_path: str):
+    """Import and return a plugin class from a dotted path like 'media_plugins.image_gen.ImageGenPlugin'."""
+    module_path, class_name = class_path.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    return getattr(module, class_name)
+
+
+def build_app(config: dict, port: int) -> FastAPI:
+    """Build the FastAPI app with all configured plugins."""
+    app = FastAPI(title="a2go media server")
+    plugins = []
+
+    for plugin_config in config.get("plugins", []):
+        engine_id = plugin_config["engine"]
+        class_path = PLUGIN_REGISTRY.get(engine_id)
+        if not class_path:
+            print(f"[MediaServer] WARNING: unknown engine '{engine_id}', skipping")
+            continue
+
+        print(f"[MediaServer] Loading plugin: {engine_id}")
+        try:
+            cls = load_plugin_class(class_path)
+            plugin = cls()
+
+            # Pass port to plugin if it has the attribute
+            if hasattr(plugin, "_server_port"):
+                plugin._server_port = port
+
+            plugin.load_model(plugin_config)
+            plugins.append(plugin)
+
+            # Mount under /{role}/ prefix
+            role = plugin.role
+            app.include_router(plugin.router(), prefix=f"/{role}", tags=[role])
+            print(f"[MediaServer] Mounted /{role}/ endpoints for {engine_id}")
+        except Exception as exc:
+            import traceback
+            print(f"[MediaServer] ERROR: plugin '{engine_id}' failed to load: {exc}")
+            traceback.print_exc()
+            print(f"[MediaServer] Skipping '{engine_id}', continuing with remaining plugins")
+
+    # Backward-compatible flat routes — mount each plugin's router a second
+    # time without a prefix so e.g. POST /generate and POST /v1/audio/speech
+    # still work alongside the canonical /image/generate and /tts/v1/audio/speech.
+    for plugin in plugins:
+        app.include_router(plugin.router(), tags=[f"{plugin.role}-compat"])
+
+    # Aggregated health endpoint (registered last so it wins over plugin /health)
+    @app.get("/health")
+    async def health():
+        result = {"status": "ok", "plugins": {}}
+        for p in plugins:
+            result["plugins"][p.role] = p.health()
+        return result
+
+    # Plugin list
+    @app.get("/plugins")
+    async def list_plugins():
+        return [{"name": p.name, "role": p.role} for p in plugins]
+
+    return app
+
+
+def main():
+    parser = argparse.ArgumentParser(description="a2go unified media server")
+    parser.add_argument("--config", required=True, help="Path to JSON config file")
+    parser.add_argument("--host", default="0.0.0.0", help="Bind host")
+    parser.add_argument("--port", type=int, default=8001, help="Bind port")
+    args = parser.parse_args()
+
+    with open(args.config, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    print(f"[MediaServer] Building app with {len(config.get('plugins', []))} plugin(s)")
+    app = build_app(config, args.port)
+
+    import uvicorn
+    print(f"[MediaServer] Starting on http://{args.host}:{args.port}")
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+
+
+if __name__ == "__main__":
+    main()

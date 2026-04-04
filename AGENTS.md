@@ -21,9 +21,10 @@ This document exists for non-obvious, error-prone shortcomings in the codebase, 
 - DGX Spark unified memory: nvidia-smi reports GPU-accessible portion (128GB for GB10), not full 141GB unified.
 
 ## Entrypoint Service Loop
+- Agent-specific env vars (e.g. `OPENCLAW_WEB_PASSWORD`) are accepted as fallbacks for users migrating from those frameworks, but the canonical config is `A2GO_*` (e.g. `A2GO_AUTH_TOKEN`) — never remove the fallback bridge in the entrypoint, agents read their own vars from the environment.
 - Variables from one iteration **leak** into the next — always re-extract `MODEL_FILES`, `FIRST_FILE`, etc. at the start of each role case.
-- The `audio)` role case must check `ENGINE_TYPE` to distinguish native llama.cpp audio (LFM2.5) from Python-based audio (Qwen3-TTS). Same pattern as the `tts)` case.
-- When testing new model configs that aren't in the baked-in Docker image: the external registry (`/workspace/.openclaw/registry`) overrides baked-in registry. Inject configs there, not just `/opt/openclaw/registry/`.
+- **Unified media server**: Python-venv `image)`, `tts)`, and `audio)` cases accumulate plugin configs into `MEDIA_PLUGINS_JSON` instead of starting separate processes. After the loop, one `a2go-media-server` process starts on port 8001 with all plugins. Native C++ cases (e.g., llama-liquid-audio-server) still start their own binaries — they're mutually exclusive with the media server on port 8001.
+- When testing new model configs that aren't in the baked-in Docker image: the external registry (`/workspace/.openclaw/registry`) overrides baked-in registry. Inject configs there, not just `/opt/a2go/registry/`.
 
 ## Nemotron-3-Super
 - Multi-file GGUF: Q2_K_XL = 3 splits, Q8_0 = 4 splits. The entrypoint passes only the first split to `-m`; llama.cpp auto-discovers the rest.

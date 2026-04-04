@@ -31,7 +31,7 @@
     "-fa",
     "on",
     "--chat-template-file",
-    "/opt/openclaw/templates/step35-flash.jinja"
+    "/opt/a2go/templates/step35-flash.jinja"
   ],
   "provider": {
     "name": "local-llamacpp",

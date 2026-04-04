@@ -19,7 +19,7 @@ import os
 import sys
 from pathlib import Path
 
-REGISTRY_DIR = Path(os.environ.get("OPENCLAW_REGISTRY_DIR", "/opt/openclaw/registry"))
+REGISTRY_DIR = Path(os.environ.get("A2GO_REGISTRY_DIR", "/opt/a2go/registry"))
 
 # Approximate KV cache VRAM per 1k context tokens for GLM-4.7 with q8_0 quantization
 # Based on observed: ~10GB for 150k context, ~14GB for 200k context

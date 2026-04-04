@@ -16,9 +16,9 @@ a2go helps you run open-source AI models on your own hardware — locally, on a 
 1. **Pick models** at [a2go.run](https://a2go.run) — select your GPU and the site shows what fits
 2. **Read the security guide** — OpenClaw agents can execute shell commands, read/write files, and fetch URLs on your machine. Understand what you're running: [Security Guide](https://trust.openclaw.ai)
 3. **Deploy** — the site generates a ready-to-use command (Docker or MLX)
-4. **Access the UI** — `http://localhost:18789/?token=<OPENCLAW_WEB_PASSWORD>`
+4. **Access the UI** — `http://localhost:18789/?token=<A2GO_AUTH_TOKEN>`
 
-On Runpod the URL is `https://<pod-id>-18789.proxy.runpod.net/?token=<OPENCLAW_WEB_PASSWORD>`.
+On Runpod the URL is `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`.
 
 First time: approve device pairing when prompted (SSH into the machine, run `openclaw devices list` then `openclaw devices approve <requestId>`).
 
@@ -29,8 +29,8 @@ The site generates this — or run it directly:
 ```bash
 docker run --gpus all \
   -e A2GO_CONFIG='{"llm":"unsloth/glm47-flash-gguf","audio":"liquidai/lfm25-audio"}' \
-  -e OPENCLAW_WEB_PASSWORD=changeme \
-  -e LLAMA_API_KEY=changeme \
+  -e A2GO_AUTH_TOKEN=changeme \
+  -e LLAMACPP_API_KEY=changeme \
   -p 8000:8000 -p 8080:8080 -p 18789:18789 \
   -v a2go-models:/workspace \
   runpod/a2go:latest
@@ -43,8 +43,8 @@ Models download on first start and persist on the volume.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `A2GO_CONFIG` | JSON config — models to load | `{}` (auto-detect) |
-| `OPENCLAW_WEB_PASSWORD` | Web UI auth token | `changeme` |
-| `LLAMA_API_KEY` | LLM API key (OpenAI-compatible endpoint) | `changeme` |
+| `A2GO_AUTH_TOKEN` | Web UI + API auth token | `changeme` |
+| `LLAMACPP_API_KEY` | LLM API key (OpenAI-compatible endpoint) | `changeme` |
 | `TELEGRAM_BOT_TOKEN` | Enable Telegram bot integration | — |
 | `GITHUB_TOKEN` | GitHub auth for Claude Code | — |
 
@@ -59,11 +59,10 @@ When `A2GO_CONFIG` is `{}` (the default), the container reads your GPU's VRAM vi
 | Port | Service |
 |------|---------|
 | 8000/http | LLM API (OpenAI-compatible) |
+| 8001/http | Media server (image gen, TTS — internal) |
 | 8080/http | Media proxy + web UI |
 | 18789/http | OpenClaw control UI + chat |
 | 22/tcp | SSH |
-
-Audio (8001) and Image (8002) are internal only.
 
 ### CLI tools
 
