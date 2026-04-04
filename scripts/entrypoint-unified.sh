@@ -574,6 +574,9 @@ json.dump(plugins, sys.stdout)
 
 done < /tmp/oc_services.txt
 
+# ── Read LLM port before starting media server (needs it for proxy) ──
+LLM_PORT="$(cat /tmp/oc_llm_port 2>/dev/null || echo "8000")"
+
 # ── Start unified media server if any Python media plugins were registered ──
 MEDIA_PID=""
 MEDIA_PLUGIN_COUNT="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")"
@@ -605,7 +608,6 @@ fi
 
 # Read PIDs and metadata from temp files
 LLAMA_PID="$(cat /tmp/oc_llm_pid 2>/dev/null || echo "")"
-LLM_PORT="$(cat /tmp/oc_llm_port 2>/dev/null || echo "8000")"
 LLM_MODEL_NAME="$(cat /tmp/oc_llm_model_name 2>/dev/null || echo "glm-4.7-flash")"
 LLM_CONTEXT="$(cat /tmp/oc_llm_context 2>/dev/null || echo "150000")"
 LLM_PROVIDER_NAME="$(cat /tmp/oc_llm_provider 2>/dev/null || echo "local-llamacpp")"
