@@ -103,7 +103,7 @@ oc_check_cuda
 # ============================================================
 echo ""
 echo "Fetching model registry..."
-FETCHED_DIR="$(a2go registry fetch)" || true
+FETCHED_DIR="$(a2go-registry registry fetch)" || true
 if [ -n "$FETCHED_DIR" ] && [ -d "$FETCHED_DIR" ]; then
     export A2GO_REGISTRY_DIR="$FETCHED_DIR"
     echo "Using registry: $FETCHED_DIR"
