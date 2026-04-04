@@ -128,23 +128,33 @@ COPY scripts/entrypoint-common.sh /opt/a2go/entrypoint-common.sh
 COPY scripts/entrypoint-unified.sh /opt/a2go/entrypoint-unified.sh
 COPY scripts/resolve-profile.py /opt/a2go/scripts/resolve-profile.py
 COPY scripts/vram-budget.py /opt/a2go/scripts/vram-budget.py
+# ── a2go CLI (Go binary) ─────────────────────────────────
+ARG A2GO_CLI_VERSION=latest
+RUN ARCH=$(uname -m) && \
+    [ "$ARCH" = "aarch64" ] && ARCH="arm64" || ARCH="amd64" && \
+    if [ "$A2GO_CLI_VERSION" = "latest" ]; then \
+      URL=$(curl -fsSL -o /dev/null -w '%{redirect_url}' https://github.com/runpod-labs/a2go/releases/latest/download/a2go_linux_${ARCH} 2>/dev/null || true) && \
+      [ -n "$URL" ] && curl -fsSL -o /usr/local/bin/a2go "$URL" || \
+      curl -fsSL -o /usr/local/bin/a2go "https://github.com/runpod-labs/a2go/releases/latest/download/a2go_linux_${ARCH}"; \
+    else \
+      curl -fsSL -o /usr/local/bin/a2go "https://github.com/runpod-labs/a2go/releases/download/${A2GO_CLI_VERSION}/a2go_linux_${ARCH}"; \
+    fi && \
+    chmod +x /usr/local/bin/a2go
+
 COPY scripts/a2go-profiles /usr/local/bin/a2go-profiles
-COPY scripts/a2go /usr/local/bin/a2go
+COPY scripts/a2go-registry /usr/local/bin/a2go-registry
 COPY scripts/a2go-image-server /usr/local/bin/a2go-image-server
 COPY scripts/a2go-tts-server /usr/local/bin/a2go-tts-server
 COPY scripts/a2go-media-server /usr/local/bin/a2go-media-server
 COPY scripts/media_plugins/ /usr/local/lib/media_plugins/
-COPY scripts/web-proxy /usr/local/bin/web-proxy
-
 RUN chmod +x /opt/a2go/entrypoint-unified.sh \
     /opt/a2go/scripts/resolve-profile.py \
     /opt/a2go/scripts/vram-budget.py \
     /usr/local/bin/a2go-profiles \
-    /usr/local/bin/a2go \
+    /usr/local/bin/a2go-registry \
     /usr/local/bin/a2go-image-server \
     /usr/local/bin/a2go-tts-server \
-    /usr/local/bin/a2go-media-server \
-    /usr/local/bin/web-proxy
+    /usr/local/bin/a2go-media-server
 
-EXPOSE 8000 8001 8080 18789 8642 22
+EXPOSE 8000 8080 18789 8642 22
 ENTRYPOINT ["/opt/a2go/entrypoint-unified.sh"]

@@ -2,24 +2,17 @@
   "a2go-llamacpp": {
     "id": "a2go-llamacpp",
     "name": "a2go-llamacpp (unified fork)",
-    "description": "llama.cpp fork (mainline rebase) — LLM, vision, embeddings, TTS",
+    "description": "llama.cpp fork (mainline rebase) — LLM, vision, embeddings",
     "binary": "/opt/engines/a2go-llamacpp/bin/llama-server",
     "binaryTts": "/opt/engines/a2go-llamacpp/bin/llama-tts",
     "libPath": "/opt/engines/a2go-llamacpp/lib",
     "type": "native",
     "source": "https://github.com/runpod-labs/a2go-llamacpp"
   },
-  "image-gen": {
-    "id": "image-gen",
-    "name": "Image Generation (Diffusers + SDNQ)",
-    "binary": "/usr/local/bin/a2go-image-server",
-    "venvPath": "/opt/engines/pytorch/venv",
-    "type": "python-venv"
-  },
-  "qwen3-tts": {
-    "id": "qwen3-tts",
-    "name": "Qwen3-TTS (PyTorch)",
-    "binary": "/usr/local/bin/a2go-tts-server",
+  "a2go-media": {
+    "id": "a2go-media",
+    "name": "Unified Media Server (image, audio, TTS)",
+    "binary": "/usr/local/bin/a2go-media-server",
     "venvPath": "/opt/engines/pytorch/venv",
     "type": "python-venv"
   },
@@ -39,20 +32,6 @@
     "id": "mflux",
     "name": "mflux Image Gen (Mac)",
     "binary": "~/.a2go/bin/mflux-server",
-    "type": "python-venv"
-  },
-  "lfm2-audio": {
-    "id": "lfm2-audio",
-    "name": "LFM2.5-Audio (liquid-audio)",
-    "binary": "/usr/local/bin/a2go-media-server",
-    "venvPath": "/opt/engines/pytorch/venv",
-    "type": "python-venv"
-  },
-  "a2go-media": {
-    "id": "a2go-media",
-    "name": "Unified Media Server (FastAPI)",
-    "binary": "/usr/local/bin/a2go-media-server",
-    "venvPath": "/opt/engines/pytorch/venv",
     "type": "python-venv"
   }
 }

@@ -103,7 +103,7 @@ oc_check_cuda
 # ============================================================
 echo ""
 echo "Fetching model registry..."
-FETCHED_DIR="$(a2go registry fetch)" || true
+FETCHED_DIR="$(a2go-registry registry fetch)" || true
 if [ -n "$FETCHED_DIR" ] && [ -d "$FETCHED_DIR" ]; then
     export A2GO_REGISTRY_DIR="$FETCHED_DIR"
     echo "Using registry: $FETCHED_DIR"
@@ -252,6 +252,7 @@ while IFS='|' read -r idx role model_id engine_id port model_json engine_json ov
     ENGINE_BINARY="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('binary',''))")"
     ENGINE_LIB_PATH="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('libPath',''))")"
     ENGINE_VENV="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('venvPath',''))")"
+    MODEL_PLUGIN="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('plugin',''))")"
     ENGINE_TYPE="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('type',''))")"
     ENGINE_BINARY_TTS="$(echo "$engine_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('binaryTts',''))")"
 
@@ -410,26 +411,24 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             echo "{\"engine\":\"$engine_id\",\"type\":\"$ENGINE_TYPE\",\"port\":$port,\"model\":\"$MODEL_SERVED_AS\"}" > /tmp/oc_audio_engine
 
             # ── Audio → accumulate for unified media server ──
-            echo "Registering Audio plugin for unified media server..."
-            echo "  Engine: $engine_id"
+            echo "Registering Audio plugin ($MODEL_PLUGIN) for unified media server..."
             echo "  Model dir: $MODEL_DOWNLOAD_DIR"
             MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
 import sys, json
 plugins = json.load(sys.stdin)
-plugins.append({'engine': '$engine_id', 'role': 'audio', 'model_dir': '$MODEL_DOWNLOAD_DIR'})
+plugins.append({'plugin': '$MODEL_PLUGIN', 'role': 'audio', 'model_dir': '$MODEL_DOWNLOAD_DIR'})
 json.dump(plugins, sys.stdout)
 ")"
             ;;
 
         image)
             # ── Image generation → accumulate for unified media server ──
-            echo "Registering Image plugin for unified media server..."
-            echo "  Engine: $engine_id"
+            echo "Registering Image plugin ($MODEL_PLUGIN) for unified media server..."
             echo "  Model: $MODEL_REPO"
             MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
 import sys, json
 plugins = json.load(sys.stdin)
-plugins.append({'engine': '$engine_id', 'role': 'image', 'model': '$MODEL_REPO'})
+plugins.append({'plugin': '$MODEL_PLUGIN', 'role': 'image', 'model': '$MODEL_REPO'})
 json.dump(plugins, sys.stdout)
 ")"
             ;;
@@ -528,14 +527,13 @@ json.dump(plugins, sys.stdout)
             echo "{\"engine\":\"$engine_id\",\"type\":\"$ENGINE_TYPE\",\"port\":$port,\"model\":\"$MODEL_SERVED_AS\"}" > /tmp/oc_tts_engine
 
             if [ "$ENGINE_TYPE" = "python-venv" ]; then
-                # ── Qwen3-TTS → accumulate for unified media server ──
-                echo "Registering TTS plugin for unified media server..."
-                echo "  Engine: $engine_id"
+                # ── TTS → accumulate for unified media server ──
+                echo "Registering TTS plugin ($MODEL_PLUGIN) for unified media server..."
                 echo "  Model dir: $MODEL_DOWNLOAD_DIR"
                 MEDIA_PLUGINS_JSON="$(echo "$MEDIA_PLUGINS_JSON" | python3 -c "
 import sys, json
 plugins = json.load(sys.stdin)
-plugins.append({'engine': '$engine_id', 'role': 'tts', 'model_dir': '$MODEL_DOWNLOAD_DIR'})
+plugins.append({'plugin': '$MODEL_PLUGIN', 'role': 'tts', 'model_dir': '$MODEL_DOWNLOAD_DIR'})
 json.dump(plugins, sys.stdout)
 ")"
             else
