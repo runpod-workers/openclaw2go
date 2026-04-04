@@ -135,7 +135,7 @@ export default function ConfigPanel({
   ) : undefined
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col overflow-visible lg:overflow-y-auto">
+    <div className="flex flex-1 min-h-0 flex-col overflow-visible lg:overflow-y-scroll">
       {/* Memory — collapsible on mobile, inline on desktop */}
       <CollapsibleSection title="Memory" badge={memoryBadge}>
         {/* Desktop: toolbar grid row with Memory + Hardware + Logo */}
