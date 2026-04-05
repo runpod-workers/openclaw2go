@@ -1,5 +1,16 @@
 # openclaw2go
 
+## 0.12.3
+
+### Patch Changes
+
+- 5eb4e83: fix: remove unsupported model types from registry
+
+  Remove registry entries for model types (reranking, vision, embedding) that
+  are not yet supported, eliminating the "SKIP: unknown type" warnings on startup.
+
+- 3a984de: fix: strengthen skill descriptions to prevent external API usage
+
 ## 0.12.2
 
 ### Patch Changes
