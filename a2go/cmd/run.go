@@ -356,6 +356,10 @@ func execRunMlx(cfg *config.Config) error {
 
 	// Strip :quant suffix — MLX uses bare HuggingFace slugs
 	llmModel := config.ModelSlug(cfg.LLM.Model)
+	audioModel := ""
+	if cfg.Audio != nil && cfg.Audio.Model != "" {
+		audioModel = config.ModelSlug(cfg.Audio.Model)
+	}
 
 	// Start LLM
 	llmPid, err := services.StartLLM(llmModel)
@@ -366,7 +370,7 @@ func execRunMlx(cfg *config.Config) error {
 
 	// Start Audio (optional)
 	if cfg.AudioEnabled() && venv.PythonCanImport("mlx_audio") && !process.PortListening(services.Audio.Port) {
-		pid, err := services.StartAudio()
+		pid, err := services.StartAudio(audioModel)
 		if err == nil {
 			pids = append(pids, pid)
 		}
@@ -394,10 +398,6 @@ func execRunMlx(cfg *config.Config) error {
 	ui.Ok("LLM server ready")
 
 	// Start web proxy
-	audioModel := ""
-	if cfg.Audio != nil && cfg.Audio.Model != "" {
-		audioModel = config.ModelSlug(cfg.Audio.Model)
-	}
 	wpPid, err := services.StartWebProxy(paths.Audio(), audioModel)
 	if err != nil {
 		return err

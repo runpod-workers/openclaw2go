@@ -99,7 +99,17 @@ func StartLLM(model string) (int, error) {
 	})
 }
 
-func StartAudio() (int, error) {
+func StartAudio(model string) (int, error) {
+	// LFM2.5 uses a custom server because mlx-audio's category detection
+	// doesn't support the STS category where the model lives.
+	if strings.Contains(strings.ToLower(model), "lfm2") {
+		return startProcess(Audio, paths.VenvPython(), []string{
+			filepath.Join(paths.Bin(), "mlx-lfm2-server"),
+			"--model", model,
+			"--host", "0.0.0.0",
+			"--port", "8001",
+		})
+	}
 	return startProcess(Audio, paths.VenvPython(), []string{
 		"-m", "mlx_audio.server",
 		"--host", "0.0.0.0",

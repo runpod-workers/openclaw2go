@@ -124,6 +124,7 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 		local  string
 	}{
 		{"scripts/mflux-server", filepath.Join(paths.Bin(), "mflux-server")},
+		{"scripts/mlx-lfm2-server", filepath.Join(paths.Bin(), "mlx-lfm2-server")},
 		{"scripts/web-proxy", filepath.Join(paths.Bin(), "web-proxy")},
 	}
 	for _, s := range scripts {
