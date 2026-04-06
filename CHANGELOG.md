@@ -1,5 +1,22 @@
 # openclaw2go
 
+## 0.12.5
+
+### Patch Changes
+
+- fee33c0: fix: mac audio proxy routing and missing mlx-audio dependencies
+
+  - Web proxy now falls back to probing audio server directly when no metadata
+    files exist (Mac native MLX path doesn't write /tmp/oc_audio_engine)
+  - Doctor installs uvicorn, fastapi, python-multipart required by mlx-audio 0.4.2
+
+- fee33c0: feat: switch LFM2.5-Audio plugin to native GGUF via llama-liquid-audio-server
+
+  Replaces the PyTorch-based liquid_audio library (~4GB VRAM) with a native
+  llama-liquid-audio-server subprocess that loads quantized GGUF files (~2GB VRAM).
+  The plugin spawns the server internally and proxies TTS/STT requests through it,
+  keeping the unified media server architecture intact.
+
 ## 0.12.4
 
 ### Patch Changes
