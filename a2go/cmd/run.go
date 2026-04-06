@@ -394,7 +394,11 @@ func execRunMlx(cfg *config.Config) error {
 	ui.Ok("LLM server ready")
 
 	// Start web proxy
-	wpPid, err := services.StartWebProxy(paths.Audio())
+	audioModel := ""
+	if cfg.Audio != nil && cfg.Audio.Model != "" {
+		audioModel = config.ModelSlug(cfg.Audio.Model)
+	}
+	wpPid, err := services.StartWebProxy(paths.Audio(), audioModel)
 	if err != nil {
 		return err
 	}

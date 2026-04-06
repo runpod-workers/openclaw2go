@@ -28,6 +28,7 @@ const audioOutputDir = readArg(
   "--audio-dir",
   process.env.A2GO_AUDIO_OUTPUT_DIR || "/workspace/openclaw/audio",
 );
+const audioModel = readArg("--audio-model", process.env.A2GO_AUDIO_MODEL || "");
 
 // Auto-detect unified media server from entrypoint metadata
 function detectUnifiedMedia() {
@@ -330,15 +331,17 @@ async function handleTts(text, voice) {
   }
 
   // Fallback: try audio server directly (Mac native MLX path has no metadata files)
-  try {
-    const url = new URL("/v1/audio/speech", audioBase);
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "tts", input: text, voice: voice || "alloy" }),
-    });
-    if (response.ok) return Buffer.from(await response.arrayBuffer());
-  } catch {}
+  if (audioModel) {
+    try {
+      const url = new URL("/v1/audio/speech", audioBase);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: audioModel, input: text, voice: voice || "alloy" }),
+      });
+      if (response.ok) return Buffer.from(await response.arrayBuffer());
+    } catch {}
+  }
 
   throw new Error("No TTS service available. Configure an audio model with a2go run --audio.");
 }
@@ -371,6 +374,30 @@ async function handleStt(audioBase64, format) {
   const engineMeta = detectAudioEngine();
   if (engineMeta?.type === "python-venv") {
     throw new Error(`STT not supported by ${engineMeta.engine || "current engine"} (TTS-only). Use LFM2.5-Audio for STT.`);
+  }
+
+  // Fallback: try audio server directly (Mac native MLX path)
+  if (audioModel) {
+    try {
+      const audioBuffer = Buffer.from(audioBase64, "base64");
+      const boundary = "----a2go" + Date.now();
+      const parts = [
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${format || "wav"}"\r\nContent-Type: audio/${format || "wav"}\r\n\r\n`,
+        audioBuffer,
+        `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\n${audioModel}\r\n--${boundary}--\r\n`,
+      ];
+      const body = Buffer.concat(parts.map((p) => (typeof p === "string" ? Buffer.from(p) : p)));
+      const url = new URL("/v1/audio/transcriptions", audioBase);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+        body,
+      });
+      if (response.ok) {
+        const result = await response.json();
+        return (result.text || "").trim();
+      }
+    } catch {}
   }
 
   throw new Error("No STT service available. Configure an audio model with a2go run --audio.");

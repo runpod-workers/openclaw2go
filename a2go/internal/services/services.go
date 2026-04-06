@@ -114,12 +114,16 @@ func StartImage(model string) (int, error) {
 	})
 }
 
-func StartWebProxy(audioDir string) (int, error) {
-	return startProcess(WebProxy, "node", []string{
+func StartWebProxy(audioDir string, audioModel string) (int, error) {
+	args := []string{
 		filepath.Join(paths.Bin(), "web-proxy"),
 		"--port", "8080",
 		"--audio-dir", audioDir,
-	})
+	}
+	if audioModel != "" {
+		args = append(args, "--audio-model", audioModel)
+	}
+	return startProcess(WebProxy, "node", args)
 }
 
 func StartGateway(authToken string) (int, error) {
