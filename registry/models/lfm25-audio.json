@@ -3,7 +3,7 @@
   "group": "lfm25-audio",
   "family": "lfm25-audio",
   "catalogKey": "lfm25-audio",
-  "name": "LFM2.5-Audio-1.5B (TTS + STT)",
+  "name": "LFM2.5-Audio-1.5B GGUF Q4_0 (TTS + STT)",
   "type": "audio",
   "capabilities": [
     "tts",
@@ -11,15 +11,19 @@
   ],
   "engine": "a2go-media",
   "plugin": "lfm2-audio",
-  "bits": 16,
-  "repo": "LiquidAI/LFM2.5-Audio-1.5B",
-  "files": [],
-  "downloadDir": "/workspace/models/LFM2.5-Audio-1.5B",
-  "downloadMode": "repo",
+  "bits": 4,
+  "repo": "LiquidAI/LFM2.5-Audio-1.5B-GGUF",
+  "files": [
+    "LFM2.5-Audio-1.5B-Q4_0.gguf",
+    "mmproj-LFM2.5-Audio-1.5B-Q4_0.gguf",
+    "vocoder-LFM2.5-Audio-1.5B-Q4_0.gguf",
+    "tokenizer-LFM2.5-Audio-1.5B-Q4_0.gguf"
+  ],
+  "downloadDir": "/workspace/models/LFM2.5-Audio-GGUF",
   "servedAs": "lfm2.5-audio",
   "vram": {
-    "model": 3500,
-    "overhead": 500
+    "model": 2000,
+    "overhead": 100
   },
   "defaults": {
     "port": 8001

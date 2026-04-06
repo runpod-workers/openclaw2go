@@ -1,7 +1,7 @@
 # engines/Dockerfile - Pre-built llama.cpp binaries for agent2go
 #
-# Builds a2go-llamacpp — clean mainline rebase (zero cherry-picks).
-# Audio moved to Python media server, no custom audio binaries.
+# Builds a2go-llamacpp — mainline rebase + cherry-picked PRs.
+# Includes llama-liquid-audio-server for LFM2.5 GGUF audio (PR #18641).
 #
 # The main Dockerfile.unified COPYs from this image — no compilation needed.
 #
@@ -21,7 +21,7 @@ ARG LLAMACPP_OPENCLAW_TAG=main
 # Stage 1: Build a2go-llamacpp (unified fork)
 # ============================================================
 # Our fork at github.com/runpod-labs/a2go-llamacpp:
-#   Clean mainline rebase (zero cherry-picks)
+#   Mainline rebase + PR #18641 (LFM2.5 audio) + PR #18039 (Eagle-3)
 FROM nvcr.io/nvidia/cuda-dl-base:25.03-cuda${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS a2go-llamacpp
 
 ARG CUDA_ARCHITECTURES
@@ -76,11 +76,11 @@ RUN git clone --depth 1 https://github.com/ikawrakow/ik_llama.cpp.git && \
 # ============================================================
 FROM ubuntu:24.04
 
-# a2go-llamacpp engine (LLM, Vision, Embeddings, TTS)
-# Audio (LFM2.5) moved to Python media server — no more custom audio binaries
+# a2go-llamacpp engine (LLM, Vision, Embeddings, TTS, Audio)
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-server /opt/engines/a2go-llamacpp/bin/
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-cli /opt/engines/a2go-llamacpp/bin/
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-tts /opt/engines/a2go-llamacpp/bin/
+COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/llama-liquid-audio-server /opt/engines/a2go-llamacpp/bin/
 COPY --from=a2go-llamacpp /build/a2go-llamacpp/build/bin/*.so* /opt/engines/a2go-llamacpp/lib/
 
 RUN chmod +x /opt/engines/a2go-llamacpp/bin/*
