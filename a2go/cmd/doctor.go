@@ -112,7 +112,7 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	if err := venv.Create(); err != nil {
 		return fmt.Errorf("failed to create venv: %w", err)
 	}
-	if err := venv.PipInstall("mlx-lm", "mlx-audio", "mflux"); err != nil {
+	if err := venv.PipInstall("mlx-lm", "mlx-audio", "mflux", "uvicorn", "fastapi", "python-multipart"); err != nil {
 		return fmt.Errorf("pip install failed: %w", err)
 	}
 	ui.Ok("mlx-lm, mlx-audio, mflux installed")

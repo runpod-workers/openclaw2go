@@ -329,6 +329,17 @@ async function handleTts(text, voice) {
     return Buffer.from(await response.arrayBuffer());
   }
 
+  // Fallback: try audio server directly (Mac native MLX path has no metadata files)
+  try {
+    const url = new URL("/v1/audio/speech", audioBase);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "tts", input: text, voice: voice || "alloy" }),
+    });
+    if (response.ok) return Buffer.from(await response.arrayBuffer());
+  } catch {}
+
   throw new Error("No TTS service available. Configure an audio model with a2go run --audio.");
 }
 
