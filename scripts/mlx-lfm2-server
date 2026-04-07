@@ -127,7 +127,7 @@ async def stt(file: UploadFile = File(...), model: str = Form("")):
     chat.new_turn("assistant")
 
     text_parts = []
-    for token, modality in _model.generate_interleaved(
+    for token, modality in _model.generate_sequential(
         **dict(chat), max_new_tokens=512,
     ):
         mx.eval(token)

@@ -13,9 +13,9 @@ func VenvBin() string        { return filepath.Join(Venv(), "bin") }
 func VenvPython() string     { return filepath.Join(VenvBin(), "python3") }
 func VenvPip() string        { return filepath.Join(VenvBin(), "pip") }
 func Skills() string              { return filepath.Join(InstallDir, "skills") }
-func SkillImageGenerate() string  { return filepath.Join(Skills(), "image-generate") }
-func SkillTextToSpeech() string   { return filepath.Join(Skills(), "text-to-speech") }
-func SkillSpeechToText() string   { return filepath.Join(Skills(), "speech-to-text") }
+func SkillImageGenerate() string  { return filepath.Join(Skills(), "a2go-image-generate") }
+func SkillTextToSpeech() string   { return filepath.Join(Skills(), "a2go-text-to-speech") }
+func SkillSpeechToText() string   { return filepath.Join(Skills(), "a2go-speech-to-text") }
 func Images() string         { return filepath.Join(InstallDir, "images") }
 func Pids() string           { return filepath.Join(InstallDir, "pids") }
 func Logs() string           { return filepath.Join(InstallDir, "logs") }
