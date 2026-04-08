@@ -28,7 +28,7 @@ The site generates this — or run it directly:
 
 ```bash
 docker run --gpus all \
-  -e A2GO_CONFIG='{"llm":"unsloth/glm47-flash-gguf","audio":"liquidai/lfm25-audio"}' \
+  -e A2GO_CONFIG='{"llm":"unsloth/GLM-4.7-Flash-GGUF","audio":"LiquidAI/LFM2.5-Audio-1.5B-GGUF"}' \
   -e A2GO_AUTH_TOKEN=changeme \
   -e LLAMACPP_API_KEY=changeme \
   -p 8000:8000 -p 8080:8080 -p 18789:18789 \

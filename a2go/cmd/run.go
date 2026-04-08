@@ -55,7 +55,7 @@ func init() {
 	runCmd.Flags().StringVar(&flagAgent, "agent", "", "Agent framework (required): openclaw, hermes")
 	runCmd.MarkFlagRequired("agent")
 	runCmd.Flags().StringVar(&flagLLM, "llm", "", "LLM model (e.g. unsloth/GLM-4.7-Flash-GGUF:4bit)")
-	runCmd.Flags().StringVar(&flagImage, "image", "", "Image model (e.g. disty0/flux2-klein-sdnq)")
+	runCmd.Flags().StringVar(&flagImage, "image", "", "Image model (e.g. Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic)")
 	runCmd.Flags().StringVar(&flagAudio, "audio", "", "Audio model (e.g. LiquidAI/LFM2.5-Audio-1.5B-GGUF:4bit, or 'off' to disable)")
 	runCmd.Flags().StringVar(&flagToken, "token", "changeme", "Auth token for gateway")
 	runCmd.Flags().StringVar(&flagConfig, "config", "", "JSON config (same format as Docker A2GO_CONFIG)")

@@ -6,9 +6,9 @@ Computes whether a set of models fits on a GPU, recommends max context length.
 Used by resolve-profile.py and as a standalone CLI tool.
 
 Usage:
-  vram-budget.py --gpu rtx-5090 --models "unsloth/GLM-4.7-Flash-GGUF,liquidai/lfm25-audio"
+  vram-budget.py --gpu rtx-5090 --models "unsloth/GLM-4.7-Flash-GGUF,LiquidAI/LFM2.5-Audio-1.5B-GGUF"
   vram-budget.py --gpu rtx-5090 --profile rtx5090-full-stack
-  vram-budget.py --vram 32768 --models "unsloth/glm47-flash-gguf"
+  vram-budget.py --vram 32768 --models "unsloth/GLM-4.7-Flash-GGUF"
 
 Model names are case-insensitive. You can use HuggingFace repo names or short model IDs.
 """

@@ -15,7 +15,7 @@ body:
     id: model-id
     attributes:
       label: Model ID
-      description: "Unique ID in provider/name format (e.g., `unsloth/glm47-flash-gguf`)"
+      description: "HuggingFace repo in org/name format (e.g., `unsloth/GLM-4.7-Flash-GGUF`)"
       placeholder: "provider/model-name"
     validations:
       required: true

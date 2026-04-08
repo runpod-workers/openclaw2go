@@ -9,17 +9,16 @@ context length, and outputs resolved config JSON to stdout.
 Config format (A2GO_CONFIG env var):
 
   Model-based (primary approach — each role takes a string model slug):
-    {"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio", "image": "disty0/flux2-klein-sdnq"}
-    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "liquidai/lfm25-audio"}
-    {"llm": "unsloth/glm47-flash-gguf"}
-    {"llm": "unsloth/glm47-flash-gguf", "contextLength": 200000}
+    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "LiquidAI/LFM2.5-Audio-1.5B-GGUF", "image": "Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic"}
+    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "LiquidAI/LFM2.5-Audio-1.5B-GGUF"}
+    {"llm": "unsloth/GLM-4.7-Flash-GGUF"}
+    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "contextLength": 200000}
     {"vision": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF"}
-    {"llm": "unsloth/glm47-flash-gguf", "embedding": "jinaai/jina-reranker-v3-gguf"}
-    {"llm": "unsloth/glm47-flash-gguf", "tts": "qwen/qwen3-tts-06b"}
+    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "embedding": "jinaai/jina-reranker-v3-gguf"}
+    {"llm": "unsloth/GLM-4.7-Flash-GGUF", "tts": "qwen/qwen3-tts-06b"}
 
-  Model names are case-insensitive. You can use the HuggingFace repo name
-  (e.g., "unsloth/GLM-4.7-Flash-GGUF") or the short model ID
-  (e.g., "unsloth/glm47-flash-gguf").
+  Model names are case-insensitive. Use the HuggingFace repo name
+  (e.g., "unsloth/GLM-4.7-Flash-GGUF").
 
   When a HuggingFace repo contains multiple quantizations, append ":Nbit" to disambiguate:
     {"llm": "unsloth/Qwen3.5-122B-A10B-GGUF:4bit"}
@@ -220,7 +219,7 @@ def resolve_model(value, models, model_type):
     """Resolve a config value to a model.
 
     Value is a string with optional ':Nbit' suffix.
-    Examples: "unsloth/Qwen3.5-122B-A10B-GGUF:4bit", "unsloth/glm47-flash-gguf"
+    Examples: "unsloth/Qwen3.5-122B-A10B-GGUF:4bit", "unsloth/GLM-4.7-Flash-GGUF"
     """
     if not isinstance(value, str):
         return None

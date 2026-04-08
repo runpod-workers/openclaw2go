@@ -78,7 +78,7 @@ func runDoctorDocker(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("  With image generation:")
 	fmt.Println()
-	fmt.Println("    a2go run --agent openclaw --llm unsloth/GLM-4.7-Flash-GGUF:4bit --image disty0/flux2-klein-sdnq")
+	fmt.Println("    a2go run --agent openclaw --llm unsloth/GLM-4.7-Flash-GGUF:4bit --image Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic")
 	fmt.Println()
 	return nil
 }

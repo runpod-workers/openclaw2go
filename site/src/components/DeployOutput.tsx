@@ -434,7 +434,7 @@ export default function DeployCard({
       if (!mlxResolvedModels[i].os.includes('mac')) {
         missing.push(mlxResolvedModels[i].name)
       } else {
-        available.push(dockerModels[i])
+        available.push(mlxResolvedModels[i])
       }
     }
     const cli = buildCliCommand(available, 'mac', framework.id, contextOverride)

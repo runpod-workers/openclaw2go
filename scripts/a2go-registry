@@ -747,7 +747,7 @@ Examples:
   a2go fit --vram 81920               Show what fits on 80GB GPU
   a2go presets                        List preset profiles
   a2go presets show <id>              Show preset details
-  a2go validate '{"llm":"unsloth/glm47-flash-gguf"}'  Validate a config
+  a2go validate '{"llm":"unsloth/GLM-4.7-Flash-GGUF"}'  Validate a config
   a2go registry fetch                 Fetch/refresh external registry
   a2go registry fetch --force         Force fetch, ignore cache TTL
   a2go registry export                Export current model config (JSON)

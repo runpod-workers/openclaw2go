@@ -70,7 +70,7 @@ body:
       label: A2GO_CONFIG
       description: "Paste your A2GO_CONFIG value"
       render: json
-      placeholder: '{"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio"}'
+      placeholder: '{"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "LiquidAI/LFM2.5-Audio-1.5B-GGUF"}'
 
   - type: textarea
     id: logs

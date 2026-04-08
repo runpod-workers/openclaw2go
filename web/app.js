@@ -39,8 +39,8 @@ const ROLE_LABELS = {
 
 // Example models for unconfigured hints
 const ROLE_EXAMPLES = {
-  image: "disty0/flux2-klein-sdnq",
-  audio: "liquidai/lfm25-audio",
+  image: "Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic",
+  audio: "LiquidAI/LFM2.5-Audio-1.5B-GGUF",
 };
 
 // ── Shared components ──
@@ -413,7 +413,7 @@ function NotConfiguredSection({ services, currentLlm }) {
   const unconfigured = UI_ROLES.filter(role => !services?.[role]?.configured);
   if (unconfigured.length === 0) return null;
 
-  const llmSlug = currentLlm || "unsloth/glm47-flash-gguf";
+  const llmSlug = currentLlm || "unsloth/GLM-4.7-Flash-GGUF";
 
   return h("div", { style: { marginTop: 8 } },
     h("div", { className: "section-label" }, "NOT CONFIGURED"),

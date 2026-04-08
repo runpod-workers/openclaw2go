@@ -8,8 +8,8 @@
 #   Stage 2 (runtime):       Slim runtime with only pre-built artifacts
 #
 # Configuration at runtime via A2GO_CONFIG env var:
-#   {"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio", "image": "disty0/flux2-klein-sdnq"}
-#   {"llm": "unsloth/glm47-flash-gguf", "audio": "liquidai/lfm25-audio"}
+#   {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "LiquidAI/LFM2.5-Audio-1.5B-GGUF", "image": "Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic"}
+#   {"llm": "unsloth/GLM-4.7-Flash-GGUF", "audio": "LiquidAI/LFM2.5-Audio-1.5B-GGUF"}
 #   {"llm": "unsloth/GLM-4.7-Flash-GGUF", "contextLength": 200000}
 #   {"profile": "rtx5090-full-stack"}                              — use a preset
 #
