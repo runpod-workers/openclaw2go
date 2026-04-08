@@ -4,6 +4,7 @@
   "family": "glm5",
   "catalogKey": "glm5",
   "name": "GLM-5-754B TQ1_0 (1-bit, 176GB)",
+  "size": "754B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 1,

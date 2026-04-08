@@ -4,6 +4,7 @@
   "family": "gemma4",
   "catalogKey": "gemma4-e4b",
   "name": "Gemma 4 E4B Q8_0 (8-bit, ~8GB, 128K context, multimodal)",
+  "size": "4B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 8,

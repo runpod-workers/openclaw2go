@@ -4,6 +4,7 @@
   "family": "nemotron3",
   "catalogKey": "nemotron3-super",
   "name": "Nemotron-3-Super-120B-A12B Q8_0 (8-bit, 128GB, 256k context, 4-split)",
+  "size": "120B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 8,

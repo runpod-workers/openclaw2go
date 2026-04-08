@@ -4,6 +4,7 @@
   "family": "kimi-k25",
   "catalogKey": "kimi-k25",
   "name": "Kimi K2.5 UD-TQ1_0 (1-bit, 240GB, 5-split)",
+  "size": "1T",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 1,

@@ -4,6 +4,7 @@
   "family": "glm47",
   "catalogKey": "glm47",
   "name": "GLM-4.7-Flash Claude Distill GGUF Q4_K_M",
+  "size": "31B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 4,

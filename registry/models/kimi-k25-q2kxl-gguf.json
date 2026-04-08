@@ -4,6 +4,7 @@
   "family": "kimi-k25",
   "catalogKey": "kimi-k25",
   "name": "Kimi K2.5 UD-Q2_K_XL (2-bit, 375GB, 8-split)",
+  "size": "1T",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 2,

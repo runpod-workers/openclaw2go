@@ -4,6 +4,7 @@
   "family": "qwen35",
   "catalogKey": "qwen35-4b",
   "name": "Qwen3.5-4B Opus Distill v2 MLX 8-bit",
+  "size": "4B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 8,

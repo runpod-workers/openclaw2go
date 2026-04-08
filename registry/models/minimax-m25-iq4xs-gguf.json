@@ -4,6 +4,7 @@
   "family": "minimax-m25",
   "catalogKey": "minimax-m25",
   "name": "MiniMax-M2.5 GGUF IQ4_XS (123GB, 4-split)",
+  "size": "229B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 4,

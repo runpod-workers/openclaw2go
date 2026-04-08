@@ -4,6 +4,7 @@
   "family": "qwen35",
   "catalogKey": "qwen35-27b",
   "name": "Qwen3.5-27B Opus Distill v2 MLX 4-bit",
+  "size": "27B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

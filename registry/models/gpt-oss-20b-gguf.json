@@ -4,6 +4,7 @@
   "family": "gpt-oss-20b",
   "catalogKey": "gpt-oss-20b",
   "name": "GPT-OSS-20B GGUF Q8_0",
+  "size": "20B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 8,

@@ -4,14 +4,23 @@
   "family": "nemotron-cascade2",
   "catalogKey": "nemotron-cascade2",
   "name": "Nemotron-Cascade-2-30B MLX 4-bit",
+  "size": "30B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,
   "repo": "mlx-community/Nemotron-Cascade-2-30B-A3B-4bit",
-  "vram": { "model": 17800, "overhead": 0 },
+  "vram": {
+    "model": 17800,
+    "overhead": 0
+  },
   "kvCacheMbPer1kTokens": 11,
-  "defaults": { "contextLength": 1048576 },
-  "provider": { "name": "local-mlx", "api": "openai-completions" },
+  "defaults": {
+    "contextLength": 1048576
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
   "platform": "mlx",
   "default": false,
   "status": "experimental"

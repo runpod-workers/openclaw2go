@@ -4,6 +4,7 @@
   "family": "gemma4",
   "catalogKey": "gemma4-31b",
   "name": "Gemma 4 31B Q4_K_M (4-bit, 17GB, 262K context, multimodal)",
+  "size": "31B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 4,

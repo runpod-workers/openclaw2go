@@ -4,6 +4,7 @@
   "family": "minimax-m25",
   "catalogKey": "minimax-m25",
   "name": "MiniMax-M2.5 MLX 3-bit",
+  "size": "229B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 3,

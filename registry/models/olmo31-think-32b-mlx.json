@@ -4,6 +4,7 @@
   "family": "olmo31-think-32b",
   "catalogKey": "olmo31-think-32b",
   "name": "OLMo 3.1 Think 32B MLX 4-bit",
+  "size": "32B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

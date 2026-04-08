@@ -4,6 +4,7 @@
   "family": "qwen3-tts",
   "catalogKey": "qwen3-tts-06b",
   "name": "Qwen3-TTS 0.6B CustomVoice (12Hz)",
+  "size": "0.6B",
   "type": "audio",
   "capabilities": [
     "tts"

@@ -4,6 +4,7 @@
   "family": "kimi-k25",
   "catalogKey": "kimi-k25",
   "name": "Kimi K2.5 MLX 3-bit",
+  "size": "1T",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 3,

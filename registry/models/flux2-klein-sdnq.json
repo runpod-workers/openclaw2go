@@ -4,6 +4,7 @@
   "family": "flux2-klein",
   "catalogKey": "flux2-klein",
   "name": "FLUX.2 Klein 4B SDNQ 4-bit Dynamic",
+  "size": "4B",
   "type": "image",
   "engine": "a2go-media",
   "plugin": "image-gen",

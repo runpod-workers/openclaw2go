@@ -4,6 +4,7 @@
   "family": "flux2-klein",
   "catalogKey": "flux2-klein",
   "name": "FLUX.2 Klein 4B MLX 4-bit",
+  "size": "4B",
   "type": "image",
   "engine": "mflux",
   "bits": 4,

@@ -4,6 +4,7 @@
   "family": "qwen35",
   "catalogKey": "qwen35-35b-a3b",
   "name": "Qwen3.5-35B-A3B Q4_K_M (4-bit, 21.2GB, 770K context, multimodal)",
+  "size": "35B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 4,

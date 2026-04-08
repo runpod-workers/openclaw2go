@@ -4,6 +4,7 @@
   "family": "ministral3-8b",
   "catalogKey": "ministral3-8b",
   "name": "Ministral-3-8B MLX 4-bit",
+  "size": "8B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

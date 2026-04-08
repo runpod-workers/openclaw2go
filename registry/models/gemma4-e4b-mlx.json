@@ -4,6 +4,7 @@
   "family": "gemma4",
   "catalogKey": "gemma4-e4b",
   "name": "Gemma 4 E4B MLX 8-bit",
+  "size": "4B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 8,

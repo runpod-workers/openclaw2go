@@ -4,6 +4,7 @@
   "family": "step35-flash",
   "catalogKey": "step35-flash",
   "name": "Step-3.5-Flash MLX 4-bit",
+  "size": "197B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

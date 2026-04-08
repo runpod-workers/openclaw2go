@@ -4,6 +4,7 @@
   "family": "ministral3-8b",
   "catalogKey": "ministral3-8b",
   "name": "Ministral-3-8B-Instruct GGUF Q8_0 (Dec 2025)",
+  "size": "8B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 8,

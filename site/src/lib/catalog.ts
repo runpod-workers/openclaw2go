@@ -11,6 +11,7 @@ export interface CatalogModel {
   family: string
   catalogKey: string
   name: string
+  size: string
   type: 'llm' | 'image' | 'audio'
   engine: string
   bits?: number
@@ -120,6 +121,7 @@ interface RawModel {
   family: string
   catalogKey: string
   name: string
+  size?: string
   type: 'llm' | 'audio' | 'image'
   engine: string
   bits?: number
@@ -163,6 +165,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; devices:
         family: m.family,
         catalogKey: m.catalogKey,
         name: m.name.toLowerCase(),
+        size: m.size ?? '',
         type: m.type,
         engine: m.engine,
         bits: m.bits,
@@ -187,6 +190,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; devices:
       family: m.family,
       catalogKey: m.catalogKey,
       name: m.name.toLowerCase(),
+      size: m.size ?? '',
       type: m.type,
       engine: m.engine,
       bits: m.bits,

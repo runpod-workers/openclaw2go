@@ -13,6 +13,7 @@ export interface ModelVariant {
 export interface ModelGroup {
   key: string
   displayName: string
+  size: string
   type: 'llm' | 'image' | 'audio'
   contextLength: number | undefined
   hasVision: boolean
@@ -35,11 +36,6 @@ function getDisplayName(name: string): string {
     .trim()
 }
 
-/** Extract parameter count (e.g. "4B", "1.5B") from a display name */
-export function extractParamSize(displayName: string): string | null {
-  const match = displayName.match(/(\d+\.?\d*)b\b/i)
-  return match ? `${match[1]}B` : null
-}
 
 export function groupModels(models: CatalogModel[]): ModelGroup[] {
   const map = new Map<string, ModelGroup>()
@@ -80,6 +76,7 @@ export function groupModels(models: CatalogModel[]): ModelGroup[] {
       map.set(key, {
         key,
         displayName: getDisplayName(model.name),
+        size: model.size,
         type: model.type,
         contextLength: model.contextLength,
         hasVision: model.hasVision,
@@ -149,6 +146,7 @@ export interface SubVariant {
 export interface CatalogEntry {
   catalogKey: string
   displayName: string
+  size: string
   family: string
   type: 'llm' | 'image' | 'audio'
   hasVision: boolean
@@ -297,6 +295,7 @@ export function buildCatalogEntries(allGroups: ModelGroup[]): CatalogEntry[] {
     entries.push({
       catalogKey,
       displayName,
+      size: firstGroup.size,
       family: firstModel.family,
       type: firstModel.type as 'llm' | 'image' | 'audio',
       hasVision,
@@ -374,21 +373,27 @@ export function buildFamilyEntries(allEntries: CatalogEntry[]): FamilyEntry[] {
     let sizeLabels: string[]
 
     if (isMultiSize) {
-      const names = entries.map((e) => e.displayName)
-      const prefix = longestCommonPrefix(names).replace(/[-\s]+$/, '')
-      displayName = prefix.length > 3 ? prefix : entries[0].displayName
-      sizeLabels = entries.map((e) => {
-        const label = e.displayName.slice(prefix.length).replace(/^[-\s]+/, '')
-        return label || e.catalogKey
-      })
+      // Use the size field from each entry's first group
+      sizeLabels = entries.map((e) => e.groups[0]?.size || '')
+      // Derive family display name by stripping the size from the first entry's name
+      const firstName = entries[0].displayName
+      const firstSize = sizeLabels[0]
+      if (firstSize) {
+        const names = entries.map((e) => e.displayName)
+        const prefix = longestCommonPrefix(names).replace(/[-\s]+$/, '')
+        displayName = prefix.length > 3 ? prefix : firstName.replace(new RegExp('[\\s-]+' + firstSize.replace('.', '\\.').replace(/b$/i, '') + 'b\\b', 'i'), '').trim()
+      } else {
+        const names = entries.map((e) => e.displayName)
+        const prefix = longestCommonPrefix(names).replace(/[-\s]+$/, '')
+        displayName = prefix.length > 3 ? prefix : entries[0].displayName
+      }
     } else {
-      const rawName = entries[0].displayName
-      const size = extractParamSize(rawName)
+      const size = entries[0].groups[0]?.size || ''
       if (size) {
-        displayName = rawName.replace(/[\s-]+\d+\.?\d*b\b/i, '').trim()
+        displayName = entries[0].displayName.replace(new RegExp('[\\s-]+' + size.replace('.', '\\.').replace(/b$/i, '') + 'b\\b', 'i'), '').trim()
         sizeLabels = [size]
       } else {
-        displayName = rawName
+        displayName = entries[0].displayName
         sizeLabels = ['']
       }
     }

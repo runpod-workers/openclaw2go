@@ -4,6 +4,7 @@
   "family": "qwen35",
   "catalogKey": "qwen35-9b",
   "name": "Qwen3.5-9B Q8_0 (8-bit, 8.9GB, 1M context, multimodal)",
+  "size": "9B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 8,

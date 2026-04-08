@@ -4,6 +4,7 @@
   "family": "nemotron3",
   "catalogKey": "nemotron3-nano",
   "name": "Nemotron-3-Nano-30B-A3B GGUF Q4_K_XL",
+  "size": "30B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 4,

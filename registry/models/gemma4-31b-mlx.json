@@ -4,6 +4,7 @@
   "family": "gemma4",
   "catalogKey": "gemma4-31b",
   "name": "Gemma 4 31B MLX 4-bit",
+  "size": "31B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

@@ -4,6 +4,7 @@
   "family": "nemotron3",
   "catalogKey": "nemotron3-super",
   "name": "Nemotron-3-Super-120B-A12B MLX 4-bit",
+  "size": "120B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

@@ -4,6 +4,7 @@
   "family": "qwen3-coder-next",
   "catalogKey": "qwen3-coder-next",
   "name": "Qwen3-Coder-Next GGUF Q3_K_M",
+  "size": "80B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 3,

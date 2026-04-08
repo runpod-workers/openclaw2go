@@ -4,6 +4,7 @@
   "family": "qwen3-coder-next",
   "catalogKey": "qwen3-coder-next",
   "name": "Qwen3-Coder-Next MLX 4-bit",
+  "size": "80B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

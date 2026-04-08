@@ -4,6 +4,7 @@
   "family": "gpt-oss-20b",
   "catalogKey": "gpt-oss-20b",
   "name": "GPT-OSS-20B MLX 8-bit",
+  "size": "20B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 8,

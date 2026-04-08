@@ -4,6 +4,7 @@
   "family": "qwen35",
   "catalogKey": "qwen35-397b-a17b",
   "name": "Qwen3.5-397B-A17B UD-Q2_K_XL (2-bit, 137GB, 1M context, 4-split)",
+  "size": "397B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 2,

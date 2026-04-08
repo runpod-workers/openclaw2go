@@ -4,6 +4,7 @@
   "family": "glm5",
   "catalogKey": "glm5",
   "name": "GLM-5 MLX 4-bit",
+  "size": "754B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

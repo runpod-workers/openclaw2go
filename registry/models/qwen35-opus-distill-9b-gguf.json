@@ -4,6 +4,7 @@
   "family": "qwen35",
   "catalogKey": "qwen35-9b",
   "name": "Qwen3.5-9B Opus Distill v2 Q8_0 (8-bit, 9.5GB, 262K context, multimodal)",
+  "size": "9B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 8,

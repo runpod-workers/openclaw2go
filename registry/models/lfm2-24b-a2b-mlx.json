@@ -4,6 +4,7 @@
   "family": "lfm2",
   "catalogKey": "lfm2-24b-a2b",
   "name": "LFM2-24B-A2B MLX 4-bit",
+  "size": "24B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

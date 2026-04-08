@@ -4,6 +4,7 @@
   "family": "qwen35",
   "catalogKey": "qwen35-397b-a17b",
   "name": "Qwen3.5-397B-A17B MLX 4-bit",
+  "size": "397B",
   "type": "llm",
   "engine": "mlx-lm",
   "bits": 4,

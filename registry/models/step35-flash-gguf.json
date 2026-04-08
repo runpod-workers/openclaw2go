@@ -4,6 +4,7 @@
   "family": "step35-flash",
   "catalogKey": "step35-flash",
   "name": "Step-3.5-Flash GGUF Q2_K",
+  "size": "197B",
   "type": "llm",
   "engine": "a2go-llamacpp",
   "bits": 2,
