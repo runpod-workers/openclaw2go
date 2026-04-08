@@ -120,9 +120,11 @@ async def stt(file: UploadFile = File(...), model: str = Form("")):
     audio = mx.array(wav_np)
 
     chat = ChatState(_processor)
+    chat.new_turn("system")
+    chat.add_text("Perform ASR.")
+    chat.end_turn()
     chat.new_turn("user")
     chat.add_audio(audio, sample_rate=sr)
-    chat.add_text("Transcribe the audio.")
     chat.end_turn()
     chat.new_turn("assistant")
 
@@ -134,7 +136,7 @@ async def stt(file: UploadFile = File(...), model: str = Form("")):
         if modality == LFMModality.TEXT:
             text_parts.append(_processor.decode_text(token[None]))
 
-    text = "".join(text_parts).strip()
+    text = "".join(text_parts).replace("<|im_end|>", "").strip()
     elapsed = time.time() - t0
     print(f"[LFM2-MLX] STT done in {elapsed:.2f}s: {text[:100]}...")
 
