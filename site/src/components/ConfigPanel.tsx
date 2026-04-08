@@ -161,6 +161,7 @@ export default function ConfigPanel({
                     selectedDevice={selectedDevice}
                     onSelect={onDeviceSelect}
                     deviceCount={deviceCount}
+                    totalVramMb={displayVramGb * 1024}
                   />
                 </div>
               </div>
@@ -239,6 +240,7 @@ export default function ConfigPanel({
               selectedDevice={selectedDevice}
               onSelect={onDeviceSelect}
               deviceCount={deviceCount}
+              totalVramMb={displayVramGb * 1024}
             />
           </div>
         </CollapsibleSection>

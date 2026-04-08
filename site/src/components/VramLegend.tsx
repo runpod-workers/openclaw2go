@@ -12,24 +12,28 @@ function formatVramGbOnly(mb: number): string {
 function DeviceButton({
   device,
   isSelected,
+  disabled,
   effectiveVramMb,
   maxVramMb,
   onSelect,
 }: {
   device: DeviceInfo
   isSelected: boolean
+  disabled: boolean
   effectiveVramMb: number
   maxVramMb: number
   onSelect: () => void
 }) {
   return (
     <button
-      onClick={onSelect}
+      onClick={() => !disabled && onSelect()}
+      disabled={disabled && !isSelected}
       className={cn(
         "flex items-baseline px-1.5 py-0.5 font-mono text-[11px] transition-all duration-150",
         isSelected
           ? "bg-foreground/10 text-foreground"
           : "bg-foreground/[0.03] text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground",
+        disabled && !isSelected && "opacity-20 pointer-events-none"
       )}
     >
       <span className="font-semibold uppercase tracking-wide">{device.name}</span>
@@ -91,11 +95,13 @@ export default function DeviceSelector({
   selectedDevice,
   onSelect,
   deviceCount,
+  totalVramMb = 0,
 }: {
   devices: DeviceInfo[]
   selectedDevice: DeviceInfo | null
   onSelect: (device: DeviceInfo) => void
   deviceCount: DeviceCount
+  totalVramMb?: number
 }) {
   const maxCount = DEVICE_COUNTS[DEVICE_COUNTS.length - 1]
   const { nvidiaDevices, macDevices } = useMemo(() => {
@@ -112,16 +118,20 @@ export default function DeviceSelector({
             NVIDIA
           </span>
           <div className="flex flex-wrap gap-1">
-            {nvidiaDevices.map((device) => (
-              <DeviceButton
-                key={device.id}
-                device={device}
-                isSelected={selectedDevice?.id === device.id}
-                effectiveVramMb={device.vramMb * deviceCount}
-                maxVramMb={device.vramMb * maxCount}
-                onSelect={() => onSelect(device)}
-              />
-            ))}
+            {nvidiaDevices.map((device) => {
+              const cantFit = totalVramMb > 0 && device.vramMb * deviceCount < totalVramMb
+              return (
+                <DeviceButton
+                  key={device.id}
+                  device={device}
+                  isSelected={selectedDevice?.id === device.id}
+                  disabled={cantFit}
+                  effectiveVramMb={device.vramMb * deviceCount}
+                  maxVramMb={device.vramMb * maxCount}
+                  onSelect={() => onSelect(device)}
+                />
+              )
+            })}
           </div>
         </div>
       )}
@@ -131,16 +141,20 @@ export default function DeviceSelector({
             Apple Silicon
           </span>
           <div className="flex flex-wrap gap-1">
-            {macDevices.map((device) => (
-              <DeviceButton
-                key={device.id}
-                device={device}
-                isSelected={selectedDevice?.id === device.id}
-                effectiveVramMb={device.vramMb * deviceCount}
-                maxVramMb={device.vramMb * maxCount}
-                onSelect={() => onSelect(device)}
-              />
-            ))}
+            {macDevices.map((device) => {
+              const cantFit = totalVramMb > 0 && device.vramMb * deviceCount < totalVramMb
+              return (
+                <DeviceButton
+                  key={device.id}
+                  device={device}
+                  isSelected={selectedDevice?.id === device.id}
+                  disabled={cantFit}
+                  effectiveVramMb={device.vramMb * deviceCount}
+                  maxVramMb={device.vramMb * maxCount}
+                  onSelect={() => onSelect(device)}
+                />
+              )
+            })}
           </div>
         </div>
       )}
