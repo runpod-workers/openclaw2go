@@ -1,5 +1,42 @@
 # openclaw2go
 
+## 0.13.0
+
+### Minor Changes
+
+- 4aed6cd: fix: e2e test issues across all platforms
+
+  - Replace internal model IDs with HuggingFace repos in all user-facing surfaces
+  - Fix image gen crash on Mac (transformers 5.x local path validation)
+  - Add image server health check during startup (hard failure if --image specified)
+  - Fast-fail on unknown model names instead of 600s timeout
+  - Skip Docker image pull when already present (fixes Windows SSH credential error)
+  - Show audio/media services in Docker status output
+  - Fix media server /health shadowed by plugin compat routes
+  - Disable thinking mode for GLM-4.7-Flash and Qwen3.5 models (--reasoning-format none)
+  - Fix Mac deploy tab using Docker model repos instead of MLX variants
+  - Fix web proxy /health returning {} on Mac native mode
+  - Update Windows install script to set PATH in current session
+
+### Patch Changes
+
+- 0b87720: feat(site): disable device buttons that can't fit selected model's vram
+
+  Devices whose VRAM (× device count) is insufficient for the current
+  config are now dimmed and non-clickable in the configurator.
+
+- 4aed6cd: feat: add glm-5.1 754b iq1m 1-bit gguf model config
+
+  Adds GLM-5.1-754B IQ1_M (1-bit, ~194GB) from unsloth/GLM-5.1-GGUF.
+  MoE architecture with 40B active parameters. Supports tool calling
+  and reasoning/thinking. Tested on 3x A100 SXM4 80GB at ~22 tok/s.
+
+- 14a3940: feat: improve deploy howto with stop and help steps
+
+  Added dedicated step 5 (stop) and step 6 (more commands) to the deploy
+  instructions. Simplified info notes to plain text. MLX troubleshooting
+  link now only shows on the mac tab.
+
 ## 0.12.8
 
 ### Patch Changes
