@@ -1,5 +1,24 @@
 # openclaw2go
 
+## 0.12.8
+
+### Patch Changes
+
+- 258ab58: fix: doctor skill download 404 — paths updated to a2go- prefix
+
+  Skills moved from config/workspace/skills/image-generate/ to
+  config/workspace/skills/a2go-image-generate/ (and similar for
+  text-to-speech, speech-to-text). Updated download paths, local
+  directory names, and removed unused FileWithReplace — the new
+  skills use `a2go tool` commands and no longer need path rewriting.
+
+- 258ab58: feat: add native LFM2.5-Audio MLX server for macOS
+
+  mlx-audio's get_model_category() doesn't support the STS category where
+  LFM2.5 lives. This adds a dedicated server (mlx-lfm2-server) that imports
+  directly from mlx_audio.sts.models.lfm_audio, with /health, TTS and STT
+  endpoints. Auto-selected when the audio model contains "lfm2".
+
 ## 0.12.7
 
 ### Patch Changes

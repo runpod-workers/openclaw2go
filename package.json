@@ -1,6 +1,6 @@
 {
   "name": "a2go",
-  "version": "0.12.7",
+  "version": "0.12.8",
   "private": true,
   "devDependencies": {
     "@changesets/cli": "^2.29.4"
