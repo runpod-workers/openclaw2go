@@ -1,5 +1,16 @@
 # openclaw2go
 
+## 0.13.2
+
+### Patch Changes
+
+- 2616076: fix: audio config deserialize + doctor always pulls latest image
+
+  AudioConfig now correctly deserializes both string and object forms from
+  saved configs, fixing wrong gateway shown in status. Doctor always attempts
+  to pull the latest image so users get updates, falling back to local only
+  if pull fails.
+
 ## 0.13.1
 
 ### Patch Changes
