@@ -42,11 +42,19 @@ type AudioConfig struct {
 }
 
 func (a *AudioConfig) UnmarshalJSON(data []byte) error {
+	// Try string first (e.g., "LiquidAI/LFM2.5-Audio-1.5B-GGUF:4bit")
 	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return fmt.Errorf("expected string for audio config, got: %s", string(data))
+	if err := json.Unmarshal(data, &str); err == nil {
+		a.Model = str
+		return nil
 	}
-	a.Model = str
+	// Fall back to object (e.g., {"enabled": false})
+	type plain AudioConfig
+	var obj plain
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return fmt.Errorf("expected string or object for audio config, got: %s", string(data))
+	}
+	*a = AudioConfig(obj)
 	return nil
 }
 

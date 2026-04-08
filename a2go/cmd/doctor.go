@@ -59,15 +59,18 @@ func runDoctorDocker(cmd *cobra.Command, args []string) error {
 	}
 	ui.Ok(paths.InstallDir)
 
-	// Step 3: Pull Docker image (skip if already present)
+	// Step 3: Pull Docker image (always try to get latest; fall back to local)
 	ui.Step(3, "Pulling Docker image")
 	fmt.Printf("      %s\n", dockerImage)
-	if docker.ImageExists(dockerImage) {
-		ui.Ok("image already present (skipping pull)")
-	} else if err := docker.PullImage(dockerImage); err != nil {
-		arch := platform.Description()
-		return fmt.Errorf("docker pull failed for %s. if the image has no manifest for this platform, try pulling the arch-specific tag: docker pull %s-%s\n%w",
-			arch, dockerImage, strings.SplitN(arch, "/", 2)[1], err)
+	if err := docker.PullImage(dockerImage); err != nil {
+		if docker.ImageExists(dockerImage) {
+			fmt.Printf("      pull failed (%v), using existing local image\n", err)
+			ui.Ok("image ready (local)")
+		} else {
+			arch := platform.Description()
+			return fmt.Errorf("docker pull failed for %s. if the image has no manifest for this platform, try pulling the arch-specific tag: docker pull %s-%s\n%w",
+				arch, dockerImage, strings.SplitN(arch, "/", 2)[1], err)
+		}
 	} else {
 		ui.Ok("image ready")
 	}
