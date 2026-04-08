@@ -1,5 +1,14 @@
 # openclaw2go
 
+## 0.13.1
+
+### Patch Changes
+
+- abc24c3: fix: stt endpoint accepts multipart file uploads (openai convention)
+
+  The /api/audio/stt endpoint now handles both multipart form data
+  (curl -F file=@audio.wav) and JSON base64 bodies.
+
 ## 0.13.0
 
 ### Minor Changes
