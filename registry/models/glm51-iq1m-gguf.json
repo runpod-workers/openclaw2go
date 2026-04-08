@@ -1,0 +1,66 @@
+{
+  "id": "unsloth/glm51-iq1m-gguf",
+  "group": "glm51-1bit",
+  "family": "glm51",
+  "catalogKey": "glm51",
+  "name": "GLM-5.1-754B IQ1_M (1-bit, 191GB)",
+  "type": "llm",
+  "engine": "a2go-llamacpp",
+  "bits": 1,
+  "repo": "unsloth/GLM-5.1-GGUF",
+  "files": [
+    "UD-IQ1_M/GLM-5.1-UD-IQ1_M-00001-of-00006.gguf",
+    "UD-IQ1_M/GLM-5.1-UD-IQ1_M-00002-of-00006.gguf",
+    "UD-IQ1_M/GLM-5.1-UD-IQ1_M-00003-of-00006.gguf",
+    "UD-IQ1_M/GLM-5.1-UD-IQ1_M-00004-of-00006.gguf",
+    "UD-IQ1_M/GLM-5.1-UD-IQ1_M-00005-of-00006.gguf",
+    "UD-IQ1_M/GLM-5.1-UD-IQ1_M-00006-of-00006.gguf"
+  ],
+  "downloadDir": "/workspace/models/GLM-5.1-GGUF",
+  "servedAs": "glm-5.1-iq1m",
+  "vram": {
+    "model": 191000,
+    "overhead": 2000
+  },
+  "kvCacheMbPer1kTokens": 10,
+  "defaults": {
+    "contextLength": 202752,
+    "port": 8000
+  },
+  "startArgs": [
+    "-m",
+    "{modelPath}/{files[0]}",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "{port}",
+    "-ngl",
+    "{gpuLayers}",
+    "--parallel",
+    "{parallel}",
+    "-c",
+    "{contextLength}",
+    "--jinja",
+    "-ctk",
+    "q8_0",
+    "-ctv",
+    "q8_0",
+    "--api-key",
+    "{apiKey}"
+  ],
+  "startDefaults": {
+    "gpuLayers": "999",
+    "parallel": "1"
+  },
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-completions"
+  },
+  "extraStartArgs": [
+    "-fa",
+    "on"
+  ],
+  "tps": {},
+  "default": false,
+  "status": "experimental"
+}
