@@ -48,6 +48,10 @@
     "gpuLayers": "999",
     "parallel": "1"
   },
+  "extraStartArgs": [
+    "--reasoning-format",
+    "none"
+  ],
   "provider": {
     "name": "local-llamacpp",
     "api": "openai-completions"

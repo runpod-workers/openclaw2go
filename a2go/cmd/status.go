@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -59,6 +63,10 @@ func runStatusDocker() {
 			} else {
 				ui.StatusLine(p.name, "starting", fmt.Sprintf("port %d not yet listening", p.port))
 			}
+		}
+		// Check media services via web proxy health endpoint
+		if process.PortListening(services.WebProxy.Port) {
+			showMediaServices()
 		}
 		fmt.Println()
 		fmt.Println("  Logs: docker logs -f a2go")
@@ -134,4 +142,44 @@ func runStatusMlx() {
 		fmt.Println("  Run: a2go run --llm <model>")
 	}
 	fmt.Println()
+}
+
+// showMediaServices queries the web proxy /health endpoint to discover
+// which media services (audio, image, tts, etc.) are active inside the container.
+func showMediaServices() {
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/health", services.WebProxy.Port))
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	// Docker media server returns: {"plugins":{"audio":{"status":"ok",...},...},"llm":{...}}
+	// Mac web proxy returns: {"audio":{"ok":true,...},...}
+	var result struct {
+		Plugins map[string]json.RawMessage `json:"plugins"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return
+	}
+	for role, raw := range result.Plugins {
+		var info struct {
+			Status      string `json:"status"`
+			ModelLoaded *bool  `json:"model_loaded"`
+		}
+		if err := json.Unmarshal(raw, &info); err != nil {
+			continue
+		}
+		if info.Status == "ok" || (info.ModelLoaded != nil && *info.ModelLoaded) {
+			ui.StatusLine(role, "running", fmt.Sprintf("via web proxy (:%d)", services.WebProxy.Port))
+		} else {
+			ui.StatusLine(role, "starting", "waiting for media server")
+		}
+	}
 }

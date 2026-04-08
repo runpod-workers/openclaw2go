@@ -72,11 +72,9 @@ def build_app(config: dict, port: int, llm_url: str, web_root: str) -> FastAPI:
             traceback.print_exc()
             print(f"[MediaServer] Skipping '{engine_id}', continuing with remaining plugins")
 
-    # Backward-compatible flat routes
-    for plugin in plugins:
-        app.include_router(plugin.router(), tags=[f"{plugin.role}-compat"])
-
     # ── Aggregated health (probes LLM + gateway + media plugins) ──
+    # Registered before backward-compatible flat routes so that plugin /health
+    # endpoints don't shadow the aggregated one.
     @app.get("/health")
     async def health():
         result = {"plugins": {}}
@@ -101,6 +99,10 @@ def build_app(config: dict, port: int, llm_url: str, web_root: str) -> FastAPI:
                 pass  # don't report unconfigured gateways
 
         return result
+
+    # Backward-compatible flat routes (after /health to avoid shadowing)
+    for plugin in plugins:
+        app.include_router(plugin.router(), tags=[f"{plugin.role}-compat"])
 
     # Plugin list
     @app.get("/plugins")

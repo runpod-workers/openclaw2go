@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/runpod-labs/a2go/a2go/internal/catalog"
 	"github.com/runpod-labs/a2go/a2go/internal/config"
 	"github.com/runpod-labs/a2go/a2go/internal/docker"
 	"github.com/runpod-labs/a2go/a2go/internal/health"
@@ -130,6 +131,11 @@ func execRunDocker(cfg *config.Config) error {
 	// Check Docker image exists
 	if !docker.ImageExists(dockerImage) {
 		return fmt.Errorf("docker image not found: %s. run: a2go doctor", dockerImage)
+	}
+
+	// Validate model names against catalog (fast-fail instead of 600s timeout)
+	if err := validateModels(cfg); err != nil {
+		return err
 	}
 
 	// Check no container already running
@@ -251,6 +257,54 @@ func execRunDocker(cfg *config.Config) error {
 	fmt.Println("  a2go status    check services")
 	fmt.Println("  a2go stop      stop all")
 	fmt.Println()
+	return nil
+}
+
+// validateModels checks that all configured models exist in the catalog.
+// This lets us fast-fail before starting a Docker container instead of waiting
+// through a 600s health-check timeout for an invalid model.
+func validateModels(cfg *config.Config) error {
+	data, err := catalog.Fetch(catalogURL, 10*time.Second)
+	if err != nil {
+		// Can't fetch catalog — skip validation rather than blocking
+		return nil
+	}
+	var cat struct {
+		Models []struct {
+			Repo string `json:"repo"`
+		} `json:"models"`
+	}
+	if err := json.Unmarshal(data, &cat); err != nil {
+		return nil
+	}
+	repos := make(map[string]bool, len(cat.Models))
+	for _, m := range cat.Models {
+		repos[strings.ToLower(m.Repo)] = true
+	}
+
+	check := func(label, model string) error {
+		slug := config.ModelSlug(model) // strip :Nbit suffix
+		if repos[strings.ToLower(slug)] {
+			return nil
+		}
+		return fmt.Errorf("unknown %s model: %s\n  Run 'a2go models --type %s' to see available models", label, model, label)
+	}
+
+	if cfg.LLM != nil {
+		if err := check("llm", cfg.LLM.Model); err != nil {
+			return err
+		}
+	}
+	if cfg.Image != nil && cfg.Image.Model != "" {
+		if err := check("image", cfg.Image.Model); err != nil {
+			return err
+		}
+	}
+	if cfg.Audio != nil && cfg.Audio.Model != "" {
+		if err := check("audio", cfg.Audio.Model); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
