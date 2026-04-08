@@ -137,17 +137,15 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	// Step 5: Download skills
 	ui.Step(5, "Installing skills")
 	skills := []struct {
-		remote   string
-		local    string
-		replFrom string
-		replTo   string
+		remote string
+		local  string
 	}{
-		{"config/workspace/skills/image-generate/SKILL.md", filepath.Join(paths.SkillImageGenerate(), "SKILL.md"), "/workspace/openclaw/images/", "~/.a2go/images/"},
-		{"config/workspace/skills/text-to-speech/SKILL.md", filepath.Join(paths.SkillTextToSpeech(), "SKILL.md"), "/workspace/openclaw/audio/", "~/.a2go/audio/"},
-		{"config/workspace/skills/speech-to-text/SKILL.md", filepath.Join(paths.SkillSpeechToText(), "SKILL.md"), "/workspace/openclaw/audio/", "~/.a2go/audio/"},
+		{"config/workspace/skills/a2go-image-generate/SKILL.md", filepath.Join(paths.SkillImageGenerate(), "SKILL.md")},
+		{"config/workspace/skills/a2go-text-to-speech/SKILL.md", filepath.Join(paths.SkillTextToSpeech(), "SKILL.md")},
+		{"config/workspace/skills/a2go-speech-to-text/SKILL.md", filepath.Join(paths.SkillSpeechToText(), "SKILL.md")},
 	}
 	for _, s := range skills {
-		if err := download.FileWithReplace(s.remote, s.local, s.replFrom, s.replTo); err != nil {
+		if err := download.File(s.remote, s.local, false); err != nil {
 			return fmt.Errorf("download skill %s: %w", s.remote, err)
 		}
 	}
