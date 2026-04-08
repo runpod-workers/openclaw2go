@@ -1,5 +1,15 @@
 # openclaw2go
 
+## 0.13.3
+
+### Patch Changes
+
+- fca27b2: fix: auto-workaround docker credential store error on pull
+
+  Docker Desktop's credsStore requires a desktop session, failing over SSH.
+  PullImage now detects this, temporarily removes credsStore, retries the
+  pull, then restores the config automatically.
+
 ## 0.13.2
 
 ### Patch Changes
