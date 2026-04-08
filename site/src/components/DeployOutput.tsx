@@ -56,9 +56,7 @@ function StepNumber({ n }: { n: number }) {
 
 function InfoNote({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-2">
-      <span className="font-mono text-[9px] leading-tight text-foreground/70">{children}</span>
-    </div>
+    <span className="font-mono text-[9px] leading-tight text-foreground/40">{children}</span>
   )
 }
 
@@ -295,10 +293,12 @@ function CliSteps({
   cli,
   requirements,
   setupNote,
+  showHelp,
 }: {
   cli: { install: string; doctor: string; run: string }
   requirements: { label: string; href?: string }[]
   setupNote: string
+  showHelp?: boolean
 }) {
   return (
     <>
@@ -360,11 +360,43 @@ function CliSteps({
         </div>
         <div className="min-w-0 flex-1 max-w-full sm:max-w-[620px] flex flex-col gap-2">
           <InlineCodeBlock code={cli.run} />
-          <InfoNote>first run downloads the model — use <code className="text-foreground/80">a2go status</code> to check services, <code className="text-foreground/80">a2go stop</code> to shut down</InfoNote>
+          <InfoNote>first run downloads the model — use <code className="text-foreground/80">a2go status</code> to check progress</InfoNote>
         </div>
       </div>
 
-      <HelpRow />
+      {/* Step 5: Stop */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex w-full sm:w-[140px] shrink-0 flex-col gap-1.5 py-1">
+          <div className="flex items-center gap-2">
+            <StepNumber n={5} />
+            <span className="font-mono text-[8px] font-semibold uppercase tracking-widest text-foreground/40">
+              stop
+            </span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 max-w-full sm:max-w-[620px] flex flex-col gap-2">
+          <InlineCodeBlock code="a2go stop" />
+          <InfoNote>shuts down all running services and containers</InfoNote>
+        </div>
+      </div>
+
+      {/* Step 6: More commands */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex w-full sm:w-[140px] shrink-0 flex-col gap-1.5 py-1">
+          <div className="flex items-center gap-2">
+            <StepNumber n={6} />
+            <span className="font-mono text-[8px] font-semibold uppercase tracking-widest text-foreground/40">
+              more commands
+            </span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 max-w-full sm:max-w-[620px] flex flex-col gap-2">
+          <InlineCodeBlock code="a2go --help" />
+          <InfoNote>see all available commands — status, logs, update, and more</InfoNote>
+        </div>
+      </div>
+
+      {showHelp && <HelpRow />}
     </>
   )
 }
@@ -599,6 +631,7 @@ export default function DeployCard({
                   cli={macCli}
                   requirements={MAC_REQUIREMENTS.map((r) => ({ label: r }))}
                   setupNote="only needed once — checks prerequisites, installs python packages and agent framework"
+                  showHelp
                 />
               </>
             ) : (
