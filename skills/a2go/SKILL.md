@@ -29,20 +29,9 @@ a2go run --agent <agent> --llm <repo>:<bits>bit [--image <repo>] [--audio <repo>
 a2go doctor                                              # Prereq check + image pull
 a2go status                                              # Service health
 a2go stop                                                # Stop containers
-docker logs -f a2go                                      # Tail container logs (Docker)
 ```
 
 Agents: `hermes` (recommended) or `openclaw`.
-
-## Cloud / Docker (no CLI needed)
-
-```bash
-docker run -d --gpus all --name a2go \
-  -e A2GO_CONFIG='{"llm":"<repo>:<bits>bit"}' \
-  -p 8000:8000 -p 8080:8080 -p 18789:18789 \
-  -v /workspace:/workspace \
-  runpod/a2go:latest
-```
 
 ## Ports
 
