@@ -1,5 +1,11 @@
 # openclaw2go
 
+## 0.14.2
+
+### Patch Changes
+
+- e196b33: Remove Docker section from skill to fix remaining security audit issue
+
 ## 0.14.1
 
 ### Patch Changes
