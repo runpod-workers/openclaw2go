@@ -357,6 +357,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                     --jinja
                     -ctk q8_0
                     -ctv q8_0
+                    --no-mmap
                     --api-key "$LLAMACPP_API_KEY"
                 )
 
