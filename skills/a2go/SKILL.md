@@ -1,13 +1,13 @@
 ---
 name: a2go
-description: Deploy and manage a2go — self-hosted LLM + media services with OpenClaw agents.
+description: Use open weight models (LLM, image, audio) with open source agents on Mac, Linux, and Windows.
 metadata:
   author: runpod
 ---
 
 # a2go
 
-Deploy LLM + image/audio services on any NVIDIA GPU (or Apple Silicon).
+Use open weight models (LLM, image, audio) with open source agents on Mac, Linux, and Windows.
 
 ## Install
 
