@@ -118,8 +118,15 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	if err := venv.Create(); err != nil {
 		return fmt.Errorf("failed to create venv: %w", err)
 	}
-	if err := venv.PipInstall("mlx-lm", "mlx-audio", "mflux", "uvicorn", "fastapi", "python-multipart"); err != nil {
+	// Install mlx-audio/mflux first, then upgrade mlx-lm last.
+	// mlx-audio can pin an older mlx-lm (e.g. ==0.31.1) which would
+	// downgrade it if installed after. Installing mlx-lm last with
+	// --upgrade ensures we always get the latest version.
+	if err := venv.PipInstall("mlx-audio", "mflux", "uvicorn", "fastapi", "python-multipart"); err != nil {
 		return fmt.Errorf("pip install failed: %w", err)
+	}
+	if err := venv.PipInstall("mlx-lm"); err != nil {
+		return fmt.Errorf("pip install mlx-lm failed: %w", err)
 	}
 	ui.Ok("mlx-lm, mlx-audio, mflux installed")
 
