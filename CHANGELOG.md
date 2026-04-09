@@ -1,5 +1,20 @@
 # openclaw2go
 
+## 0.14.1
+
+### Patch Changes
+
+- f4b3660: Fix security audit failures on skills.sh
+- ca3b07e: fix: show actionable errors when mlx model fails to start locally
+
+  when an mlx model (e.g. gemma 4) fails to start, the cli now:
+
+  - shows the last 20 lines of the log file inline (no more "check logs" dead end)
+  - detects common error patterns (ModuleNotFoundError, unsupported model type, OOM)
+    and suggests the fix (e.g. "run 'a2go doctor' to upgrade")
+  - validates mlx models against the catalog before starting services (fast-fail)
+  - uses correct error messages ("LLM process exited" instead of "container exited")
+
 ## 0.14.0
 
 ### Minor Changes
