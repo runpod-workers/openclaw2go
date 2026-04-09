@@ -6,8 +6,9 @@ import type { AgentFramework } from '../lib/frameworks'
 import { PlatformIcon } from './PlatformSelector'
 import { TriangleAlert } from 'lucide-react'
 import { FaCloud } from 'react-icons/fa'
+import { Bot } from 'lucide-react'
 
-type DeployTab = 'linux' | 'windows' | 'mac' | 'cloud'
+type DeployTab = 'agent' | 'linux' | 'windows' | 'mac' | 'cloud'
 
 const LINUX_REQUIREMENTS: { label: string; href?: string }[] = [
   { label: 'nvidia gpu' },
@@ -60,14 +61,17 @@ function InfoNote({ children }: { children: React.ReactNode }) {
   )
 }
 
-function InlineCodeBlock({ code }: { code: string }) {
+function InlineCodeBlock({ code, wrap }: { code: string; wrap?: boolean }) {
   return (
     <div className="relative flex flex-col overflow-clip rounded border border-foreground/[0.06] bg-[#080706]">
       <div className="absolute top-2 right-2 z-10">
         <CopyButton text={code} />
       </div>
-      <div className="overflow-x-auto p-3 pr-16">
-        <pre className="whitespace-pre font-mono text-[10px] leading-relaxed text-foreground/90">
+      <div className={cn(wrap ? "p-3 pr-16" : "overflow-x-auto p-3 pr-16")}>
+        <pre className={cn(
+          "font-mono text-[10px] leading-relaxed text-foreground/90",
+          wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre"
+        )}>
           <code>{code}</code>
         </pre>
       </div>
@@ -108,14 +112,16 @@ export function CodeBlock({ code, requirements }: { code: string; requirements: 
   )
 }
 
-const TAB_CONFIG: { id: DeployTab; label: string; os: OsPlatform | null }[] = [
+const TAB_CONFIG: { id: DeployTab; label: string; os: OsPlatform | null; icon?: 'agent' | 'cloud' }[] = [
+  { id: 'agent', label: 'agent', os: null, icon: 'agent' },
   { id: 'linux', label: 'linux', os: 'linux' },
   { id: 'windows', label: 'windows', os: 'windows' },
   { id: 'mac', label: 'mac', os: 'mac' },
-  { id: 'cloud', label: 'cloud', os: null },
+  { id: 'cloud', label: 'cloud', os: null, icon: 'cloud' },
 ]
 
 function isTabVisible(tab: DeployTab, os: OsPlatform | null): boolean {
+  if (tab === 'agent') return true
   if (os === null) return true
   if (tab === 'cloud') return os !== 'mac'
   if (tab === 'linux') return os === 'linux'
@@ -289,6 +295,84 @@ function HelpRow() {
   )
 }
 
+const SKILL_INSTALL_COMMAND = 'npx skills add https://github.com/runpod-labs/a2go --skill a2go'
+
+function cleanModelLabel(model: CatalogModel, modelIdToGroup: Map<string, ModelGroup>): string {
+  const group = modelIdToGroup.get(model.id)
+  const name = group ? group.displayName : model.name
+  const bits = model.bits ? `${model.bits}-bit` : ''
+  return `${name}${bits ? ` ${bits}` : ''}`.toLowerCase()
+}
+
+function buildAgentPrompt(
+  models: CatalogModel[],
+  frameworkName: string,
+  modelIdToGroup: Map<string, ModelGroup>,
+): string {
+  const llm = models.find((m) => m.type === 'llm')
+  const image = models.find((m) => m.type === 'image')
+  const audio = models.find((m) => m.type === 'audio')
+
+  const parts: string[] = []
+  if (llm) parts.push(`${cleanModelLabel(llm, modelIdToGroup)} as llm`)
+  if (image) parts.push(`${cleanModelLabel(image, modelIdToGroup)} as image`)
+  if (audio) parts.push(`${cleanModelLabel(audio, modelIdToGroup)} as audio`)
+
+  if (parts.length === 0) {
+    return `/a2go deploy with ${frameworkName.toLowerCase()} as the agent`
+  }
+
+  return `/a2go deploy with ${frameworkName.toLowerCase()} as the agent using ${parts.join(', ')}`
+}
+
+function AgentSkillSteps({
+  models,
+  frameworkName,
+  modelIdToGroup,
+}: {
+  models: CatalogModel[]
+  frameworkName: string
+  modelIdToGroup: Map<string, ModelGroup>
+}) {
+  const prompt = buildAgentPrompt(models, frameworkName, modelIdToGroup)
+
+  return (
+    <>
+      {/* Step 1: Install skill */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex w-full sm:w-[140px] shrink-0 flex-col gap-1.5 py-1">
+          <div className="flex items-center gap-2">
+            <StepNumber n={1} />
+            <span className="font-mono text-[8px] font-semibold uppercase tracking-widest text-foreground/40">
+              install skill
+            </span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 max-w-full sm:max-w-[620px] flex flex-col gap-2">
+          <InlineCodeBlock code={SKILL_INSTALL_COMMAND} />
+          <InfoNote>adds the a2go skill to your agent — run this once per project</InfoNote>
+        </div>
+      </div>
+
+      {/* Step 2: Use it */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex w-full sm:w-[140px] shrink-0 flex-col gap-1.5 py-1">
+          <div className="flex items-center gap-2">
+            <StepNumber n={2} />
+            <span className="font-mono text-[8px] font-semibold uppercase tracking-widest text-foreground/40">
+              use it
+            </span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 max-w-full sm:max-w-[620px] flex flex-col gap-2">
+          <InlineCodeBlock code={prompt} wrap />
+          <InfoNote>your agent handles the rest — configuration, install, and deployment</InfoNote>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function CliSteps({
   cli,
   requirements,
@@ -416,7 +500,7 @@ export default function DeployCard({
   onToggle?: (model: CatalogModel) => void
   framework: AgentFramework
 }) {
-  const [activeTab, setActiveTab] = useState<DeployTab>('linux')
+  const [activeTab, setActiveTab] = useState<DeployTab>('agent')
 
   // Only filter tabs when the global OS filter (top-level buttons) is active.
   // Model card platform tabs (sharedOs) should NOT hide deploy tabs.
@@ -516,7 +600,7 @@ export default function DeployCard({
     <div className="flex flex-col">
       {/* Tab bar */}
       <div className="flex items-center gap-1">
-        {visibleTabs.map(({ id, label, os: tabOs }) => (
+        {visibleTabs.map(({ id, label, os: tabOs, icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
@@ -527,11 +611,13 @@ export default function DeployCard({
                 : "text-foreground/30 hover:text-foreground/50"
             )}
           >
-            {tabOs ? (
-              <PlatformIcon os={tabOs} className="h-3.5 w-3.5" />
-            ) : (
+            {icon === 'agent' ? (
+              <Bot className="h-3.5 w-3.5" />
+            ) : icon === 'cloud' ? (
               <FaCloud className="h-3.5 w-3.5" />
-            )}
+            ) : tabOs ? (
+              <PlatformIcon os={tabOs} className="h-3.5 w-3.5" />
+            ) : null}
             {label}
           </button>
         ))}
@@ -544,6 +630,12 @@ export default function DeployCard({
             <span className="font-mono text-[10px] text-foreground/30">
               select models above to generate deploy command
             </span>
+          </div>
+        )}
+
+        {hasModels && activeTab === 'agent' && (
+          <div className="flex flex-1 min-h-0 flex-col p-3 gap-5">
+            <AgentSkillSteps models={selectedModels} frameworkName={framework.name} modelIdToGroup={modelIdToGroup} />
           </div>
         )}
 
