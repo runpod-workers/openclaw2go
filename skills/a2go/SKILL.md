@@ -9,15 +9,9 @@ metadata:
 
 Use open weight models (LLM, image, audio) with open source agents on Mac, Linux, and Windows.
 
-## Install
+## Prerequisites
 
-```bash
-# Linux / macOS
-curl -sSL https://a2go.run/install.sh | bash
-
-# Windows (PowerShell)
-irm https://a2go.run/install.ps1 | iex
-```
+Requires the `a2go` CLI. Install from GitHub releases (includes SHA256 checksums for verification): https://github.com/runpod-labs/a2go/releases
 
 ## Quick start
 
@@ -54,10 +48,10 @@ docker run -d --gpus all --name a2go \
 
 - **8000** — LLM API (direct model access, use for testing chat completions)
 - **8080** — Web proxy / media server (TTS, STT, image gen, web UI)
-- **8642** — Hermes Gateway (platform pairing for Telegram/Discord/WhatsApp, not for direct API calls)
-- **18789** — OpenClaw Gateway (platform pairing, not for direct API calls)
+- **8642** — Hermes Gateway (agent orchestration, not for direct API calls)
+- **18789** — OpenClaw Gateway (agent orchestration, not for direct API calls)
 
-For direct LLM testing use port **8000** (`/v1/chat/completions`). For TTS/STT use port **8080** (`/v1/audio/speech`, `/v1/audio/transcriptions`). The gateway ports (8642/18789) are for messaging platform integrations.
+For direct LLM testing use port **8000** (`/v1/chat/completions`). For TTS/STT use port **8080** (`/v1/audio/speech`, `/v1/audio/transcriptions`). The gateway ports (8642/18789) are for platform integrations.
 
 ## Models
 
