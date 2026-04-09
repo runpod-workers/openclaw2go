@@ -75,58 +75,56 @@ func Run(currentVersion string) {
 		return
 	}
 
-	// Run all checks in parallel with a combined 3s timeout
+	// Run all checks in parallel with a 5s timeout.
+	// Each result is saved as it arrives so partial results survive a timeout.
 	newState := &checkState{LastCheck: time.Now().Unix()}
-	done := make(chan struct{})
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	wg.Add(3)
 
+	// CLI version check
 	go func() {
-		var wg sync.WaitGroup
-		var mu sync.Mutex
-
-		wg.Add(3)
-
-		// CLI version check
-		go func() {
-			defer wg.Done()
-			if v, err := selfupdate.FetchLatestVersion(); err == nil {
-				mu.Lock()
-				newState.CLI = &cliState{LatestVersion: v}
-				mu.Unlock()
-			}
-		}()
-
-		// Hermes check
-		go func() {
-			defer wg.Done()
-			if behind := checkHermesBehind(); behind > 0 {
-				mu.Lock()
-				newState.Hermes = &hermState{CommitsBehind: behind}
-				mu.Unlock()
-			}
-		}()
-
-		// Python packages check
-		go func() {
-			defer wg.Done()
-			if pkgs := checkPipOutdated(); len(pkgs) > 0 {
-				mu.Lock()
-				newState.PythonPackages = pkgs
-				mu.Unlock()
-			}
-		}()
-
-		wg.Wait()
-		close(done)
+		defer wg.Done()
+		if v, err := selfupdate.FetchLatestVersion(); err == nil {
+			mu.Lock()
+			newState.CLI = &cliState{LatestVersion: v}
+			mu.Unlock()
+		}
 	}()
+
+	// Hermes check
+	go func() {
+		defer wg.Done()
+		if behind := checkHermesBehind(); behind > 0 {
+			mu.Lock()
+			newState.Hermes = &hermState{CommitsBehind: behind}
+			mu.Unlock()
+		}
+	}()
+
+	// Python packages check
+	go func() {
+		defer wg.Done()
+		if pkgs := checkPipOutdated(); len(pkgs) > 0 {
+			mu.Lock()
+			newState.PythonPackages = pkgs
+			mu.Unlock()
+		}
+	}()
+
+	// Wait for all checks or timeout — save whatever we got either way
+	done := make(chan struct{})
+	go func() { wg.Wait(); close(done) }()
 
 	select {
 	case <-done:
-		saveState(newState)
-		printHints(currentVersion, newState)
-	case <-time.After(3 * time.Second):
-		// Don't block startup — skip this time
-		return
+	case <-time.After(5 * time.Second):
 	}
+
+	mu.Lock()
+	saveState(newState)
+	printHints(currentVersion, newState)
+	mu.Unlock()
 }
 
 // checkHermesBehind returns the number of commits hermes is behind origin/main.
