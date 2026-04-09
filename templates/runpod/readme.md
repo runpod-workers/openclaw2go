@@ -1,6 +1,6 @@
 # a2go
 
-Run open source AI agents on GPU pods. a2go bundles local LLM inference, image generation, and audio services into a single Docker image - everything agents like [OpenClaw](https://openclaw.ai) (and soon Hermes) need to operate autonomously.
+Use open weight models (LLM, image, audio) with open source agents on GPU pods. a2go bundles local LLM inference, image generation, and audio services into a single Docker image — everything agents like [Hermes](https://github.com/hermes-agent/hermes) and [OpenClaw](https://openclaw.ai) need to operate autonomously.
 
 ## Quick Start
 
@@ -31,8 +31,9 @@ Models are cached in `/workspace/models/` and persist across pod restarts.
 | Port | Protocol | Service |
 |------|----------|---------|
 | 8000 | HTTP | OpenAI-compatible LLM API (`/v1/chat/completions`) |
-| 8080 | HTTP | Web proxy (media preview, image generation UI) |
-| 18789 | HTTP | OpenClaw gateway (control UI, device pairing) |
+| 8080 | HTTP | Web proxy / media server (TTS, STT, image gen, web UI) |
+| 8642 | HTTP | Hermes Gateway (agent pairing for Telegram, Discord, WhatsApp) |
+| 18789 | HTTP | OpenClaw Gateway (agent pairing, device control UI) |
 | 22 | TCP | SSH access |
 
 ## Environment Variables
@@ -41,7 +42,7 @@ Models are cached in `/workspace/models/` and persist across pod restarts.
 
 | Variable | Description |
 |----------|-------------|
-| `A2GO_AUTH_TOKEN` | Auth token for the control UI + API |
+| `A2GO_AUTH_TOKEN` | Auth token for the gateway + API |
 | `LLAMACPP_API_KEY` | Protects the OpenAI-compatible LLM endpoint |
 
 ### Recommended
@@ -62,7 +63,8 @@ Models are cached in `/workspace/models/` and persist across pod restarts.
 
 Replace `<pod-id>` with your pod ID:
 
-- **Control UI**: `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`
+- **Hermes Gateway**: `https://<pod-id>-8642.proxy.runpod.net`
+- **OpenClaw Gateway**: `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`
 - **Web Proxy**: `https://<pod-id>-8080.proxy.runpod.net`
 - **LLM API**: `https://<pod-id>-8000.proxy.runpod.net/v1`
 
@@ -71,6 +73,7 @@ Replace `<pod-id>` with your pod ID:
 SSH into the pod to access:
 
 - `openclaw` - manage devices, pairings, and config
+- `hermes` - Hermes agent gateway management
 - `llama-server` - llama.cpp inference server (managed by entrypoint)
 - `nvidia-smi` - GPU monitoring
 

@@ -2,6 +2,7 @@
   "name": "agent2go",
   "imageName": "runpod/a2go:latest",
   "containerDiskInGb": 20,
+  "ports": "8000/http,8080/http,8642/http,18789/http,22/tcp",
   "env": [
     {
       "key": "A2GO_CONFIG",
