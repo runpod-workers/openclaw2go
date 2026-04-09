@@ -134,7 +134,7 @@ func execRunDocker(cfg *config.Config) error {
 	}
 
 	// Validate model names against catalog (fast-fail instead of 600s timeout)
-	if err := validateModels(cfg); err != nil {
+	if err := validateModels(cfg, nil); err != nil {
 		return err
 	}
 
@@ -219,7 +219,7 @@ func execRunDocker(cfg *config.Config) error {
 	isAlive := func() bool {
 		return docker.ContainerStatus(containerName) == "running"
 	}
-	if err := health.WaitForReady("http://localhost:8000/health", isAlive, 600*time.Second); err != nil {
+	if err := health.WaitForReady("http://localhost:8000/health", isAlive, 600*time.Second, "container"); err != nil {
 		ui.Fail(fmt.Sprintf("LLM server: %v", err))
 		// Show container logs so agents and users can diagnose without running another command
 		fmt.Println()
@@ -261,25 +261,30 @@ func execRunDocker(cfg *config.Config) error {
 }
 
 // validateModels checks that all configured models exist in the catalog.
-// This lets us fast-fail before starting a Docker container instead of waiting
-// through a 600s health-check timeout for an invalid model.
-func validateModels(cfg *config.Config) error {
+// This lets us fast-fail before starting a Docker container or MLX server instead
+// of waiting through a long health-check timeout for an invalid model.
+// When allowedEngines is non-nil, only models with a matching engine are accepted.
+func validateModels(cfg *config.Config, allowedEngines map[string]bool) error {
 	data, err := catalog.Fetch(catalogURL, 10*time.Second)
 	if err != nil {
 		// Can't fetch catalog — skip validation rather than blocking
 		return nil
 	}
-	var cat struct {
-		Models []struct {
-			Repo string `json:"repo"`
-		} `json:"models"`
-	}
+	var cat catalogJSON
 	if err := json.Unmarshal(data, &cat); err != nil {
 		return nil
 	}
 	repos := make(map[string]bool, len(cat.Models))
 	for _, m := range cat.Models {
+		if allowedEngines != nil && !allowedEngines[m.Engine] {
+			continue
+		}
 		repos[strings.ToLower(m.Repo)] = true
+	}
+
+	osHint := ""
+	if allowedEngines != nil {
+		osHint = " --os mac"
 	}
 
 	check := func(label, model string) error {
@@ -287,7 +292,7 @@ func validateModels(cfg *config.Config) error {
 		if repos[strings.ToLower(slug)] {
 			return nil
 		}
-		return fmt.Errorf("unknown %s model: %s\n  Run 'a2go models --type %s' to see available models", label, model, label)
+		return fmt.Errorf("unknown %s model: %s\n  Run 'a2go models --type %s%s' to see available models", label, model, label, osHint)
 	}
 
 	if cfg.LLM != nil {
@@ -345,6 +350,11 @@ func execRunMlx(cfg *config.Config) error {
 	// Check not already running
 	if pid, err := process.ReadPid("llm"); err == nil && process.IsAlive(pid) {
 		return fmt.Errorf("already running (LLM pid %d)\n\n  a2go status    check services\n  a2go stop      stop first", pid)
+	}
+
+	// Validate model names against catalog (fast-fail before startup)
+	if err := validateModels(cfg, mlxEngines); err != nil {
+		return err
 	}
 
 	// Check ports — gateway port depends on agent
@@ -444,9 +454,11 @@ func execRunMlx(cfg *config.Config) error {
 	fmt.Println()
 	ui.Info("waiting for LLM server...")
 	isAlive := func() bool { return process.IsAlive(llmPid) }
-	if err := health.WaitForReady("http://localhost:8000/health", isAlive, 300*time.Second); err != nil {
+	if err := health.WaitForReady("http://localhost:8000/health", isAlive, 300*time.Second, "LLM process"); err != nil {
 		ui.Fail(fmt.Sprintf("LLM server: %v", err))
-		fmt.Printf("      Check logs: %s/llm.log\n", paths.Logs())
+		logPath := filepath.Join(paths.Logs(), "llm.log")
+		showLogTail(logPath, 20)
+		suggestFixes(logPath)
 		cleanup()
 		return fmt.Errorf("LLM server failed to start")
 	}
@@ -456,9 +468,11 @@ func execRunMlx(cfg *config.Config) error {
 	if imagePid > 0 {
 		ui.Info("waiting for image server...")
 		imgAlive := func() bool { return process.IsAlive(imagePid) }
-		if err := health.WaitForReady(fmt.Sprintf("http://localhost:%d/health", services.Image.Port), imgAlive, 120*time.Second); err != nil {
+		if err := health.WaitForReady(fmt.Sprintf("http://localhost:%d/health", services.Image.Port), imgAlive, 120*time.Second, "image process"); err != nil {
 			ui.Fail(fmt.Sprintf("image server: %v", err))
-			fmt.Printf("      Check logs: %s/image.log\n", paths.Logs())
+			logPath := filepath.Join(paths.Logs(), "image.log")
+			showLogTail(logPath, 20)
+			suggestFixes(logPath)
 			cleanup()
 			return fmt.Errorf("image server failed to start")
 		}
@@ -523,4 +537,78 @@ func execRunMlx(cfg *config.Config) error {
 
 	// Wait forever (until signal)
 	select {}
+}
+
+// showLogTail prints the last n lines of a log file inline so the user/agent
+// can see what went wrong without manually opening the file.
+func showLogTail(path string, n int) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Printf("      (could not read %s)\n", path)
+		return
+	}
+	content := strings.TrimRight(string(data), "\n")
+	if content == "" {
+		fmt.Printf("      (log file is empty: %s)\n", path)
+		return
+	}
+	lines := strings.Split(content, "\n")
+	if len(lines) > n {
+		lines = lines[len(lines)-n:]
+	}
+	fmt.Println()
+	fmt.Printf("      --- %s (last %d lines) ---\n", filepath.Base(path), len(lines))
+	for _, line := range lines {
+		fmt.Printf("      %s\n", line)
+	}
+	fmt.Println("      --- end logs ---")
+}
+
+// suggestFixes scans a log file for known error patterns and prints
+// actionable suggestions so the user knows what to do next.
+func suggestFixes(logPath string) {
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		return
+	}
+	content := string(data)
+
+	type hint struct {
+		pattern    string
+		suggestion string
+	}
+	hints := []hint{
+		{
+			"ModuleNotFoundError",
+			"This usually means your Python packages are outdated and don't support this model.\n      Fix: run 'a2go doctor' to upgrade to the latest versions.",
+		},
+		{
+			"No module named",
+			"A required Python module is missing or outdated.\n      Fix: run 'a2go doctor' to install/upgrade dependencies.",
+		},
+		{
+			"ImportError",
+			"A required Python module failed to import.\n      Fix: run 'a2go doctor' to reinstall dependencies.",
+		},
+		{
+			"Model type",
+			"The installed mlx-lm version doesn't support this model architecture.\n      Fix: run 'a2go doctor' to upgrade to the latest version.",
+		},
+		{
+			"out of memory",
+			"Not enough unified memory for this model + KV cache.\n      Fix: try a smaller quantization (e.g. 4bit) or a smaller model.",
+		},
+		{
+			"MemoryError",
+			"Not enough unified memory for this model + KV cache.\n      Fix: try a smaller quantization (e.g. 4bit) or a smaller model.",
+		},
+	}
+
+	for _, h := range hints {
+		if strings.Contains(content, h.pattern) {
+			fmt.Println()
+			ui.Warn(h.suggestion)
+			return
+		}
+	}
 }

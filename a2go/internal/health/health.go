@@ -8,14 +8,15 @@ import (
 
 // WaitForReady polls a health endpoint until it returns 200 or times out.
 // isAlive is called each iteration to check if the backing process/container is still running.
-func WaitForReady(url string, isAlive func() bool, timeout time.Duration) error {
+// processLabel describes what is being waited on (e.g. "container", "LLM process") for error messages.
+func WaitForReady(url string, isAlive func() bool, timeout time.Duration, processLabel string) error {
 	deadline := time.Now().Add(timeout)
 	interval := 3 * time.Second
 	waited := time.Duration(0)
 
 	for time.Now().Before(deadline) {
 		if !isAlive() {
-			return fmt.Errorf("container exited unexpectedly (crashed or was stopped externally)")
+			return fmt.Errorf("%s exited unexpectedly", processLabel)
 		}
 
 		resp, err := http.Get(url)
