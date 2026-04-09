@@ -1,5 +1,15 @@
 # openclaw2go
 
+## 0.15.1
+
+### Patch Changes
+
+- 660b5f6: feat(site): add agent skill tab to deploy section
+
+  Adds "agent" as the first deploy tab, showing a 2-step flow to install and use the a2go skill via `npx skills add`. The prompt dynamically reflects selected models with clean labels (e.g. "glm-4.7-flash 4-bit as llm"). The agent tab is always visible regardless of OS filter.
+
+- 9be4298: Dim unselected devices in hardware selector so the active device stands out
+
 ## 0.15.0
 
 ### Minor Changes
