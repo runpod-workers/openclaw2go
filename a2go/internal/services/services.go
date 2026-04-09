@@ -106,12 +106,13 @@ func PreDownloadModel(model string) error {
 	return nil
 }
 
-func StartLLM(model string) (int, error) {
+func StartLLM(model string, contextLength int) (int, error) {
 	return startProcess(LLM, paths.VenvPython(), []string{
 		"-m", "mlx_lm", "server",
 		"--model", model,
 		"--host", "0.0.0.0",
 		"--port", "8000",
+		"--max-tokens", fmt.Sprintf("%d", contextLength),
 	})
 }
 

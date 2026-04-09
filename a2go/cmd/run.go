@@ -463,7 +463,7 @@ func execRunMlx(cfg *config.Config) error {
 	}
 
 	// Start LLM
-	llmPid, err := services.StartLLM(llmModel)
+	llmPid, err := services.StartLLM(llmModel, cfg.GetContextLength())
 	if err != nil {
 		return err
 	}
