@@ -1,5 +1,21 @@
 # openclaw2go
 
+## 0.13.7
+
+### Patch Changes
+
+- 7154868: feat: add glm-5.1 754b iq1m 1-bit gguf model config
+
+  Adds GLM-5.1-754B IQ1_M (1-bit, ~194GB) from unsloth/GLM-5.1-GGUF.
+  MoE architecture with 40B active parameters. Supports tool calling
+  and reasoning/thinking. Tested on 3x A100 SXM4 80GB at ~22 tok/s.
+
+- 1ec9172: fix: add --no-mmap as default for llama-server to prevent NV hang on large models
+
+  mmap causes llama-server to hang on network volumes when loading large models
+  (191 GB+) with cold NFS cache. --no-mmap uses sequential reads instead,
+  which is reliable on all storage types and reduces host RAM usage by 83-99%.
+
 ## 0.13.6
 
 ### Patch Changes
