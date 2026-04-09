@@ -221,19 +221,20 @@ func execRunDocker(cfg *config.Config) error {
 	}
 	if err := health.WaitForReady("http://localhost:8000/health", isAlive, 600*time.Second, "container"); err != nil {
 		ui.Fail(fmt.Sprintf("LLM server: %v", err))
-		// Show container logs so agents and users can diagnose without running another command
+		// Fetch enough logs to capture the real error (not just health-check "Waiting..." lines)
+		allLogs := docker.ContainerLogs(containerName, 200)
+		// Show only the meaningful lines (filter out health-check noise)
 		fmt.Println()
-		fmt.Println("      --- container logs (last 30 lines) ---")
-		logs := docker.ContainerLogs(containerName, 30)
-		if logs != "" {
-			fmt.Println(logs)
+		if allLogs != "" {
+			showFilteredLogs(allLogs, 30)
 		} else {
+			fmt.Println("      --- container logs ---")
 			fmt.Println("      (no logs available)")
+			fmt.Println("      --- end logs ---")
 		}
-		fmt.Println("      --- end logs ---")
-		// Scan logs for known error patterns and suggest fixes
-		if logs != "" {
-			suggestFixesFromContent(logs)
+		// Scan all logs for known error patterns and suggest fixes
+		if allLogs != "" {
+			suggestFixesFromContent(allLogs)
 		}
 		fmt.Println()
 		// Clean up the failed container so the next start doesn't say "already running"
@@ -544,6 +545,39 @@ func execRunMlx(cfg *config.Config) error {
 	select {}
 }
 
+// showFilteredLogs prints the last n meaningful lines from container logs,
+// filtering out health-check noise ("Waiting..." lines) that would push
+// the actual error out of view.
+func showFilteredLogs(logs string, n int) {
+	lines := strings.Split(logs, "\n")
+	var meaningful []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		// Skip internal health-check polling lines
+		if strings.HasPrefix(trimmed, "Waiting...") || strings.HasPrefix(trimmed, "still waiting...") {
+			continue
+		}
+		meaningful = append(meaningful, line)
+	}
+	if len(meaningful) == 0 {
+		fmt.Println("      --- container logs ---")
+		fmt.Println("      (only health-check output, no useful logs)")
+		fmt.Println("      --- end logs ---")
+		return
+	}
+	if len(meaningful) > n {
+		meaningful = meaningful[len(meaningful)-n:]
+	}
+	fmt.Printf("      --- container logs (last %d lines) ---\n", len(meaningful))
+	for _, line := range meaningful {
+		fmt.Printf("      %s\n", line)
+	}
+	fmt.Println("      --- end logs ---")
+}
+
 // showLogTail prints the last n lines of a log file inline so the user/agent
 // can see what went wrong without manually opening the file.
 func showLogTail(path string, n int) {
@@ -602,6 +636,10 @@ func suggestFixesFromContent(content string) {
 		{
 			"Model type",
 			"The installed mlx-lm version doesn't support this model architecture.\n      Fix: run 'a2go doctor' to upgrade to the latest version.",
+		},
+		{
+			"unknown model architecture",
+			"The llama.cpp build in the Docker image doesn't support this model architecture yet.\n      Fix: run 'a2go doctor' to pull the latest image.",
 		},
 		{
 			"unknown model",
