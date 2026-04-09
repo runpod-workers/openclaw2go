@@ -1,5 +1,11 @@
 # openclaw2go
 
+## 0.14.3
+
+### Patch Changes
+
+- 234abe2: add MIT license
+
 ## 0.14.2
 
 ### Patch Changes
