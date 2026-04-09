@@ -23,6 +23,7 @@ import (
 	"github.com/runpod-labs/a2go/a2go/internal/process"
 	"github.com/runpod-labs/a2go/a2go/internal/services"
 	"github.com/runpod-labs/a2go/a2go/internal/ui"
+	"github.com/runpod-labs/a2go/a2go/internal/updatecheck"
 	"github.com/runpod-labs/a2go/a2go/internal/venv"
 )
 
@@ -114,6 +115,9 @@ func resolveConfig() (*config.Config, error) {
 }
 
 func execRun(cmd *cobra.Command, args []string) error {
+	// Non-blocking update check (cached, once per day)
+	updatecheck.Run(Version)
+
 	cfg, err := resolveConfig()
 	if err != nil {
 		return err
@@ -254,6 +258,9 @@ func execRunDocker(cfg *config.Config) error {
 	// Ready banner
 	ui.Banner(fmt.Sprintf("agent2go — Ready! (%s)", cfg.Agent))
 	fmt.Println()
+	if cfg.Agent == "hermes" {
+		fmt.Println("  Chat:    hermes chat              (start chatting)")
+	}
 	fmt.Printf("  LLM:     http://localhost:8000  (%s)\n", modelName)
 	fmt.Println("  Web:     http://localhost:8080")
 	fmt.Printf("  Gateway: http://localhost:%d  (%s)\n", gwPort, cfg.Agent)
@@ -270,6 +277,7 @@ func execRunDocker(cfg *config.Config) error {
 // This lets us fast-fail before starting a Docker container or MLX server instead
 // of waiting through a long health-check timeout for an invalid model.
 // When allowedEngines is non-nil, only models with a matching engine are accepted.
+// It also populates ContextLength and MaxOutputTokens from catalog defaults if not already set.
 func validateModels(cfg *config.Config, allowedEngines map[string]bool) error {
 	data, err := catalog.Fetch(catalogURL, 10*time.Second)
 	if err != nil {
@@ -281,11 +289,16 @@ func validateModels(cfg *config.Config, allowedEngines map[string]bool) error {
 		return nil
 	}
 	repos := make(map[string]bool, len(cat.Models))
+	defaults := make(map[string]*catalogDefaults, len(cat.Models))
 	for _, m := range cat.Models {
 		if allowedEngines != nil && !allowedEngines[m.Engine] {
 			continue
 		}
-		repos[strings.ToLower(m.Repo)] = true
+		key := strings.ToLower(m.Repo)
+		repos[key] = true
+		if m.Defaults != nil {
+			defaults[key] = m.Defaults
+		}
 	}
 
 	osHint := ""
@@ -304,6 +317,16 @@ func validateModels(cfg *config.Config, allowedEngines map[string]bool) error {
 	if cfg.LLM != nil {
 		if err := check("llm", cfg.LLM.Model); err != nil {
 			return err
+		}
+		// Populate context length and max output tokens from catalog if not set by user
+		slug := strings.ToLower(config.ModelSlug(cfg.LLM.Model))
+		if d, ok := defaults[slug]; ok {
+			if cfg.ContextLength == nil && d.ContextLength != nil {
+				cfg.ContextLength = d.ContextLength
+			}
+			if cfg.MaxOutputTokens == nil && d.MaxOutputTokens != nil {
+				cfg.MaxOutputTokens = d.MaxOutputTokens
+			}
 		}
 	}
 	if cfg.Image != nil && cfg.Image.Model != "" {
@@ -337,6 +360,9 @@ func buildDockerConfigJSON(cfg *config.Config) string {
 	}
 	if cfg.ContextLength != nil {
 		m["contextLength"] = *cfg.ContextLength
+	}
+	if cfg.MaxOutputTokens != nil {
+		m["maxOutputTokens"] = *cfg.MaxOutputTokens
 	}
 	data, _ := json.Marshal(m)
 	return string(data)
@@ -431,6 +457,11 @@ func execRunMlx(cfg *config.Config) error {
 		audioModel = config.ModelSlug(cfg.Audio.Model)
 	}
 
+	// Pre-download model to avoid semaphore leak crash during server startup
+	if err := services.PreDownloadModel(llmModel); err != nil {
+		return err
+	}
+
 	// Start LLM
 	llmPid, err := services.StartLLM(llmModel)
 	if err != nil {
@@ -497,7 +528,7 @@ func execRunMlx(cfg *config.Config) error {
 	case "openclaw":
 		ui.Info("generating openclaw config...")
 		hasImage := cfg.Image != nil && cfg.Image.Model != ""
-		if err := openclaw.GenerateConfig(cfg.LLM.Model, cfg.GetContextLength(), cfg.GetAuthToken(), hasImage); err != nil {
+		if err := openclaw.GenerateConfig(cfg.LLM.Model, cfg.GetContextLength(), cfg.GetMaxOutputTokens(), cfg.GetAuthToken(), hasImage); err != nil {
 			return fmt.Errorf("failed to generate openclaw.json: %w", err)
 		}
 		ui.Ok(paths.OpenClawState() + "/openclaw.json")
@@ -510,7 +541,7 @@ func execRunMlx(cfg *config.Config) error {
 
 	case "hermes":
 		ui.Info("generating hermes config...")
-		if err := hermes.GenerateConfig(cfg.LLM.Model, cfg.GetContextLength(), cfg.GetAuthToken()); err != nil {
+		if err := hermes.GenerateConfig(cfg.LLM.Model, cfg.GetContextLength(), cfg.GetMaxOutputTokens(), cfg.GetAuthToken()); err != nil {
 			return fmt.Errorf("failed to generate hermes config: %w", err)
 		}
 		ui.Ok(paths.HermesState() + "/config.yaml")
@@ -531,6 +562,9 @@ func execRunMlx(cfg *config.Config) error {
 	// Ready banner
 	ui.Banner(fmt.Sprintf("agent2go — Ready! (%s)", cfg.Agent))
 	fmt.Println()
+	if cfg.Agent == "hermes" {
+		fmt.Println("  Chat:    hermes chat              (start chatting)")
+	}
 	fmt.Printf("  API:     http://localhost:8080  (%s)\n", modelName)
 	fmt.Printf("  Gateway: http://localhost:%d  (%s)\n", mlxGwSvc.Port, cfg.Agent)
 	fmt.Println()

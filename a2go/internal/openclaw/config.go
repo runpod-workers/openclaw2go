@@ -80,7 +80,7 @@ type enabled struct {
 	Enabled bool `json:"enabled"`
 }
 
-func GenerateConfig(llmModelName string, contextWindow int, authToken string, hasImage bool) error {
+func GenerateConfig(llmModelName string, contextWindow int, maxOutputTokens int, authToken string, hasImage bool) error {
 	ctxTokens := contextWindow
 	if ctxTokens > 135000 {
 		ctxTokens = 135000
@@ -115,7 +115,7 @@ func GenerateConfig(llmModelName string, contextWindow int, authToken string, ha
 						ID:            modelID,
 						Name:          modelID,
 						ContextWindow: contextWindow,
-						MaxTokens:     8192,
+						MaxTokens:     maxOutputTokens,
 						Reasoning:     false,
 						Input:         []string{"text"},
 						Cost:          cost{},

@@ -14,13 +14,34 @@ func Exists() bool {
 	return err == nil
 }
 
+// preferredPython returns a list of Python executables to try, in order.
+// Python 3.11 is preferred because 3.14 has multiprocessing/semaphore bugs
+// that crash the MLX LLM server during model download.
+var preferredPython = []string{
+	"python3.11",
+	"python3.12",
+	"python3.13",
+	"python3",
+}
+
+// FindPython returns the first available Python executable from the preferred list.
+func FindPython() string {
+	for _, py := range preferredPython {
+		if p, err := exec.LookPath(py); err == nil {
+			return p
+		}
+	}
+	return "python3"
+}
+
 func Create() error {
 	if Exists() {
 		ui.Ok("venv already exists")
 		return nil
 	}
-	ui.Info("creating python venv...")
-	cmd := exec.Command("python3", "-m", "venv", paths.Venv())
+	python := FindPython()
+	ui.Info(fmt.Sprintf("creating python venv (%s)...", python))
+	cmd := exec.Command(python, "-m", "venv", paths.Venv())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

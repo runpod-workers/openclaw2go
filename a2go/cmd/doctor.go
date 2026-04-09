@@ -20,6 +20,15 @@ import (
 
 const dockerImage = "runpod/a2go:latest"
 
+// isInteractive checks if stdin is a terminal (TTY).
+func isInteractive() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Check prerequisites and install dependencies",
@@ -177,9 +186,16 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	// Step 7: Install Hermes
 	ui.Step(7, "Installing Hermes")
 	if _, err := exec.LookPath("hermes"); err != nil {
+		// Skip the interactive setup wizard in non-interactive shells (no TTY).
+		// The hermes install script's setup wizard reads from /dev/tty which fails
+		// in CI, Docker, and AI coding assistants. Setting HERMES_SKIP_WIZARD=1
+		// tells it to use defaults. The install itself works fine without a TTY.
 		hermesInstall := exec.Command("bash", "-c", "curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash")
 		hermesInstall.Stdout = os.Stdout
 		hermesInstall.Stderr = os.Stderr
+		if !isInteractive() {
+			hermesInstall.Env = append(os.Environ(), "HERMES_SKIP_WIZARD=1", "NONINTERACTIVE=1")
+		}
 		if err := hermesInstall.Run(); err != nil {
 			fmt.Println("      WARNING: hermes install failed — hermes agent will not be available")
 			fmt.Printf("      %v\n", err)

@@ -23,9 +23,44 @@ func hermesAPIKey(token string) string {
 	return token
 }
 
+// SyncSkills copies a2go skills into the hermes skills directory so hermes can discover them.
+// Creates symlinks from ~/.hermes/skills/a2go/<skill-name> → ~/.a2go/skills/<skill-name>.
+func SyncSkills() error {
+	srcDir := paths.Skills()
+	dstDir := filepath.Join(paths.HermesState(), "skills", "a2go")
+
+	if err := os.MkdirAll(dstDir, 0755); err != nil {
+		return fmt.Errorf("failed to create hermes a2go skills dir: %w", err)
+	}
+
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		// No a2go skills installed yet — not an error
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		src := filepath.Join(srcDir, e.Name())
+		dst := filepath.Join(dstDir, e.Name())
+
+		// Remove existing symlink or dir before creating new one
+		os.Remove(dst)
+		if err := os.Symlink(src, dst); err != nil {
+			return fmt.Errorf("failed to symlink skill %s: %w", e.Name(), err)
+		}
+	}
+	return nil
+}
+
 // GenerateConfig writes ~/.hermes/config.yaml and ~/.hermes/.env
 // pointing at the local LLM server.
-func GenerateConfig(llmModelName string, contextWindow int, authToken string) error {
+func GenerateConfig(llmModelName string, contextWindow int, maxOutputTokens int, authToken string) error {
 	dir := paths.HermesState()
 
 	// Create required directories
@@ -33,6 +68,11 @@ func GenerateConfig(llmModelName string, contextWindow int, authToken string) er
 		if err := os.MkdirAll(filepath.Join(dir, sub), 0755); err != nil {
 			return fmt.Errorf("failed to create %s: %w", sub, err)
 		}
+	}
+
+	// Sync a2go skills into hermes skills directory
+	if err := SyncSkills(); err != nil {
+		return fmt.Errorf("failed to sync skills: %w", err)
 	}
 
 	// Model ID: strip :quant suffix but keep org/repo format
@@ -51,13 +91,14 @@ func GenerateConfig(llmModelName string, contextWindow int, authToken string) er
   base_url: http://localhost:8000/v1
   api_key: %s
   context_length: %d
+  max_tokens: %d
 memory:
   memory_enabled: true
   user_profile_enabled: true
 terminal:
   backend: local
   persistent_shell: true
-`, modelID, apiKey, contextWindow)
+`, modelID, apiKey, contextWindow, maxOutputTokens)
 
 	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(configYAML), 0600); err != nil {
 		return fmt.Errorf("failed to write config.yaml: %w", err)
