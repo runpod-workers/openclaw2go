@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="media/a2go_logo_nobg.png" alt="a2go logo" width="200">
+</p>
+
 # agent2go
 
 a2go helps you run open-source AI models on your own hardware — locally, on a cloud GPU, or on a Mac.
