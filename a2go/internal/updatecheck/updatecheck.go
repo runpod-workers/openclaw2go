@@ -3,6 +3,7 @@ package updatecheck
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -151,44 +152,72 @@ func checkHermesBehind() int {
 }
 
 // checkPipOutdated checks if key Python packages have newer versions available.
+// Uses `pip show` (local, instant) for the installed version and a quick PyPI
+// JSON API call for the latest version — much faster than `pip list --outdated`
+// which queries PyPI for every installed package.
 var trackedPackages = []string{"mlx-lm", "mlx-audio", "mflux"}
 
 func checkPipOutdated() []pipState {
-	pip := paths.VenvPip()
-	if _, err := os.Stat(pip); err != nil {
+	python := paths.VenvPython()
+	if _, err := os.Stat(python); err != nil {
 		return nil
-	}
-
-	out, err := exec.Command(pip, "list", "--outdated", "--format=json").Output()
-	if err != nil {
-		return nil
-	}
-
-	var allPkgs []struct {
-		Name      string `json:"name"`
-		Version   string `json:"version"`
-		Latest    string `json:"latest_version"`
-	}
-	if err := json.Unmarshal(out, &allPkgs); err != nil {
-		return nil
-	}
-
-	tracked := make(map[string]bool, len(trackedPackages))
-	for _, p := range trackedPackages {
-		tracked[strings.ToLower(p)] = true
 	}
 
 	var outdated []pipState
-	for _, p := range allPkgs {
-		if tracked[strings.ToLower(p.Name)] {
+	for _, pkg := range trackedPackages {
+		installed := pipShowVersion(python, pkg)
+		if installed == "" {
+			continue
+		}
+		latest := pypiLatestVersion(pkg)
+		if latest == "" || latest == installed {
+			continue
+		}
+		if selfupdate.IsNewer(installed, latest) {
 			outdated = append(outdated, pipState{
-				Name:      p.Name,
-				Installed: p.Version,
-				Latest:    p.Latest,
+				Name:      pkg,
+				Installed: installed,
+				Latest:    latest,
 			})
 		}
 	}
 	return outdated
+}
+
+// pipShowVersion returns the installed version of a package via `pip show` (local, instant).
+func pipShowVersion(python, pkg string) string {
+	out, err := exec.Command(python, "-m", "pip", "show", pkg).Output()
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.HasPrefix(line, "Version: ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "Version: "))
+		}
+	}
+	return ""
+}
+
+// pypiLatestVersion fetches the latest version of a package from PyPI JSON API.
+func pypiLatestVersion(pkg string) string {
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(fmt.Sprintf("https://pypi.org/pypi/%s/json", pkg))
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return ""
+	}
+	var data struct {
+		Info struct {
+			Version string `json:"version"`
+		} `json:"info"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return ""
+	}
+	return data.Info.Version
 }
 
 func printHints(currentVersion string, state *checkState) {
