@@ -33,6 +33,7 @@ Key fields to get right:
 - `group`: shared identifier across GGUF/MLX variants (e.g. `qwen35-9b`)
 - `family`: broader family (e.g. `qwen35`)
 - `catalogKey`: same as `group` unless the family has models that need separate catalog rows
+- `size`: parameter count string (e.g. `"754B"`, `"27B"`, `"1T"`) — required for UI display
 - `vram.model`: model weight size in MB (check HuggingFace file sizes)
 - `vram.overhead`: compute graph buffers (1.5-3GB for large models, 0 for MLX)
 - `kvCacheMbPer1kTokens`: KV cache rate. **MLX rate must be ~1.88x the GGUF rate** (MLX uses fp16, GGUF uses q8_0)
@@ -54,9 +55,7 @@ cd site && npx tsx scripts/validate.ts
 
 Fix any errors. Warnings about MLX/GGUF KV ratio should be investigated.
 
-## Step 4: Build a Test Image
-
-Push your branch and let CI build a Docker image with the branch tag:
+## Step 4: Commit and Push
 
 ```bash
 git add registry/models/
@@ -64,84 +63,105 @@ git commit -m "feat: add {model-name} model configs"
 git push origin {branch-name}
 ```
 
-The CI builds images tagged as `runpod/a2go:{branch-name}` (slashes/underscores become hyphens, lowercased).
-
 ## Step 5: Test on Runpod
 
-Use the `/runpodctl` skill to deploy a Runpod GPU pod with the branch-tagged image. Test on **every supported GPU where the model fits** — at minimum RTX 4090, RTX 5090, and RTX 3090.
+Use the `/runpodctl` skill to deploy a Runpod GPU pod using `A2GO_CONFIG` — the same way any user would deploy a model.
 
-**CRITICAL: NEVER delete or stop a pod to "fix" something.** Pods take a long time to provision. Always fix issues on the running pod:
-- If the engine doesn't support a model architecture, **build from source on the pod** (install `cmake cuda-nvcc-12-8 cuda-cudart-dev-12-8 libcublas-dev-12-8`, clone the repo, build with `-DGGML_CUDA=ON -DBUILD_SHARED_LIBS=ON`, run the freshly built binary).
-- To free VRAM from the default model: `kill -STOP` the entrypoint bash process first (freezes it, prevents container exit), then kill `llama-server`. Run test servers on a different port (e.g., 8100).
+### Creating the test pod
+
+Use `A2GO_CONFIG` to specify the model. The entrypoint resolves the model from the registry, downloads it, starts llama-server, starts the agent gateway, and starts any additional services — all automatically.
+
+```bash
+runpodctl pod create \
+  --name "{model-name}-test" \
+  --gpu-id "{gpu-id}" \
+  --gpu-count {count} \
+  --image "runpod/a2go:latest" \
+  --container-disk-in-gb {size} \
+  --ports "8000/http,8080/http,8642/http,18789/http,22/tcp" \
+  --env '{"A2GO_CONFIG":"{\"agent\":\"hermes\",\"llm\":\"{repo}:{bits}bit\"}","A2GO_AUTH_TOKEN":"test123","HF_TOKEN":"{{ RUNPOD_SECRET_HF_TOKEN }}"}'
+```
+
+**Key points:**
+- `A2GO_CONFIG` takes JSON with an `agent` field (required) and role fields like `llm`, `image`, etc.
+- Model names use HuggingFace repo format: `"unsloth/GLM-5.1-GGUF:1bit"`
+- The entrypoint handles everything: registry resolution, download, server startup, Hermes/OpenClaw
+- Use **container disk** (not network volumes) for large models (>50GB) — network volumes cause mmap hangs
+- For multi-role testing (LLM + image): `{"agent":"hermes","llm":"{repo}:{bits}bit","image":"Disty0/FLUX.2-klein-4B-SDNQ-4bit-dynamic"}`
+- Test on **every supported GPU where the model fits**
+
+**Do NOT manually start servers, freeze entrypoints, or inject configs via SSH.** Let the entrypoint handle it.
 
 ### 5a: Test through the LLM API (port 8000)
+
+Wait for the model to finish downloading and loading. Check with:
+```bash
+curl http://localhost:8000/health
+```
 
 1. **Basic chat completion** — simple factual question:
    ```bash
    curl http://localhost:8000/v1/chat/completions \
      -H "Content-Type: application/json" \
+     -H "Authorization: Bearer {api-key}" \
      -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "What is the capital of France?"}], "max_tokens": 100}'
    ```
 
-2. **Tool/function calling** — run the test suite:
-   ```bash
-   bash tests/test-tool-calling.sh
-   ```
-   All tests must pass. If they fail, the model may not support tool calling or needs a different tool call parser.
-
-3. **Reasoning/thinking mode** (if supported) — verify `reasoning_content` is populated:
+2. **Tool/function calling**:
    ```bash
    curl http://localhost:8000/v1/chat/completions \
      -H "Content-Type: application/json" \
-     -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "How many r'\''s are in strawberry? Think step by step."}], "max_tokens": 512}'
+     -H "Authorization: Bearer {api-key}" \
+     -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "What is the weather in Berlin?"}], "tools": [{"type": "function", "function": {"name": "get_weather", "description": "Get weather for a location", "parameters": {"type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"]}}}], "max_tokens": 256}'
+   ```
+
+3. **Multi-turn with tool results**:
+   ```bash
+   curl http://localhost:8000/v1/chat/completions \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer {api-key}" \
+     -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "What is the weather in Berlin?"}, {"role": "assistant", "content": null, "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "get_weather", "arguments": "{\"location\": \"Berlin\"}"}}]}, {"role": "tool", "tool_call_id": "call_1", "content": "{\"temp\": 18, \"condition\": \"cloudy\"}"}], "max_tokens": 256}'
+   ```
+
+4. **Reasoning/thinking mode** (if supported) — verify `reasoning_content` is populated:
+   ```bash
+   curl http://localhost:8000/v1/chat/completions \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer {api-key}" \
+     -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "How many rs are in strawberry? Think step by step."}], "max_tokens": 512}'
    ```
 
 ### 5b: Test through Hermes gateway (port 8642)
 
-Hermes is the agent framework that sits on top of the LLM. It must work correctly for agent use cases.
+Hermes is the agent framework. It manages tools internally (browser, terminal, search, etc.).
 
-1. **Basic Hermes chat** — verify the gateway responds:
+1. **Basic Hermes chat** — verify the gateway responds and lists tools:
    ```bash
    curl http://localhost:8642/v1/chat/completions \
      -H "Content-Type: application/json" \
+     -H "Authorization: Bearer {auth-token}" \
      -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "Hello, what tools do you have available?"}], "max_tokens": 256}'
    ```
 
-2. **Hermes tool calling** — Hermes uses the `hermes` tool call parser. Verify tool calls work through the gateway:
+2. **Hermes agentic tool use** — ask something that requires tools. Hermes will use its built-in tools (browser, search) to resolve the query end-to-end:
    ```bash
    curl http://localhost:8642/v1/chat/completions \
      -H "Content-Type: application/json" \
-     -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "What is the weather in Berlin?"}], "tools": [{"type": "function", "function": {"name": "get_weather", "description": "Get weather for a location", "parameters": {"type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"]}}}], "max_tokens": 256}'
+     -H "Authorization: Bearer {auth-token}" \
+     -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "What is the weather in Berlin?"}], "max_tokens": 256}'
    ```
 
-3. **Hermes multi-turn with tool results** — verify the agent can incorporate tool results:
-   ```bash
-   curl http://localhost:8642/v1/chat/completions \
-     -H "Content-Type: application/json" \
-     -d '{"model": "{served-as}", "messages": [{"role": "user", "content": "What is the weather in Berlin?"}, {"role": "assistant", "content": null, "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "get_weather", "arguments": "{\"location\": \"Berlin\"}"}}]}, {"role": "tool", "tool_call_id": "call_1", "content": "{\"temp\": 18, \"condition\": \"cloudy\"}"}], "max_tokens": 256}'
-   ```
+### 5c: Test the web UI with `/agent-browser`
 
-### 5c: Test through OpenClaw gateway (port 18789)
+If the pod was deployed with `"agent":"openclaw"`, OpenClaw serves a web UI on port 18789. Use the `/agent-browser` skill to test end-to-end:
 
-1. **Device pairing:**
-   ```bash
-   OPENCLAW_GATEWAY_TOKEN=<token> openclaw devices list
-   openclaw devices approve <request-id>
-   ```
+1. **Open the agent UI** — navigate to `https://{pod-id}-18789.proxy.runpod.net`
+2. **Device pairing** — approve the device when prompted
+3. **Send a chat message** — verify the agent responds correctly
+4. **Test tool calling in the UI** — ask the agent to perform a task that requires tools
+5. **Test image generation** (if image service is running) — ask the agent to generate an image
 
-2. **Full flow** — verify profile resolution, model download, server start, and gateway connectivity all work end-to-end.
-
-### 5d: Test the OpenClaw web UI with `/agent-browser`
-
-OpenClaw has a web UI on port 8080. Hermes is API-only (no web UI). Use the `/agent-browser` skill to test the OpenClaw UI end-to-end:
-
-1. **Open the agent UI** — navigate to the pod's proxy URL on port 8080
-2. **Device pairing** — approve the device when prompted. Use `/agent-browser` to click through the pairing flow in the browser.
-3. **Send a chat message** — verify the agent responds correctly through the web UI
-4. **Test tool calling in the UI** — ask the agent to perform a task that requires tools and verify it works visually
-5. **Test image generation** (if image service is running) — ask the agent to generate an image and verify it renders in the UI
-
-### 5e: Record measurements
+### 5d: Record measurements
 
 For each GPU tested:
 
