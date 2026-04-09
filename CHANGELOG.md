@@ -1,5 +1,15 @@
 # openclaw2go
 
+## 0.13.4
+
+### Patch Changes
+
+- dbedc52: fix: mac audio requires explicit model, web proxy stt supports multipart
+
+  Mac audio server no longer starts without an explicit model (it can't
+  serve TTS/STT without one). Web proxy STT endpoint now accepts multipart
+  file uploads matching the Docker media server and OpenAI API convention.
+
 ## 0.13.3
 
 ### Patch Changes
