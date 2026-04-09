@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/runpod-labs/a2go/a2go/internal/ui"
+	"github.com/runpod-labs/a2go/a2go/internal/venv"
 )
 
 type CheckResult struct {
@@ -61,19 +62,9 @@ func PrintResults(results []CheckResult) {
 }
 
 func checkPython() CheckResult {
-	out, err := exec.Command("python3", "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Output()
+	ver, err := venv.CheckPythonVersion()
 	if err != nil {
-		return CheckResult{"python3", false, "python3 not found — install Python 3.10+ from https://www.python.org"}
-	}
-	ver := strings.TrimSpace(string(out))
-	parts := strings.SplitN(ver, ".", 2)
-	if len(parts) != 2 {
-		return CheckResult{"python3", false, fmt.Sprintf("could not parse python version: %s", ver)}
-	}
-	major, _ := strconv.Atoi(parts[0])
-	minor, _ := strconv.Atoi(parts[1])
-	if major < 3 || (major == 3 && minor < 10) {
-		return CheckResult{"python3", false, fmt.Sprintf("python 3.10+ required (found %s)", ver)}
+		return CheckResult{"python3", false, err.Error()}
 	}
 	return CheckResult{"python3", true, fmt.Sprintf("python3 %s", ver)}
 }

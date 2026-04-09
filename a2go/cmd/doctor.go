@@ -20,6 +20,15 @@ import (
 
 const dockerImage = "runpod/a2go:latest"
 
+// isInteractive checks if stdin is a terminal (TTY).
+func isInteractive() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Check prerequisites and install dependencies",
@@ -118,12 +127,15 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	if err := venv.Create(); err != nil {
 		return fmt.Errorf("failed to create venv: %w", err)
 	}
-	// Install mlx-audio/mflux first, then upgrade mlx-lm last.
-	// mlx-audio can pin an older mlx-lm (e.g. ==0.31.1) which would
-	// downgrade it if installed after. Installing mlx-lm last with
-	// --upgrade ensures we always get the latest version.
-	if err := venv.PipInstall("mlx-audio", "mflux", "uvicorn", "fastapi", "python-multipart"); err != nil {
+	// Install mlx-audio first (it pins mlx-lm==0.31.1), then upgrade
+	// mlx-lm and mflux individually to get their latest versions.
+	// Installing them in the batch with mlx-audio prevents pip from
+	// resolving to the latest due to mlx-audio's pin.
+	if err := venv.PipInstall("mlx-audio", "uvicorn", "fastapi", "python-multipart"); err != nil {
 		return fmt.Errorf("pip install failed: %w", err)
+	}
+	if err := venv.PipInstall("mflux"); err != nil {
+		return fmt.Errorf("pip install mflux failed: %w", err)
 	}
 	if err := venv.PipInstall("mlx-lm"); err != nil {
 		return fmt.Errorf("pip install mlx-lm failed: %w", err)
@@ -174,12 +186,19 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	}
 	ui.Ok("openclaw installed")
 
-	// Step 7: Install Hermes
+	// Step 7: Install or update Hermes
 	ui.Step(7, "Installing Hermes")
 	if _, err := exec.LookPath("hermes"); err != nil {
+		// Fresh install — skip the interactive setup wizard in non-interactive shells.
+		// The hermes install script's setup wizard reads from /dev/tty which fails
+		// in CI, Docker, and AI coding assistants. Setting HERMES_SKIP_WIZARD=1
+		// tells it to use defaults. The install itself works fine without a TTY.
 		hermesInstall := exec.Command("bash", "-c", "curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash")
 		hermesInstall.Stdout = os.Stdout
 		hermesInstall.Stderr = os.Stderr
+		if !isInteractive() {
+			hermesInstall.Env = append(os.Environ(), "HERMES_SKIP_WIZARD=1", "NONINTERACTIVE=1")
+		}
 		if err := hermesInstall.Run(); err != nil {
 			fmt.Println("      WARNING: hermes install failed — hermes agent will not be available")
 			fmt.Printf("      %v\n", err)
@@ -187,7 +206,17 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 			ui.Ok("hermes installed")
 		}
 	} else {
-		ui.Ok("hermes already installed")
+		// Already installed — update to latest
+		ui.Info("hermes found, updating...")
+		hermesUpdate := exec.Command("hermes", "update")
+		hermesUpdate.Stdout = os.Stdout
+		hermesUpdate.Stderr = os.Stderr
+		if err := hermesUpdate.Run(); err != nil {
+			fmt.Println("      WARNING: hermes update failed — continuing with current version")
+			fmt.Printf("      %v\n", err)
+		} else {
+			ui.Ok("hermes updated")
+		}
 	}
 
 	// Done

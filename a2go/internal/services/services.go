@@ -90,12 +90,29 @@ func startProcess(svc Service, name string, args []string, extraEnv ...string) (
 	return pid, nil
 }
 
-func StartLLM(model string) (int, error) {
+// PreDownloadModel downloads a HuggingFace model before starting the server.
+// This avoids the multiprocessing semaphore leak that crashes mlx_lm.server
+// when it tries to download models internally.
+func PreDownloadModel(model string) error {
+	ui.Info(fmt.Sprintf("checking model cache (%s)...", model))
+	cmd := exec.Command(paths.VenvPython(), "-c", fmt.Sprintf(
+		`from huggingface_hub import snapshot_download; snapshot_download("%s")`, model))
+	cmd.Env = append(venvEnv(), "HF_HUB_DISABLE_PROGRESS_BARS=0")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to download model %s: %w", model, err)
+	}
+	return nil
+}
+
+func StartLLM(model string, contextLength int) (int, error) {
 	return startProcess(LLM, paths.VenvPython(), []string{
-		"-m", "mlx_lm.server",
+		"-m", "mlx_lm", "server",
 		"--model", model,
 		"--host", "0.0.0.0",
 		"--port", "8000",
+		"--max-tokens", fmt.Sprintf("%d", contextLength),
 	})
 }
 

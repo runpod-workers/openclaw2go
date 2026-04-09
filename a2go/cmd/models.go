@@ -62,7 +62,8 @@ type catalogVRAM struct {
 }
 
 type catalogDefaults struct {
-	ContextLength *int `json:"contextLength"`
+	ContextLength   *int `json:"contextLength"`
+	MaxOutputTokens *int `json:"maxOutputTokens"`
 }
 
 var mlxEngines = map[string]bool{

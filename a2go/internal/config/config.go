@@ -80,12 +80,13 @@ func ValidateAgent(agent string) error {
 }
 
 type Config struct {
-	Agent         string         `json:"agent,omitempty"`
-	LLM           *ServiceConfig `json:"llm,omitempty"`
-	Image         *ServiceConfig `json:"image,omitempty"`
-	Audio         *AudioConfig   `json:"audio,omitempty"`
-	ContextLength *int           `json:"contextLength,omitempty"`
-	AuthToken     string         `json:"authToken,omitempty"`
+	Agent           string         `json:"agent,omitempty"`
+	LLM             *ServiceConfig `json:"llm,omitempty"`
+	Image           *ServiceConfig `json:"image,omitempty"`
+	Audio           *AudioConfig   `json:"audio,omitempty"`
+	ContextLength   *int           `json:"contextLength,omitempty"`
+	MaxOutputTokens *int           `json:"maxOutputTokens,omitempty"`
+	AuthToken       string         `json:"authToken,omitempty"`
 }
 
 func (c *Config) AudioEnabled() bool {
@@ -107,6 +108,22 @@ func (c *Config) GetContextLength() int {
 		return *c.ContextLength
 	}
 	return 32768
+}
+
+func (c *Config) GetMaxOutputTokens() int {
+	if c.MaxOutputTokens != nil {
+		return *c.MaxOutputTokens
+	}
+	// Default to contextLength/4, capped between 4096 and 32768
+	ctx := c.GetContextLength()
+	mot := ctx / 4
+	if mot < 4096 {
+		mot = 4096
+	}
+	if mot > 32768 {
+		mot = 32768
+	}
+	return mot
 }
 
 func Parse(raw string) (*Config, error) {

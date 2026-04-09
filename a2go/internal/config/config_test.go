@@ -95,6 +95,71 @@ func TestAudioEnabled_NilEnabled(t *testing.T) {
 	}
 }
 
+func TestGetMaxOutputTokens_Default(t *testing.T) {
+	cfg := &Config{}
+	// Default context is 32768, so maxOutputTokens = 32768/4 = 8192
+	got := cfg.GetMaxOutputTokens()
+	if got != 8192 {
+		t.Errorf("GetMaxOutputTokens() = %d, want 8192 (contextLength/4)", got)
+	}
+}
+
+func TestGetMaxOutputTokens_Explicit(t *testing.T) {
+	mot := 16384
+	cfg := &Config{MaxOutputTokens: &mot}
+	got := cfg.GetMaxOutputTokens()
+	if got != 16384 {
+		t.Errorf("GetMaxOutputTokens() = %d, want 16384", got)
+	}
+}
+
+func TestGetMaxOutputTokens_LargeContext(t *testing.T) {
+	ctx := 131072
+	cfg := &Config{ContextLength: &ctx}
+	got := cfg.GetMaxOutputTokens()
+	// 131072/4 = 32768, which is the cap
+	if got != 32768 {
+		t.Errorf("GetMaxOutputTokens() = %d, want 32768 (capped)", got)
+	}
+}
+
+func TestGetMaxOutputTokens_SmallContext(t *testing.T) {
+	ctx := 4096
+	cfg := &Config{ContextLength: &ctx}
+	got := cfg.GetMaxOutputTokens()
+	// 4096/4 = 1024, but minimum is 4096
+	if got != 4096 {
+		t.Errorf("GetMaxOutputTokens() = %d, want 4096 (floor)", got)
+	}
+}
+
+func TestGetMaxOutputTokens_VeryLargeContext(t *testing.T) {
+	ctx := 1000000
+	cfg := &Config{ContextLength: &ctx}
+	got := cfg.GetMaxOutputTokens()
+	// 1000000/4 = 250000, but capped at 32768
+	if got != 32768 {
+		t.Errorf("GetMaxOutputTokens() = %d, want 32768 (capped at max)", got)
+	}
+}
+
+func TestGetContextLength_Default(t *testing.T) {
+	cfg := &Config{}
+	got := cfg.GetContextLength()
+	if got != 32768 {
+		t.Errorf("GetContextLength() = %d, want 32768", got)
+	}
+}
+
+func TestGetContextLength_Explicit(t *testing.T) {
+	ctx := 131072
+	cfg := &Config{ContextLength: &ctx}
+	got := cfg.GetContextLength()
+	if got != 131072 {
+		t.Errorf("GetContextLength() = %d, want 131072", got)
+	}
+}
+
 func TestLoadLast_PreservesAgentForGatewayResolution(t *testing.T) {
 	setupTestDir(t)
 
