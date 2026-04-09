@@ -11,7 +11,7 @@
   "repo": "RunPod/FLUX.2-klein-4B-mflux-4bit",
   "vram": {
     "model": 4400,
-    "overhead": 9700
+    "overhead": 2800
   },
   "defaults": {
     "port": 8002
