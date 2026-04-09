@@ -13,8 +13,8 @@
   "files": [],
   "downloadDir": "",
   "vram": {
-    "model": 5600,
-    "overhead": 500
+    "model": 5300,
+    "overhead": 2500
   },
   "defaults": {
     "port": 8002
