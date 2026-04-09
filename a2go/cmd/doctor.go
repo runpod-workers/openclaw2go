@@ -183,10 +183,10 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	}
 	ui.Ok("openclaw installed")
 
-	// Step 7: Install Hermes
+	// Step 7: Install or update Hermes
 	ui.Step(7, "Installing Hermes")
 	if _, err := exec.LookPath("hermes"); err != nil {
-		// Skip the interactive setup wizard in non-interactive shells (no TTY).
+		// Fresh install — skip the interactive setup wizard in non-interactive shells.
 		// The hermes install script's setup wizard reads from /dev/tty which fails
 		// in CI, Docker, and AI coding assistants. Setting HERMES_SKIP_WIZARD=1
 		// tells it to use defaults. The install itself works fine without a TTY.
@@ -203,7 +203,17 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 			ui.Ok("hermes installed")
 		}
 	} else {
-		ui.Ok("hermes already installed")
+		// Already installed — update to latest
+		ui.Info("hermes found, updating...")
+		hermesUpdate := exec.Command("hermes", "update")
+		hermesUpdate.Stdout = os.Stdout
+		hermesUpdate.Stderr = os.Stderr
+		if err := hermesUpdate.Run(); err != nil {
+			fmt.Println("      WARNING: hermes update failed — continuing with current version")
+			fmt.Printf("      %v\n", err)
+		} else {
+			ui.Ok("hermes updated")
+		}
 	}
 
 	// Done
