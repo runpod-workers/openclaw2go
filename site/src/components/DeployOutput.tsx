@@ -21,7 +21,7 @@ interface CloudProvider {
 const CLOUD_PROVIDERS: CloudProvider[] = [
   {
     id: 'runpod',
-    name: 'RunPod',
+    name: 'Runpod',
     logo: 'logos/runpod.svg',
     color: '#5D29F0',
     templateUrl: 'https://console.runpod.io/hub/template/a2go?id=4hgezzzadd',
