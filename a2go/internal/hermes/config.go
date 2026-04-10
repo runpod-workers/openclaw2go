@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/runpod-labs/a2go/a2go/internal/agentskills"
 	"github.com/runpod-labs/a2go/a2go/internal/paths"
 )
 
@@ -23,37 +24,13 @@ func hermesAPIKey(token string) string {
 	return token
 }
 
-// SyncSkills copies a2go skills into the hermes skills directory so hermes can discover them.
-// Creates symlinks from ~/.hermes/skills/a2go/<skill-name> → ~/.a2go/skills/<skill-name>.
+// SyncSkills fully regenerates the hermes-managed a2go skill subtree from bundled assets.
 func SyncSkills() error {
-	srcDir := paths.Skills()
-	dstDir := filepath.Join(paths.HermesState(), "skills", "a2go")
-
-	if err := os.MkdirAll(dstDir, 0755); err != nil {
-		return fmt.Errorf("failed to create hermes a2go skills dir: %w", err)
+	if err := agentskills.Sync(paths.HermesSkills()); err != nil {
+		return fmt.Errorf("failed to sync bundled skills: %w", err)
 	}
-
-	entries, err := os.ReadDir(srcDir)
-	if err != nil {
-		// No a2go skills installed yet — not an error
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		src := filepath.Join(srcDir, e.Name())
-		dst := filepath.Join(dstDir, e.Name())
-
-		// Remove existing symlink or dir before creating new one
-		os.Remove(dst)
-		if err := os.Symlink(src, dst); err != nil {
-			return fmt.Errorf("failed to symlink skill %s: %w", e.Name(), err)
-		}
+	if err := agentskills.CleanupLegacyDir(paths.Skills()); err != nil {
+		return fmt.Errorf("failed to remove legacy skills dir: %w", err)
 	}
 	return nil
 }

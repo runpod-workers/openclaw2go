@@ -114,85 +114,99 @@ func TestGenerateConfig_CreatesDirectories(t *testing.T) {
 	}
 }
 
-func TestSyncSkills_NoSourceDir(t *testing.T) {
+func TestSyncSkills_WritesOnlyBundledSkills(t *testing.T) {
 	setupTestDirs(t)
-
-	// SyncSkills should not error when source dir doesn't exist
-	if err := SyncSkills(); err != nil {
-		t.Fatalf("SyncSkills with no source dir: %v", err)
-	}
-}
-
-func TestSyncSkills_CreatesSymlinks(t *testing.T) {
-	setupTestDirs(t)
-
-	// Create fake a2go skills
-	skillDir := filepath.Join(paths.Skills(), "a2go-image-generate")
-	os.MkdirAll(skillDir, 0755)
-	os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# test"), 0644)
-
-	skillDir2 := filepath.Join(paths.Skills(), "a2go-text-to-speech")
-	os.MkdirAll(skillDir2, 0755)
-	os.WriteFile(filepath.Join(skillDir2, "SKILL.md"), []byte("# test2"), 0644)
-
-	// Create hermes skills dir
-	os.MkdirAll(filepath.Join(paths.HermesState(), "skills"), 0755)
 
 	if err := SyncSkills(); err != nil {
 		t.Fatalf("SyncSkills: %v", err)
 	}
 
-	// Check symlinks exist
-	hermesA2goSkills := filepath.Join(paths.HermesState(), "skills", "a2go")
-	for _, skill := range []string{"a2go-image-generate", "a2go-text-to-speech"} {
-		link := filepath.Join(hermesA2goSkills, skill)
-		fi, err := os.Lstat(link)
-		if err != nil {
-			t.Errorf("symlink %s not created: %v", skill, err)
-			continue
-		}
-		if fi.Mode()&os.ModeSymlink == 0 {
-			t.Errorf("%s should be a symlink", skill)
-		}
-		// Verify the symlink target is readable
-		target, err := os.Readlink(link)
-		if err != nil {
-			t.Errorf("readlink %s: %v", skill, err)
-			continue
-		}
-		if !strings.Contains(target, skill) {
-			t.Errorf("symlink target %q should contain %q", target, skill)
-		}
-	}
-}
-
-func TestSyncSkills_UpdatesExistingSymlinks(t *testing.T) {
-	setupTestDirs(t)
-
-	// Create a2go skills
-	skillDir := filepath.Join(paths.Skills(), "a2go-image-generate")
-	os.MkdirAll(skillDir, 0755)
-
-	// Create hermes skills dir with an existing (possibly stale) symlink
-	hermesA2goSkills := filepath.Join(paths.HermesState(), "skills", "a2go")
-	os.MkdirAll(hermesA2goSkills, 0755)
-	staleLink := filepath.Join(hermesA2goSkills, "a2go-image-generate")
-	os.Symlink("/nonexistent", staleLink)
-
-	// SyncSkills should replace the stale symlink
-	if err := SyncSkills(); err != nil {
-		t.Fatalf("SyncSkills: %v", err)
+	hermesSkills := paths.HermesSkills()
+	expected := map[string]struct{}{
+		"a2go-image-generate": {},
+		"a2go-text-to-speech": {},
+		"a2go-speech-to-text": {},
 	}
 
-	target, err := os.Readlink(staleLink)
+	entries, err := os.ReadDir(hermesSkills)
 	if err != nil {
-		t.Fatalf("readlink: %v", err)
+		t.Fatalf("read hermes skills: %v", err)
 	}
-	if target == "/nonexistent" {
-		t.Error("symlink should have been updated from stale target")
+	if len(entries) != len(expected) {
+		t.Fatalf("got %d skills, want %d", len(entries), len(expected))
 	}
-	if target != skillDir {
-		t.Errorf("symlink target = %q, want %q", target, skillDir)
+
+	for _, entry := range entries {
+		if _, ok := expected[entry.Name()]; !ok {
+			t.Fatalf("unexpected skill copied: %s", entry.Name())
+		}
+		dir := filepath.Join(hermesSkills, entry.Name())
+		fi, err := os.Lstat(dir)
+		if err != nil {
+			t.Fatalf("stat %s: %v", entry.Name(), err)
+		}
+		if fi.Mode()&os.ModeSymlink != 0 {
+			t.Fatalf("%s should be a real directory", entry.Name())
+		}
+		data, err := os.ReadFile(filepath.Join(dir, "SKILL.md"))
+		if err != nil {
+			t.Fatalf("read %s/SKILL.md: %v", entry.Name(), err)
+		}
+		if !strings.Contains(string(data), "name: "+entry.Name()) {
+			t.Fatalf("unexpected bundled skill contents for %s", entry.Name())
+		}
+	}
+}
+
+func TestSyncSkills_CleansManagedDirAndLegacySkillsDir(t *testing.T) {
+	setupTestDirs(t)
+
+	legacySkill := filepath.Join(paths.Skills(), "image-generate")
+	if err := os.MkdirAll(legacySkill, 0755); err != nil {
+		t.Fatalf("mkdir legacy skill: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(legacySkill, "SKILL.md"), []byte("legacy"), 0644); err != nil {
+		t.Fatalf("write legacy skill: %v", err)
+	}
+
+	hermesSkills := paths.HermesSkills()
+	if err := os.MkdirAll(hermesSkills, 0755); err != nil {
+		t.Fatalf("mkdir hermes skills: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(hermesSkills, "random-file.txt"), []byte("junk"), 0644); err != nil {
+		t.Fatalf("write stale file: %v", err)
+	}
+	staleDir := filepath.Join(hermesSkills, "removed-skill")
+	if err := os.MkdirAll(staleDir, 0755); err != nil {
+		t.Fatalf("mkdir stale dir: %v", err)
+	}
+	staleLink := filepath.Join(hermesSkills, "a2go-image-generate")
+	if err := os.Symlink("/nonexistent", staleLink); err != nil {
+		t.Fatalf("create stale symlink: %v", err)
+	}
+
+	if err := SyncSkills(); err != nil {
+		t.Fatalf("SyncSkills: %v", err)
+	}
+
+	if _, err := os.Stat(paths.Skills()); !os.IsNotExist(err) {
+		t.Fatalf("legacy ~/.a2go/skills should be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(hermesSkills, "random-file.txt")); !os.IsNotExist(err) {
+		t.Fatalf("stale managed file should be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(staleDir); !os.IsNotExist(err) {
+		t.Fatalf("stale managed skill should be removed, got err=%v", err)
+	}
+	fi, err := os.Lstat(staleLink)
+	if err != nil {
+		t.Fatalf("stat regenerated skill: %v", err)
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		t.Fatal("regenerated bundled skill should not be a symlink")
+	}
+	if !fi.IsDir() {
+		t.Fatal("regenerated bundled skill should be a directory")
 	}
 }
 

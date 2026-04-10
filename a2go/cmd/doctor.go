@@ -159,22 +159,13 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	}
 	ui.Ok("scripts installed to " + paths.Bin())
 
-	// Step 5: Download skills
-	ui.Step(5, "Installing skills")
-	skills := []struct {
-		remote string
-		local  string
-	}{
-		{"config/workspace/skills/a2go-image-generate/SKILL.md", filepath.Join(paths.SkillImageGenerate(), "SKILL.md")},
-		{"config/workspace/skills/a2go-text-to-speech/SKILL.md", filepath.Join(paths.SkillTextToSpeech(), "SKILL.md")},
-		{"config/workspace/skills/a2go-speech-to-text/SKILL.md", filepath.Join(paths.SkillSpeechToText(), "SKILL.md")},
+	// Step 5: Remove legacy local skill install. Skills are now bundled in the CLI
+	// and regenerated into agent-owned directories on each run.
+	ui.Step(5, "Cleaning legacy skill state")
+	if err := os.RemoveAll(paths.Skills()); err != nil {
+		return fmt.Errorf("remove legacy skills dir: %w", err)
 	}
-	for _, s := range skills {
-		if err := download.File(s.remote, s.local, false); err != nil {
-			return fmt.Errorf("download skill %s: %w", s.remote, err)
-		}
-	}
-	ui.Ok("skills installed")
+	ui.Ok("legacy ~/.a2go/skills removed")
 
 	// Step 6: Install OpenClaw
 	ui.Step(6, "Installing OpenClaw")
