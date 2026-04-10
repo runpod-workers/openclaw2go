@@ -2,13 +2,18 @@ Use open weight models (LLM, image, audio) with open source agents on GPU pods. 
 
 ## Quick Start
 
-### 1. Pick your models
+Just hit deploy — no configuration needed. a2go auto-detects your GPU and picks the best model that fits. Default passwords are `changeme` for both `A2GO_AUTH_TOKEN` and `A2GO_API_KEY`.
 
-Go to [a2go.run](https://a2go.run), select your GPU, and choose the models you want to run. The site shows what fits your VRAM and generates the configuration for you.
+Once the pod is running, open the agent gateway:
 
-### 2. Set the environment variables
+- **OpenClaw**: `https://<pod-id>-18789.proxy.runpod.net/?token=changeme`
+- **Hermes**: `https://<pod-id>-8642.proxy.runpod.net`
 
-When deploying this template, fill in these three environment variables:
+Replace `<pod-id>` with your pod ID from the Runpod dashboard.
+
+## Custom Configuration
+
+For production use or to pick specific models, set these environment variables before deploying:
 
 | Variable | What to put in | Why it's needed |
 |----------|---------------|-----------------|
@@ -23,19 +28,6 @@ Each agent supports additional environment variables for integrations like Teleg
 - [OpenClaw documentation](https://docs.openclaw.ai/getting-started)
 - [Hermes documentation](https://hermes-agent.nousresearch.com/docs)
 
-### 3. Deploy
-
-Hit deploy. The pod will automatically download your selected models and start all services. First boot takes a few minutes depending on model size — subsequent starts use the cached models on your volume.
-
-### 4. Access
-
-Once the pod is running, open the agent gateway:
-
-- **OpenClaw**: `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`
-- **Hermes**: `https://<pod-id>-8642.proxy.runpod.net`
-
-Replace `<pod-id>` with your pod ID (shown in the Runpod dashboard) and `<A2GO_AUTH_TOKEN>` with the password you set in step 2.
-
 ## Ports
 
 | Port | Protocol | Purpose |
@@ -47,10 +39,6 @@ Replace `<pod-id>` with your pod ID (shown in the Runpod dashboard) and `<A2GO_A
 | 22 | TCP | SSH — direct shell access to the pod |
 
 Only one gateway port is active depending on which agent you selected in `A2GO_CONFIG`.
-
-## Auto-Detect Mode
-
-Leave `A2GO_CONFIG` empty and a2go will automatically select the best model for your GPU based on available VRAM.
 
 ## GPU Compatibility
 
