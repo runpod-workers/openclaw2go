@@ -18,6 +18,11 @@ When deploying this template, fill in these three environment variables:
 
 Use [Runpod Secrets](https://docs.runpod.io/pods/templates/secrets) for `A2GO_AUTH_TOKEN` and `A2GO_API_KEY` to keep them out of your template config.
 
+Each agent supports additional environment variables for integrations like Telegram, Discord, and more. See the agent docs for the full list:
+
+- [OpenClaw documentation](https://docs.openclaw.ai/getting-started)
+- [Hermes documentation](https://hermes-agent.nousresearch.com/docs)
+
 ### 3. Deploy
 
 Hit deploy. The pod will automatically download your selected models and start all services. First boot takes a few minutes depending on model size — subsequent starts use the cached models on your volume.
