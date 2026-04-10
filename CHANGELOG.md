@@ -1,5 +1,25 @@
 # openclaw2go
 
+## 0.17.0
+
+### Minor Changes
+
+- d9d032d: feat: fully own and refresh managed agent skills
+
+  a2go now owns the canonical agent skill set it ships. Instead of loading runtime
+  skills from the mutable local `~/.a2go/skills` directory, the CLI bundles the a2go
+  skills and regenerates managed skill directories for Hermes and OpenClaw on run.
+
+  This also fixes Hermes skill discovery by replacing the old symlink-based flow and
+  ensures stale managed skill entries are removed during refresh.
+
+### Patch Changes
+
+- 457fefe: Update the `a2go` skill examples to remove the concrete remote model reference from
+  the quick start flow and point users to `a2go models` instead. This fixes the
+  Snyk `W012` finding on `skills/a2go/SKILL.md`.
+- a725684: Set default values for RunPod template environment variables
+
 ## 0.16.0
 
 ### Minor Changes
