@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/runpod-labs/a2go/a2go/internal/agentskills"
 	"github.com/runpod-labs/a2go/a2go/internal/paths"
 )
 
@@ -94,9 +95,16 @@ func GenerateConfig(llmModelName string, contextWindow int, maxOutputTokens int,
 	var skills interface{} = struct{}{}
 	var plugins interface{} = struct{}{}
 
+	if err := agentskills.Sync(paths.OpenClawSkills()); err != nil {
+		return err
+	}
+	if err := agentskills.CleanupLegacyDir(paths.Skills()); err != nil {
+		return err
+	}
+
 	if hasImage {
 		skills = skillsWithDirs{
-			Load: skillLoad{ExtraDirs: []string{"~/.a2go/skills"}},
+			Load: skillLoad{ExtraDirs: []string{paths.OpenClawSkills()}},
 			Entries: map[string]enabled{
 				"openai-image-gen": {Enabled: false},
 				"nano-banana-pro":  {Enabled: false},

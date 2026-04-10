@@ -81,6 +81,10 @@ func TestGenerateConfig_CapsContextTokens(t *testing.T) {
 func TestGenerateConfig_WithImage(t *testing.T) {
 	setupTestDirs(t)
 
+	if err := os.MkdirAll(filepath.Join(paths.Skills(), "junk"), 0755); err != nil {
+		t.Fatalf("mkdir legacy skill: %v", err)
+	}
+
 	err := GenerateConfig("test/model", 32768, 8192, "token", true)
 	if err != nil {
 		t.Fatalf("GenerateConfig: %v", err)
@@ -97,6 +101,15 @@ func TestGenerateConfig_WithImage(t *testing.T) {
 	}
 	if len(skills.Load.ExtraDirs) == 0 {
 		t.Error("skills should have extraDirs when image is enabled")
+	}
+	if got := skills.Load.ExtraDirs[0]; got != paths.OpenClawSkills() {
+		t.Fatalf("extraDirs[0] = %q, want %q", got, paths.OpenClawSkills())
+	}
+	if _, err := os.Stat(filepath.Join(paths.OpenClawSkills(), "a2go-image-generate", "SKILL.md")); err != nil {
+		t.Fatalf("managed openclaw skill missing: %v", err)
+	}
+	if _, err := os.Stat(paths.Skills()); !os.IsNotExist(err) {
+		t.Fatalf("legacy ~/.a2go/skills should be removed, got err=%v", err)
 	}
 }
 
