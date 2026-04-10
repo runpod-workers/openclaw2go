@@ -1,5 +1,18 @@
 # openclaw2go
 
+## 0.16.0
+
+### Minor Changes
+
+- f03bbba: Rename LLAMACPP_API_KEY to A2GO_API_KEY for engine-agnostic API authentication
+
+### Patch Changes
+
+- ffcc268: Slim down RunPod template README and add changeset package name gotcha to AGENTS.md
+- 451ebc2: feat(site): add cloud provider templates to deploy section
+
+  Add a templates row to the cloud deploy tab with a RunPod button linking to the official a2go template. Manual configuration (image, env vars, ports) remains below a divider as a fallback. Also adds a bottom border to the deploy tab bar and increases spacing between tabs and content.
+
 ## 0.15.1
 
 ### Patch Changes
