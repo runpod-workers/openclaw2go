@@ -32,6 +32,7 @@ This document exists for non-obvious, error-prone shortcomings in the codebase, 
 ## Changesets
 - Without a changeset file, merging to `main` will NOT produce a release — the workflow detects the existing version tag and skips.
 - **Always create a changeset** by running `npx changeset` before creating a PR.
+- **The package name is `"a2go"`** — not `"site"`, not the scope from the commit message. Changesets reference workspace package names from `package.json`, not directory names or conventional-commit scopes. Using the wrong name breaks the release workflow.
 
 ## CI/CD
 - `workflow_dispatch` only works from default branch — feature branch workflows can't be manually triggered until merged to main.

@@ -24,11 +24,14 @@ Hit deploy. The pod will automatically download your selected models and start a
 
 ### 4. Access
 
-Once the pod is running, open:
+Once the pod is running, open the agent gateway:
 
-`https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`
+- **OpenClaw**: `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`
+- **Hermes**: `https://<pod-id>-8642.proxy.runpod.net`
 
 Replace `<pod-id>` with your pod ID (shown in the Runpod dashboard) and `<A2GO_AUTH_TOKEN>` with the password you set in step 2.
+
+The media proxy (image gen, TTS, web UI) runs on port 8080. The LLM API is on port 8000 if you need direct model access.
 
 ## Auto-Detect Mode
 
@@ -38,64 +41,9 @@ Leave `A2GO_CONFIG` empty and a2go will automatically select the best model for 
 
 Works with any NVIDIA GPU. The image auto-detects VRAM and adjusts context length, model layers, and batch size accordingly. Tested on RTX 3090, RTX 4090, RTX 5090, H100, H200, and DGX Spark (GB10).
 
-## Volume Requirements
+## Volume
 
-- **Minimum**: 30 GB network volume
-- **Recommended**: 50 GB+ for storing multiple models
-- Mount path: `/workspace`
-
-Models are cached in `/workspace/models/` and persist across pod restarts.
-
-## Ports
-
-| Port | Protocol | Service |
-|------|----------|---------|
-| 8000 | HTTP | OpenAI-compatible LLM API (`/v1/chat/completions`) |
-| 8080 | HTTP | Web proxy / media server (TTS, STT, image gen, web UI) |
-| 8642 | HTTP | Hermes Gateway (agent pairing for Telegram, Discord, WhatsApp) |
-| 18789 | HTTP | OpenClaw Gateway (agent pairing, device control UI) |
-| 22 | TCP | SSH access |
-
-## Environment Variables
-
-### Required
-
-| Variable | Description |
-|----------|-------------|
-| `A2GO_AUTH_TOKEN` | Authenticates the web UI and agent gateway (OpenClaw / Hermes) |
-| `A2GO_API_KEY` | Secures all a2go API endpoints (LLM, media, future services) |
-
-### Recommended
-
-| Variable | Description |
-|----------|-------------|
-| `A2GO_CONFIG` | Model config JSON from [a2go.run](https://a2go.run). Empty = auto-detect. |
-| `HF_TOKEN` | HuggingFace token for faster/gated model downloads |
-
-### Optional
-
-| Variable | Description |
-|----------|-------------|
-| `TELEGRAM_BOT_TOKEN` | Telegram bot integration |
-| `GITHUB_TOKEN` | GitHub auth for Claude Code inside the pod |
-
-## Access URLs
-
-Replace `<pod-id>` with your pod ID:
-
-- **Hermes Gateway**: `https://<pod-id>-8642.proxy.runpod.net`
-- **OpenClaw Gateway**: `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`
-- **Web Proxy**: `https://<pod-id>-8080.proxy.runpod.net`
-- **LLM API**: `https://<pod-id>-8000.proxy.runpod.net/v1`
-
-## CLI Tools Inside the Pod
-
-SSH into the pod to access:
-
-- `openclaw` - manage devices, pairings, and config
-- `hermes` - Hermes agent gateway management
-- `llama-server` - llama.cpp inference server (managed by entrypoint)
-- `nvidia-smi` - GPU monitoring
+Minimum 30 GB network volume (50 GB+ recommended for multiple models). Models are cached in `/workspace/models/` and persist across pod restarts.
 
 ## Security
 
