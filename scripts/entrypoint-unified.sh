@@ -142,8 +142,7 @@ echo "$RESOLVED_JSON" > /tmp/oc_resolved.json
 # ============================================================
 # Environment defaults
 # ============================================================
-# Support both LLAMACPP_API_KEY (new) and LLAMA_API_KEY (deprecated)
-LLAMACPP_API_KEY="${LLAMACPP_API_KEY:-${LLAMA_API_KEY:-changeme}}"
+A2GO_API_KEY="${A2GO_API_KEY:-changeme}"
 
 # ── Canonical A2GO_* env vars with backward-compat fallback to OPENCLAW_* ──
 # Users can set either; A2GO_* takes precedence. Old names supported forever.
@@ -155,8 +154,8 @@ A2GO_WEB_PROXY_PORT="${A2GO_WEB_PROXY_PORT:-8080}"
 # Hermes blocklists placeholder secrets ("changeme", "dummy", etc.)
 # When using Hermes with a placeholder key, substitute a non-blocked value
 # that still matches what the LLM server expects.
-if [ "$AGENT" = "hermes" ] && [ "$LLAMACPP_API_KEY" = "changeme" ]; then
-    LLAMACPP_API_KEY="a2go-local-changeme"
+if [ "$AGENT" = "hermes" ] && [ "$A2GO_API_KEY" = "changeme" ]; then
+    A2GO_API_KEY="a2go-local-changeme"
     A2GO_AUTH_TOKEN="${A2GO_AUTH_TOKEN:-a2go-local-changeme}"
     echo "Note: Hermes requires non-placeholder API keys. Using 'a2go-local-changeme' instead of 'changeme'."
 fi
@@ -358,7 +357,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                     -ctk q8_0
                     -ctv q8_0
                     --no-mmap
-                    --api-key "$LLAMACPP_API_KEY"
+                    --api-key "$A2GO_API_KEY"
                 )
 
                 # Add -ngl unless "auto" (let --fit determine GPU layers)
@@ -452,7 +451,7 @@ json.dump(plugins, sys.stdout)
                 --host 0.0.0.0
                 --port "$port"
                 -ngl 99
-                --api-key "$LLAMACPP_API_KEY"
+                --api-key "$A2GO_API_KEY"
             )
 
             if [ -n "$MMPROJ_FILE" ]; then
@@ -483,7 +482,7 @@ json.dump(plugins, sys.stdout)
                 --port "$port"
                 -ngl 99
                 --embedding
-                --api-key "$LLAMACPP_API_KEY"
+                --api-key "$A2GO_API_KEY"
             )
 
             if [ -n "$EXTRA_START_ARGS" ]; then
@@ -513,7 +512,7 @@ json.dump(plugins, sys.stdout)
                 --port "$port"
                 -ngl 99
                 --reranking
-                --api-key "$LLAMACPP_API_KEY"
+                --api-key "$A2GO_API_KEY"
             )
 
             env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
@@ -664,7 +663,7 @@ elif [ -d "/workspace/.config/gh" ] && [ -f "/workspace/.config/gh/hosts.yml" ];
 fi
 
 # Setup Claude Code environment (OpenAI-compatible)
-export OPENAI_API_KEY="$LLAMACPP_API_KEY"
+export OPENAI_API_KEY="$A2GO_API_KEY"
 export OPENAI_BASE_URL="http://localhost:${LLM_PORT}/v1"
 
 GATEWAY_PID=""
@@ -708,7 +707,7 @@ case "$AGENT" in
     "providers": {
       "$LLM_PROVIDER_NAME": {
         "baseUrl": "http://localhost:${LLM_PORT}/v1",
-        "apiKey": "$LLAMACPP_API_KEY",
+        "apiKey": "$A2GO_API_KEY",
         "api": "openai-completions",
         "models": [{
           "id": "$LLM_MODEL_NAME",
@@ -794,7 +793,7 @@ model:
   provider: custom
   default: $LLM_MODEL_NAME
   base_url: http://localhost:${LLM_PORT}/v1
-  api_key: $LLAMACPP_API_KEY
+  api_key: $A2GO_API_KEY
   context_length: $LLM_CONTEXT
 memory:
   memory_enabled: true
@@ -806,7 +805,7 @@ EOF
 
         # Generate .env for Hermes
         cat > "$HERMES_DIR/.env" << EOF
-OPENAI_API_KEY=$LLAMACPP_API_KEY
+OPENAI_API_KEY=$A2GO_API_KEY
 OPENAI_BASE_URL=http://localhost:${LLM_PORT}/v1
 EOF
 
@@ -830,7 +829,7 @@ EOF
         # Start Hermes gateway (API server on port 8642, foreground mode, backgrounded by us)
         echo ""
         echo "Starting Hermes gateway..."
-        OPENAI_API_KEY="$LLAMACPP_API_KEY" \
+        OPENAI_API_KEY="$A2GO_API_KEY" \
         OPENAI_BASE_URL="http://localhost:${LLM_PORT}/v1" \
         API_SERVER_ENABLED=true \
         API_SERVER_PORT=8642 \

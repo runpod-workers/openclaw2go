@@ -36,7 +36,7 @@ The site generates this — or run it directly:
 docker run --gpus all \
   -e A2GO_CONFIG='{"llm":"unsloth/GLM-4.7-Flash-GGUF","audio":"LiquidAI/LFM2.5-Audio-1.5B-GGUF"}' \
   -e A2GO_AUTH_TOKEN=changeme \
-  -e LLAMACPP_API_KEY=changeme \
+  -e A2GO_API_KEY=changeme \
   -p 8000:8000 -p 8080:8080 -p 18789:18789 \
   -v a2go-models:/workspace \
   runpod/a2go:latest
@@ -50,7 +50,7 @@ Models download on first start and persist on the volume.
 |----------|-------------|---------|
 | `A2GO_CONFIG` | JSON config — models to load | `{}` (auto-detect) |
 | `A2GO_AUTH_TOKEN` | Web UI + API auth token | `changeme` |
-| `LLAMACPP_API_KEY` | LLM API key (OpenAI-compatible endpoint) | `changeme` |
+| `A2GO_API_KEY` | LLM API key (OpenAI-compatible endpoint) | `changeme` |
 | `TELEGRAM_BOT_TOKEN` | Enable Telegram bot integration | — |
 | `GITHUB_TOKEN` | GitHub auth for Claude Code | — |
 

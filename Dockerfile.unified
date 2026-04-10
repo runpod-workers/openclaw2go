@@ -109,7 +109,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 WORKDIR /
 
 # ── Environment defaults ──────────────────────────────────
-ENV LLAMACPP_API_KEY="changeme" \
+ENV A2GO_API_KEY="changeme" \
     A2GO_AUTH_TOKEN="changeme" \
     A2GO_STATE_DIR="" \
     A2GO_WORKSPACE="" \

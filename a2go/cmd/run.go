@@ -200,7 +200,7 @@ func execRunDocker(cfg *config.Config) error {
 		Env: map[string]string{
 			"A2GO_CONFIG":     configJSON,
 			"A2GO_AUTH_TOKEN":  cfg.GetAuthToken(),
-			"LLAMACPP_API_KEY": cfg.GetAuthToken(),
+			"A2GO_API_KEY": cfg.GetAuthToken(),
 		},
 		Ports: []string{
 			"8000:8000",

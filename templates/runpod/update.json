@@ -1,5 +1,5 @@
 {
-  "name": "agent2go",
+  "name": "a2go",
   "imageName": "runpod/a2go:latest",
   "containerDiskInGb": 20,
   "ports": "8000/http,8080/http,8642/http,18789/http,22/tcp",
@@ -13,7 +13,7 @@
       "value": ""
     },
     {
-      "key": "LLAMACPP_API_KEY",
+      "key": "A2GO_API_KEY",
       "value": ""
     },
     {

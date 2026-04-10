@@ -228,7 +228,7 @@ function buildCloudConfig(
     envVars: [
       { key: 'A2GO_CONFIG', value: configJSON },
       { key: 'A2GO_AUTH_TOKEN', value: 'changeme' },
-      { key: 'LLAMACPP_API_KEY', value: 'changeme' },
+      { key: 'A2GO_API_KEY', value: 'changeme' },
     ],
     ports: [
       agentId === 'hermes'
