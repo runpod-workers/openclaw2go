@@ -6,27 +6,15 @@
   "env": [
     {
       "key": "A2GO_CONFIG",
-      "value": ""
+      "value": "{}"
     },
     {
       "key": "A2GO_AUTH_TOKEN",
-      "value": ""
+      "value": "changeme"
     },
     {
       "key": "A2GO_API_KEY",
-      "value": ""
-    },
-    {
-      "key": "HF_TOKEN",
-      "value": ""
-    },
-    {
-      "key": "TELEGRAM_BOT_TOKEN",
-      "value": ""
-    },
-    {
-      "key": "GITHUB_TOKEN",
-      "value": ""
+      "value": "changeme"
     }
   ]
 }
