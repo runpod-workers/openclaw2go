@@ -1,5 +1,5 @@
 ---
-"site": patch
+"a2go": patch
 ---
 
 feat(site): add cloud provider templates to deploy section
