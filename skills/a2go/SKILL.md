@@ -17,10 +17,12 @@ Requires the `a2go` CLI. Install from GitHub releases (includes SHA256 checksums
 
 ```bash
 a2go doctor                                              # One-time setup (checks Docker, GPU, pulls image)
-a2go run --agent hermes --llm unsloth/GLM-4.7-Flash-GGUF:4bit  # Start with a model
+a2go run --agent hermes --llm <repo>:<bits>bit          # Start with a model
 a2go status                                              # Check running services
 a2go stop                                                # Stop all
 ```
+
+Pick a model value with `a2go models`; use the `repo:bits` value from the output.
 
 ## Commands
 
