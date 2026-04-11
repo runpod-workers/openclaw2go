@@ -18,14 +18,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const body = req.body
   if (!body || typeof body !== 'object' || !body.event) {
-    return res.status(400).json({ error: 'invalid payload' })
+    return res.status(200).json({ ok: true })
   }
 
   try {
     await client.mutation(api.analytics.ingest, { event: body })
-    return res.status(200).json({ ok: true })
   } catch (err) {
     console.error('convex ingest error:', err)
-    return res.status(500).json({ error: 'ingestion failed' })
   }
+
+  return res.status(200).json({ ok: true })
 }
