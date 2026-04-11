@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npx convex deploy --cmd 'cd site && npm run build:prod'",
+  "outputDirectory": "dist",
+  "installCommand": "npm install && cd site && npm install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/v1/analytics", "destination": "/api/v1/analytics" }
+  ]
+}

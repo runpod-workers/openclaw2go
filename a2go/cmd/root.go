@@ -34,6 +34,7 @@ func init() {
 	stopCmd.GroupID = "management"
 	restartCmd.GroupID = "management"
 	statusCmd.GroupID = "management"
+	analyticsCmd.GroupID = "management"
 
 	toolCmd.GroupID = "tools"
 
@@ -46,6 +47,7 @@ func init() {
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(restartCmd)
 	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(analyticsCmd)
 	rootCmd.AddCommand(toolCmd)
 	rootCmd.AddCommand(modelsCmd)
 	rootCmd.AddCommand(versionCmd)

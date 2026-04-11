@@ -1,0 +1,9 @@
+a2go/
+docs/
+scripts/
+registry/profiles/
+registry/schemas/
+registry/templates/
+*.go
+*.sum
+go.mod

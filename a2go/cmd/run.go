@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/runpod-labs/a2go/a2go/internal/analytics"
 	"github.com/runpod-labs/a2go/a2go/internal/catalog"
 	"github.com/runpod-labs/a2go/a2go/internal/config"
 	"github.com/runpod-labs/a2go/a2go/internal/docker"
@@ -199,8 +200,8 @@ func execRunDocker(cfg *config.Config) error {
 		GPUs:  "all",
 		Env: map[string]string{
 			"A2GO_CONFIG":     configJSON,
-			"A2GO_AUTH_TOKEN":  cfg.GetAuthToken(),
-			"A2GO_API_KEY": cfg.GetAuthToken(),
+			"A2GO_AUTH_TOKEN": cfg.GetAuthToken(),
+			"A2GO_API_KEY":    cfg.GetAuthToken(),
 		},
 		Ports: []string{
 			"8000:8000",
@@ -270,6 +271,7 @@ func execRunDocker(cfg *config.Config) error {
 	fmt.Println("  a2go status    check services")
 	fmt.Println("  a2go stop      stop all")
 	fmt.Println()
+	analytics.Run(Version, cfg, "cli", "docker")
 	return nil
 }
 
@@ -571,6 +573,7 @@ func execRunMlx(cfg *config.Config) error {
 	fmt.Println("  a2go stop      stop all")
 	fmt.Println("  Ctrl+C          stop all")
 	fmt.Println()
+	analytics.Run(Version, cfg, "cli", "mlx")
 
 	// Wait forever (until signal)
 	select {}

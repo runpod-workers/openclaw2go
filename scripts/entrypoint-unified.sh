@@ -217,6 +217,192 @@ LLM_CONTEXT=""
 MEDIA_PLUGINS_JSON="[]"
 MEDIA_SERVER_PORT="${A2GO_WEB_PROXY_PORT:-8080}"
 
+a2go_analytics_enabled() {
+    case "$(printf '%s' "${A2GO_NO_ANALYTICS:-}" | tr '[:upper:]' '[:lower:]')" in
+        1|true|yes|on) return 1 ;;
+    esac
+    case "$(printf '%s' "${A2GO_ANALYTICS_ENABLED:-1}" | tr '[:upper:]' '[:lower:]')" in
+        0|false|no|off) return 1 ;;
+    esac
+    return 0
+}
+
+a2go_send_analytics() {
+    a2go_analytics_enabled || return 0
+
+    local endpoint="${A2GO_ANALYTICS_URL:-https://a2go.run/v1/analytics}"
+    local state_file="${A2GO_ANALYTICS_STATE_FILE:-$A2GO_WORKSPACE/.a2go/analytics-state.json}"
+    mkdir -p "$(dirname "$state_file")"
+
+    RESOLVED_JSON="$RESOLVED_JSON" \
+    A2GO_ANALYTICS_ENDPOINT="$endpoint" \
+    A2GO_ANALYTICS_STATE_FILE="$state_file" \
+    A2GO_ANALYTICS_SOURCE="container" \
+    python3 - <<'PY' >/dev/null 2>&1 &
+import hashlib
+import json
+import os
+import platform
+import re
+import time
+import urllib.request
+from pathlib import Path
+
+def load_version():
+    package_json = Path("/opt/a2go/package.json")
+    if package_json.exists():
+        try:
+            return json.loads(package_json.read_text()).get("version", "container")
+        except Exception:
+            pass
+    return "container"
+
+def parse_json():
+    try:
+        return json.loads(os.environ["RESOLVED_JSON"])
+    except Exception:
+        return None
+
+def read_mem_bytes():
+    try:
+        with open("/proc/meminfo", "r", encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("MemTotal:"):
+                    return int(line.split()[1]) * 1024
+    except Exception:
+        return 0
+    return 0
+
+def bucket_memory(bytes_value):
+    if not bytes_value:
+        return ""
+    gb = bytes_value / (1024 ** 3)
+    buckets = [8, 12, 16, 24, 32, 48, 64, 80, 96, 128, 180, 192, 256, 384, 512, 1024]
+    for bucket in buckets:
+        if gb <= bucket * 1.12:
+            return "1tb" if bucket >= 1024 else f"{bucket}gb"
+    return "1tb+"
+
+def bucket_tokens(value):
+    if not value:
+        return ""
+    if value >= 1_000_000:
+        return f"{value // 1_000_000}m"
+    return f"{int((value + 500) / 1000)}k"
+
+def normalize_gpu(name):
+    name = (name or "").strip().lower()
+    name = re.sub(r"\b(nvidia|geforce|graphics|gpu)\b", "", name)
+    return "-".join(name.split())
+
+def gpu_info(data):
+    detected = data.get("gpuDetected") or {}
+    registry = data.get("gpu") or {}
+    raw_name = detected.get("name") or registry.get("name") or ""
+    raw_vram = detected.get("vramMb") or registry.get("vramMb") or 0
+    if not raw_name and not raw_vram:
+        return None
+    info = {"family": normalize_gpu(raw_name), "count": 1}
+    if raw_vram:
+        info["vramBucket"] = bucket_memory(int(raw_vram) * 1024 * 1024)
+    return info
+
+def resolved_context_bucket(data):
+    if data.get("computedContextLength"):
+        return bucket_tokens(data.get("computedContextLength"))
+    for svc in data.get("services", []):
+        if svc.get("role") != "llm":
+            continue
+        overrides = svc.get("overrides") or {}
+        if overrides.get("contextLength"):
+            return bucket_tokens(overrides.get("contextLength"))
+        defaults = (svc.get("model") or {}).get("defaults") or {}
+        if defaults.get("contextLength"):
+            return bucket_tokens(defaults.get("contextLength"))
+    return ""
+
+def load_state(path):
+    try:
+        return json.loads(Path(path).read_text())
+    except Exception:
+        return {"events": {}}
+
+def save_state(path, state):
+    try:
+        Path(path).write_text(json.dumps(state))
+    except Exception:
+        pass
+
+def should_send(path, signature):
+    state = load_state(path)
+    sent_at = state.get("events", {}).get(signature)
+    if not sent_at:
+        return True
+    return (time.time() - sent_at) >= 24 * 3600
+
+def mark_sent(path, signature):
+    state = load_state(path)
+    events = state.setdefault("events", {})
+    events[signature] = int(time.time())
+    save_state(path, state)
+
+data = parse_json()
+if not data:
+    raise SystemExit(0)
+
+models = {}
+for svc in data.get("services", []):
+    role = svc.get("role")
+    model = svc.get("model") or {}
+    repo = model.get("repo")
+    bits = model.get("bits")
+    if role in {"llm", "image", "audio"} and repo:
+        models[role] = f"{repo}:{bits}bit" if bits is not None else repo
+
+event = {
+    "event": "runtime_started",
+    "sentAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    "version": load_version(),
+    "source": os.environ.get("A2GO_ANALYTICS_SOURCE", "container"),
+    "backend": "docker",
+    "agent": data.get("agent", ""),
+    "models": models,
+    "config": {
+        "contextLengthBucket": resolved_context_bucket(data),
+        "profile": (data.get("profile") or {}).get("id", ""),
+        "profileSource": (data.get("profile") or {}).get("source", ""),
+    },
+    "system": {
+        "os": platform.system().lower(),
+        "arch": platform.machine().lower(),
+        "ramBucket": bucket_memory(read_mem_bytes()),
+        "gpu": gpu_info(data),
+    },
+}
+
+payload = json.dumps(event, sort_keys=True).encode("utf-8")
+signature_event = dict(event)
+signature_event["sentAt"] = ""
+signature = hashlib.sha256(json.dumps(signature_event, sort_keys=True).encode("utf-8")).hexdigest()
+state_file = os.environ["A2GO_ANALYTICS_STATE_FILE"]
+if not should_send(state_file, signature):
+    raise SystemExit(0)
+
+req = urllib.request.Request(
+    os.environ["A2GO_ANALYTICS_ENDPOINT"],
+    data=payload,
+    headers={"Content-Type": "application/json", "User-Agent": "a2go"},
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(req, timeout=2) as resp:
+        if 200 <= resp.status < 300:
+            mark_sent(state_file, signature)
+except Exception:
+    pass
+PY
+}
+
 # ============================================================
 # Download models and start services from resolved profile
 # ============================================================
@@ -861,6 +1047,8 @@ total = data['profile'].get('vramTotal', 0)
 gpu_vram = data.get('gpuDetected', {}).get('vramMb', 0) or data.get('gpu', {}).get('vramMb', 0)
 print(f\"VRAM: {' + '.join(parts)} = ~{total // 1000}GB / {gpu_vram // 1000}GB\")
 " 2>/dev/null || echo "VRAM: see profile")"
+
+a2go_send_analytics
 
 echo ""
 oc_print_ready "LLM API" "$LLM_MODEL_NAME" "$LLM_CONTEXT tokens" "token" \

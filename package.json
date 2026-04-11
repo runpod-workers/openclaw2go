@@ -4,5 +4,9 @@
   "private": true,
   "devDependencies": {
     "@changesets/cli": "^2.29.4"
+  },
+  "dependencies": {
+    "@vercel/node": "^5.7.4",
+    "convex": "^1.35.1"
   }
 }

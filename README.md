@@ -51,10 +51,13 @@ Models download on first start and persist on the volume.
 | `A2GO_CONFIG` | JSON config — models to load | `{}` (auto-detect) |
 | `A2GO_AUTH_TOKEN` | Web UI + API auth token | `changeme` |
 | `A2GO_API_KEY` | LLM API key (OpenAI-compatible endpoint) | `changeme` |
+| `A2GO_ANALYTICS_ENABLED` | Anonymous usage analytics (`0` to opt out completely) | `1` |
 | `TELEGRAM_BOT_TOKEN` | Enable Telegram bot integration | — |
 | `GITHUB_TOKEN` | GitHub auth for Claude Code | — |
 
 Model names are case-insensitive. Use HuggingFace repo names or short IDs.
+
+Anonymous analytics only include selected models, config buckets, OS/arch, GPU family/count, and RAM bucket. They do not include prompts, tokens, auth tokens, IPs, hostnames, or file paths. On the CLI, disable permanently with `a2go analytics disable`.
 
 ### Auto-detect
 
