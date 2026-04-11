@@ -2,11 +2,11 @@ package hermes
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/runpod-labs/a2go/a2go/internal/agentskills"
 	"github.com/runpod-labs/a2go/a2go/internal/paths"
 )
 
@@ -24,14 +24,100 @@ func hermesAPIKey(token string) string {
 	return token
 }
 
-// SyncSkills fully regenerates the hermes-managed a2go skill subtree from bundled assets.
+func copyFile(src, dst string, mode os.FileMode) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	return out.Close()
+}
+
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode().Perm())
+		}
+
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		return copyFile(path, target, info.Mode().Perm())
+	})
+}
+
+// SyncSkills copies a2go skills into the hermes skills directory so hermes can discover them.
+// Copies files from ~/.a2go/skills/<skill-name>/ into ~/.hermes/skills/a2go/<skill-name>/.
+// The ~/.hermes/skills/a2go subtree is fully managed by a2go and refreshed on each run.
 func SyncSkills() error {
-	if err := agentskills.Sync(paths.HermesSkills()); err != nil {
-		return fmt.Errorf("failed to sync bundled skills: %w", err)
+	srcDir := paths.Skills()
+	dstDir := filepath.Join(paths.HermesState(), "skills", "a2go")
+
+	if err := os.MkdirAll(dstDir, 0755); err != nil {
+		return fmt.Errorf("failed to create hermes a2go skills dir: %w", err)
 	}
-	if err := agentskills.CleanupLegacyDir(paths.Skills()); err != nil {
-		return fmt.Errorf("failed to remove legacy skills dir: %w", err)
+
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		// No a2go skills installed yet — not an error
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
 	}
+
+	sourceSkills := make(map[string]struct{}, len(entries))
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		sourceSkills[e.Name()] = struct{}{}
+
+		src := filepath.Join(srcDir, e.Name())
+		dst := filepath.Join(dstDir, e.Name())
+
+		if err := os.RemoveAll(dst); err != nil {
+			return fmt.Errorf("failed to reset skill dir %s: %w", e.Name(), err)
+		}
+		if err := copyDir(src, dst); err != nil {
+			return fmt.Errorf("failed to copy skill %s: %w", e.Name(), err)
+		}
+	}
+
+	dstEntries, err := os.ReadDir(dstDir)
+	if err != nil {
+		return fmt.Errorf("failed to read hermes a2go skills dir: %w", err)
+	}
+	for _, e := range dstEntries {
+		if _, ok := sourceSkills[e.Name()]; ok {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(dstDir, e.Name())); err != nil {
+			return fmt.Errorf("failed to remove stale skill %s: %w", e.Name(), err)
+		}
+	}
+
 	return nil
 }
 
