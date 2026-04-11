@@ -1,9 +1,8 @@
 a2go/
 docs/
-scripts/
+/scripts/
 registry/profiles/
 registry/schemas/
 registry/templates/
-*.go
-*.sum
 go.mod
+go.sum
