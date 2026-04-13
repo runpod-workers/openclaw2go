@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
 import SectionHeader from './SectionHeader'
 import CollapsibleSection from './CollapsibleSection'
+import DeviceSelector, { DeviceCountStepper } from './VramLegend'
 import VramGauge, { type VramSegment } from './VramSelector'
 import SelectedModels from './SelectedModels'
 import DeployCard from './DeployOutput'
 import SecurityGuide from './SecurityGuide'
-import type { CatalogModel, DeviceInfo, DeviceCount, OsPlatform } from '../lib/catalog'
+import type { CatalogModel, DeviceInfo, DeviceCount, Platform } from '../lib/catalog'
 import { VRAM_PRESETS } from '../lib/catalog'
 import { getVariantForOs, type ModelGroup, type CatalogEntry, type FamilyEntry } from '../lib/group-models'
 import type { AgentFramework } from '../lib/frameworks'
@@ -42,13 +43,15 @@ export default function ConfigPanel({
   selectedDevice,
   devices,
   deviceCount,
+  onDeviceCountChange,
+  onDeviceSelect,
   onVramPreset,
   onToggleModel,
   onClearAll,
   modelIdToGroup,
   modelIdToEntry,
   modelIdToFamilyEntry,
-  os,
+  platform,
   hasSelections,
   contextOverride,
   onContextChange,
@@ -60,13 +63,15 @@ export default function ConfigPanel({
   selectedDevice: DeviceInfo | null
   devices: DeviceInfo[]
   deviceCount: DeviceCount
+  onDeviceCountChange: (count: DeviceCount) => void
+  onDeviceSelect: (device: DeviceInfo) => void
   onVramPreset: (gb: number) => void
   onToggleModel: (model: CatalogModel) => void
   onClearAll: () => void
   modelIdToGroup: Map<string, ModelGroup>
   modelIdToEntry?: Map<string, CatalogEntry>
   modelIdToFamilyEntry?: Map<string, FamilyEntry>
-  os: OsPlatform | null
+  platform: Platform | null
   hasSelections: boolean
   contextOverride: number | null
   onContextChange: (ctx: number | null) => void
@@ -74,12 +79,13 @@ export default function ConfigPanel({
   framework: AgentFramework
 }) {
   const hasModels = selectedModels.length > 0
+  const showResourcePanels = true
 
   // Track the active platform tab from SelectedModels (card-local, never affects global OS)
-  const [sharedOs, setSharedOs] = useState<OsPlatform | null>(os)
+  const [sharedOs, setSharedOs] = useState<Platform | null>(platform)
 
-  // Sync shared tab state when global OS is set; preserve user's tab selection when cleared
-  useEffect(() => { if (os != null) setSharedOs(os) }, [os])
+  // Keep card-local platform state aligned with the active global platform.
+  useEffect(() => { setSharedOs(platform) }, [platform])
 
   // Per-type VRAM segments for the gauge bar — use the variant matching the active tab,
   // so switching platform tabs in a card immediately updates the memory gauge.
@@ -123,14 +129,43 @@ export default function ConfigPanel({
     </span>
   ) : undefined
 
+  const hardwareBadge = selectedDevice ? (
+    <span className="font-mono text-[9px] text-foreground/40">
+      {selectedDevice.name}
+    </span>
+  ) : undefined
+
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-visible lg:overflow-y-scroll">
-      {/* Memory — collapsible on mobile, inline on desktop */}
-      <CollapsibleSection title="Memory" badge={memoryBadge}>
-        {/* Desktop: toolbar grid row with Memory + Logo */}
+      {showResourcePanels && <CollapsibleSection title="Memory" badge={memoryBadge}>
+        {/* Desktop: toolbar grid row with Memory + Hardware + Logo */}
         <div className="hidden lg:block">
           <div className="border-b border-foreground/[0.06]">
-            <div className="grid grid-cols-[1fr_auto]">
+            <div className="grid grid-cols-[1fr_1fr_auto]">
+              {/* Hardware */}
+              <div className="border-r border-foreground/[0.06]">
+                <SectionHeader>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
+                    Hardware
+                  </span>
+                  <span className="ml-auto flex items-center gap-1.5">
+                    <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/40">
+                      count
+                    </span>
+                    <DeviceCountStepper count={deviceCount} onChange={onDeviceCountChange} />
+                  </span>
+                </SectionHeader>
+                <div className="px-3 py-2.5">
+                  <DeviceSelector
+                    devices={devices}
+                    selectedDevice={selectedDevice}
+                    onSelect={onDeviceSelect}
+                    deviceCount={deviceCount}
+                    totalVramMb={displayVramGb * 1024}
+                  />
+                </div>
+              </div>
+
               {/* Memory */}
               <div className="border-r border-foreground/[0.06]">
                 <SectionHeader>
@@ -188,7 +223,28 @@ export default function ConfigPanel({
             segments={vramSegments}
           />
         </div>
-      </CollapsibleSection>
+      </CollapsibleSection>}
+
+      {/* Hardware — collapsible on mobile only (desktop is rendered above inside the grid) */}
+      {showResourcePanels && <div className="lg:hidden">
+        <CollapsibleSection title="Hardware" badge={hardwareBadge}>
+          <div className="flex items-center gap-1 border-b border-foreground/[0.04] px-3 py-1.5">
+            <span className="font-mono text-[8px] uppercase tracking-widest text-foreground/25">
+              count
+            </span>
+            <DeviceCountStepper count={deviceCount} onChange={onDeviceCountChange} />
+          </div>
+          <div className="px-3 py-2.5">
+            <DeviceSelector
+              devices={devices}
+              selectedDevice={selectedDevice}
+              onSelect={onDeviceSelect}
+              deviceCount={deviceCount}
+              totalVramMb={displayVramGb * 1024}
+            />
+          </div>
+        </CollapsibleSection>
+      </div>}
 
       {/* Selected Models — sticky header */}
       <div className="sticky top-0 z-10 bg-background border-b border-foreground/[0.06]">
@@ -229,7 +285,7 @@ export default function ConfigPanel({
           modelIdToEntry={modelIdToEntry}
           modelIdToFamilyEntry={modelIdToFamilyEntry}
           devices={devices}
-          os={os}
+          os={platform}
           contextOverride={contextOverride}
           onContextChange={onContextChange}
           onSharedOsChange={setSharedOs}
@@ -267,7 +323,7 @@ export default function ConfigPanel({
                 <DeployCard
                   selectedModels={selectedModels}
                   modelIdToGroup={modelIdToGroup}
-                  globalOs={os}
+                  globalOs={sharedOs}
                   contextOverride={contextOverride}
                   onToggle={onToggleModel}
                   framework={framework}

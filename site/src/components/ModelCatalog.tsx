@@ -1,72 +1,18 @@
-import { useMemo, useCallback, useState, useEffect, useRef } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, SlidersHorizontal } from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
+import { cn } from '../lib/utils'
 import CollapsibleSection from './CollapsibleSection'
-import ModelSearch from './ModelSearch'
-import ModelFilters, { type FilterState, type TaskChip, EMPTY_FILTERS } from './ModelFilters'
+import ModelFilters from './ModelFilters'
 import CatalogEntryCard from './ModelPicker'
 import SectionHeader from './SectionHeader'
 import FrameworkSelector from './FrameworkSelector'
-import DeviceSelector from './VramLegend'
-import type { CatalogModel, DeviceInfo, DeviceCount, OsPlatform } from '../lib/catalog'
+import type { CatalogModel, Platform } from '../lib/catalog'
 import type { AgentFramework } from '../lib/frameworks'
-import { getFamilyEntrySummary, getVariantForOs, type FamilyEntry } from '../lib/group-models'
-
-// ---------------------------------------------------------------------------
-// GPU detection via WebGL
-// ---------------------------------------------------------------------------
-
-type DetectedBrand = 'nvidia' | 'apple'
-
-interface GpuDetection {
-  renderer: string
-  brand: DetectedBrand | null
-  chipHint: string | null
-}
-
-function detectGpuFromWebGL(): GpuDetection | null {
-  try {
-    const canvas = document.createElement('canvas')
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
-    if (!gl || !(gl instanceof WebGLRenderingContext)) return null
-    const ext = gl.getExtension('WEBGL_debug_renderer_info')
-    if (!ext) return null
-    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string
-    canvas.remove()
-    if (!renderer) return null
-
-    const lower = renderer.toLowerCase()
-    if (lower.includes('nvidia') || lower.includes('geforce') || lower.includes('rtx') || lower.includes('quadro') || lower.includes('tesla')) {
-      return { renderer, brand: 'nvidia', chipHint: renderer.replace(/\/.*$/, '').trim() }
-    }
-    if (lower.includes('apple')) {
-      const m = renderer.match(/Apple\s+(M\d+(?:\s+(?:Pro|Max|Ultra))?)/i)
-      return { renderer, brand: 'apple', chipHint: m ? m[1] : null }
-    }
-    if (typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform ?? '')) {
-      return { renderer, brand: 'apple', chipHint: null }
-    }
-    return { renderer, brand: null, chipHint: null }
-  } catch {
-    return null
-  }
-}
-
-function matchDevice(detection: GpuDetection, devices: DeviceInfo[]): DeviceInfo | null {
-  if (!detection.brand) return null
-  const pool = detection.brand === 'nvidia'
-    ? devices.filter((d) => !d.os.includes('mac'))
-    : devices.filter((d) => d.os.includes('mac'))
-
-  if (detection.brand === 'nvidia') {
-    const lower = detection.renderer.toLowerCase()
-    for (const d of pool) { if (lower.includes(d.name)) return d }
-  } else if (detection.brand === 'apple' && detection.chipHint) {
-    const chip = detection.chipHint.toLowerCase()
-    const hits = pool.filter((d) => d.name.includes(chip))
-    if (hits.length === 1) return hits[0]
-  }
-  return null
-}
+import { EMPTY_FILTERS, type FilterState, type TaskChip } from '../lib/model-filters'
+import { familyEntryHasOs, getFamilyEntrySummary, type FamilyEntry } from '../lib/group-models'
+import { resolveVariantForPlatformEngine, getPreferredEngine } from '../lib/engine-resolver'
 
 type SortColumn = 'name' | 'ctx' | 'tps' | 'memory'
 type SortDirection = 'asc' | 'desc'
@@ -123,70 +69,34 @@ function SortableColumnHeader({
 
 export default function ModelCatalog({
   familyEntries,
-  os,
-  onOsChange,
+  platform,
+  onPlatformChange,
   selectedModelIds,
   selectedModels,
   onToggleModel,
   remainingVramMb,
   effectiveVramMb,
-  onClearModels,
+  onClearAll,
+  hasSelections,
   framework,
   onFrameworkSelect,
-  devices,
-  selectedDevice,
-  onDeviceSelect,
-  deviceCount,
-  onDeviceCountChange,
-  totalVramMb,
 }: {
   familyEntries: FamilyEntry[]
-  os: OsPlatform | null
-  onOsChange: (os: OsPlatform) => void
+  platform: Platform | null
+  onPlatformChange: (platform: Platform | null) => void
   selectedModelIds: Set<string>
   selectedModels: CatalogModel[]
   onToggleModel: (model: CatalogModel) => void
   remainingVramMb: number
   effectiveVramMb: number
-  onClearModels: () => void
+  onClearAll: () => void
+  hasSelections: boolean
   framework: AgentFramework
   onFrameworkSelect: (fw: AgentFramework) => void
-  devices: DeviceInfo[]
-  selectedDevice: DeviceInfo | null
-  onDeviceSelect: (device: DeviceInfo) => void
-  deviceCount: DeviceCount
-  onDeviceCountChange: (count: DeviceCount) => void
-  totalVramMb: number
 }) {
   const [search, setSearch] = useState("")
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
   const [sort, setSort] = useState<SortState>({ column: 'name', direction: 'asc' })
-
-  // GPU detection — runs once on mount, button allows re-apply
-  const autoDetectRan = useRef(false)
-  const [detection, setDetection] = useState<GpuDetection | null>(null)
-
-  useEffect(() => {
-    const result = detectGpuFromWebGL()
-    if (result) setDetection(result)
-  }, [])
-
-  // Auto-apply on mount (once, only if no device already selected from URL)
-  useEffect(() => {
-    if (autoDetectRan.current || !detection || selectedDevice) return
-    autoDetectRan.current = true
-    if (detection.brand) {
-      const matched = matchDevice(detection, devices)
-      if (matched) onDeviceSelect(matched)
-    }
-  }, [detection, devices, selectedDevice, onDeviceSelect])
-
-  const handleDetect = useCallback(() => {
-    const result = detection ?? detectGpuFromWebGL()
-    if (!result?.brand) return
-    const matched = matchDevice(result, devices)
-    if (matched && matched.id !== selectedDevice?.id) onDeviceSelect(matched)
-  }, [detection, devices, selectedDevice, onDeviceSelect])
 
   const toggleSort = useCallback((col: SortColumn) => {
     setSort((prev) => {
@@ -197,22 +107,16 @@ export default function ModelCatalog({
 
   const searchLower = search.toLowerCase().trim()
 
-  const lockedTypes = useMemo(() => {
-    const types = new Set<string>()
-    for (const m of selectedModels) types.add(m.type)
-    return types
-  }, [selectedModels])
-
   const visibleTypes = useMemo(() => getVisibleTypes(filters.task), [filters.task])
 
   /** Pre-compute summaries for all family entries */
   const summaryMap = useMemo(() => {
     const map = new Map<string, { maxTps?: number; minVramMb: number }>()
     for (const fe of familyEntries) {
-      map.set(fe.family, getFamilyEntrySummary(fe, os))
+      map.set(fe.family, getFamilyEntrySummary(fe, platform))
     }
     return map
-  }, [familyEntries, os])
+  }, [familyEntries, platform])
 
   /** Sort filtered entries by the active column/direction */
   const sortEntries = useCallback(
@@ -261,7 +165,7 @@ export default function ModelCatalog({
   const filterEntries = useCallback(
     (allFamilies: FamilyEntry[], type: SectionKey): FamilyEntry[] => {
       if (!visibleTypes.has(type)) return []
-      let result = allFamilies.filter((fe) => fe.type === type)
+      let result = allFamilies.filter((fe) => fe.type === type && familyEntryHasOs(fe, platform))
       if (searchLower) {
         result = result.filter(
           (fe) =>
@@ -272,6 +176,17 @@ export default function ModelCatalog({
                 g.variants.some((v) => v.repo.toLowerCase().includes(searchLower))
               )
             )
+        )
+      }
+      // Engine filter — keep family if any variant matches an active engine
+      if (filters.engines) {
+        const activeEngines = new Set(filters.engines)
+        result = result.filter((fe) =>
+          fe.entries.some((entry) =>
+            entry.groups.some((g) =>
+              g.variants.some((v) => activeEngines.has(v.model.engineCategory))
+            )
+          )
         )
       }
       // Apply LLM-specific filters
@@ -285,7 +200,7 @@ export default function ModelCatalog({
       }
       return result
     },
-    [searchLower, filters, visibleTypes]
+    [searchLower, filters, visibleTypes, platform]
   )
 
   const modelSections = useMemo(
@@ -315,35 +230,25 @@ export default function ModelCatalog({
         }
       }
 
-      // Select: pick the first (smallest) entry, prefer smallest quant for current OS
-      const firstEntry = fe.entries[0]
-      if (!firstEntry) return
-
-      const sv = firstEntry.subVariants[0]
-      if (!sv) return
-
-      // First group with a variant for current OS (smallest bits first)
-      let bestGroup = sv.groups.find((g) =>
-        g.variants.some((v) => !os || v.os.includes(os))
-      )
-      // Fall back to first group
-      if (!bestGroup) bestGroup = sv.groups[0]
-      if (!bestGroup) return
-
-      const variant = getVariantForOs(bestGroup, os)
-      onToggleModel(variant.model)
+      // Use central resolver: pick best variant based on platform + engine filter
+      const preferredEngine = filters.engines?.length === 1
+        ? filters.engines[0]
+        : getPreferredEngine(platform)
+      const resolved = resolveVariantForPlatformEngine(fe, platform, preferredEngine)
+      if (!resolved) return
+      onToggleModel(resolved)
     },
-    [os, selectedModelIds, onToggleModel]
+    [platform, selectedModelIds, onToggleModel, filters.engines]
   )
 
-  const hasActiveFilters = selectedModels.length > 0 || os !== null || filters.task !== null || filters.contextMin !== null || search !== "" || sort.column !== 'name' || sort.direction !== 'asc'
+  const hasActiveFilters = hasSelections || filters.task !== null || filters.contextMin !== null || filters.engines !== null || search !== "" || sort.column !== 'name' || sort.direction !== 'asc'
 
   const handleReset = useCallback(() => {
     setSearch("")
     setFilters(EMPTY_FILTERS)
     setSort({ column: 'name', direction: 'asc' })
-    onClearModels()
-  }, [onClearModels])
+    onClearAll()
+  }, [onClearAll])
 
   const modelsBadge = selectedModels.length > 0 ? (
     <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 font-mono text-[10px] font-bold text-primary">
@@ -352,7 +257,7 @@ export default function ModelCatalog({
   ) : undefined
 
   return (
-    <div className="flex w-full lg:w-[480px] shrink-0 flex-col overflow-visible lg:overflow-hidden border-r-0 lg:border-r border-foreground/[0.06]">
+    <div className="flex w-full lg:w-[480px] shrink-0 flex-col overflow-visible lg:overflow-hidden border-r-0 lg:border-r border-foreground/[0.06]" style={{ '--catalog-width': '480px' } as React.CSSProperties}>
       {/* Agent */}
       <div className="border-b border-foreground/[0.06]">
         <SectionHeader>
@@ -363,54 +268,92 @@ export default function ModelCatalog({
         <FrameworkSelector selected={framework} onSelect={onFrameworkSelect} />
       </div>
 
-      {/* Hardware */}
-      <div className="border-b border-foreground/[0.06]">
-        <SectionHeader>
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
-            Hardware
-          </span>
-          {detection?.brand && (
-            <button
-              onClick={handleDetect}
-              className="ml-auto shrink-0 font-mono text-[9px] font-medium lowercase tracking-widest text-foreground/40 transition-colors hover:text-foreground/70"
-            >
-              detect
-            </button>
-          )}
-        </SectionHeader>
-        <div className="px-2 py-2">
-          <DeviceSelector
-            devices={devices}
-            selectedDevice={selectedDevice}
-            onSelect={onDeviceSelect}
-            deviceCount={deviceCount}
-            onDeviceCountChange={onDeviceCountChange}
-            totalVramMb={totalVramMb}
-          />
-        </div>
-      </div>
-
       <CollapsibleSection title="Models" badge={modelsBadge} className="lg:flex-1 lg:min-h-0 flex flex-col">
         <SectionHeader className="hidden lg:flex">
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
             Models
           </span>
-          {hasActiveFilters && (
-            <button
-              onClick={handleReset}
-              className="ml-auto shrink-0 font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/40 transition-colors hover:text-foreground/70"
-            >
-              reset
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-1.5">
+            {hasActiveFilters && (
+              <button
+                onClick={handleReset}
+                className="shrink-0 font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/40 transition-colors hover:text-foreground/70"
+              >
+                reset
+              </button>
+            )}
+
+            {/* Search popover */}
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded transition-colors",
+                    search
+                      ? "bg-foreground/[0.12] text-foreground"
+                      : "text-foreground/40 hover:bg-foreground/[0.05] hover:text-foreground/60"
+                  )}
+                  title="Search models"
+                >
+                  <Search size={13} />
+                </button>
+              </Popover.Trigger>
+              <Popover.Content
+                side="bottom"
+                align="end"
+                sideOffset={4}
+                className="z-50 w-[var(--catalog-width,480px)] rounded border border-foreground/[0.08] bg-background shadow-lg animate-in fade-in-0 zoom-in-95"
+                style={{ maxWidth: 'var(--catalog-width, 480px)' }}
+              >
+                <div className="relative">
+                  <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground/40" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="search models..."
+                    autoFocus
+                    className="w-full rounded bg-transparent py-2 pl-8 pr-3 font-mono text-[11px] text-foreground placeholder:text-foreground/30 focus:outline-none"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 font-mono text-[9px] text-foreground/40 hover:text-foreground/70"
+                    >
+                      clear
+                    </button>
+                  )}
+                </div>
+              </Popover.Content>
+            </Popover.Root>
+
+            {/* Filter popover */}
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded transition-colors",
+                    (platform !== null || filters.task !== null || filters.engines !== null || filters.contextMin !== null)
+                      ? "bg-foreground/[0.12] text-foreground"
+                      : "text-foreground/40 hover:bg-foreground/[0.05] hover:text-foreground/60"
+                  )}
+                  title="Filter models"
+                >
+                  <SlidersHorizontal size={13} />
+                </button>
+              </Popover.Trigger>
+              <Popover.Content
+                side="bottom"
+                align="end"
+                sideOffset={4}
+                className="z-50 w-[var(--catalog-width,480px)] rounded border border-foreground/[0.08] bg-background shadow-lg animate-in fade-in-0 zoom-in-95"
+                style={{ maxWidth: 'var(--catalog-width, 480px)' }}
+              >
+                <ModelFilters filters={filters} onChange={setFilters} platform={platform} onPlatformChange={onPlatformChange} />
+              </Popover.Content>
+            </Popover.Root>
+          </div>
         </SectionHeader>
-        <ModelSearch value={search} onChange={setSearch} />
-        <ModelFilters
-          filters={filters}
-          onChange={setFilters}
-          os={os}
-          onOsChange={onOsChange}
-        />
 
         {/* column headers */}
         <div className="flex shrink-0 items-center gap-2 border-b border-foreground/[0.04] px-3 py-1.5">
@@ -421,10 +364,14 @@ export default function ModelCatalog({
         </div>
 
         {/* model list — scrollable on desktop, full-height on mobile */}
-        <div className="overflow-y-auto py-1 max-h-[50vh] lg:max-h-none lg:flex-1" data-model-list>
+        <div className="overflow-y-scroll py-1 max-h-[50vh] lg:max-h-none lg:flex-1" data-model-list>
           {modelSections.length === 0 && (
             <div className="flex items-center justify-center py-12">
-              <span className="font-mono text-[10px] text-foreground/30">no models match</span>
+              <span className="font-mono text-[10px] text-foreground/30">
+                {search || filters.task || filters.contextMin || filters.engines
+                  ? 'no models match'
+                  : platform ? `no models for ${platform} yet` : 'no models available'}
+              </span>
             </div>
           )}
           {modelSections.map((section) => (
@@ -444,8 +391,6 @@ export default function ModelCatalog({
                   effectiveVramMb > 0 &&
                   !selected &&
                   summary.minVramMb > remainingVramMb
-                const dimmed = !selected && lockedTypes.has(fe.type)
-
                 return (
                   <CatalogEntryCard
                     key={fe.family}
@@ -453,8 +398,7 @@ export default function ModelCatalog({
                     selected={selected}
                     onToggle={() => handleFamilyToggle(fe)}
                     wouldExceed={wouldExceed}
-                    dimmed={dimmed}
-                    os={os}
+                    os={platform}
                     accentColor={section.color}
                   />
                 )

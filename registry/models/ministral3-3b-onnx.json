@@ -1,0 +1,32 @@
+{
+  "id": "mistralai/ministral3-3b-onnx",
+  "group": "ministral3-3b",
+  "family": "ministral3-8b",
+  "catalogKey": "ministral3-3b",
+  "name": "Ministral 3 3B Q4 (4-bit, ~2.5GB, 128K context, vision)",
+  "size": "3B",
+  "type": "llm",
+  "engine": "wandler",
+  "bits": 4,
+  "repo": "mistralai/Ministral-3-3B-Instruct-2512-ONNX",
+  "mmproj": "vision_encoder",
+  "vram": {
+    "model": 2500,
+    "overhead": 400
+  },
+  "kvCacheMbPer1kTokens": 6,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "wandler",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "platforms": [
+    "mac",
+    "linux",
+    "windows"
+  ],
+  "status": "experimental"
+}

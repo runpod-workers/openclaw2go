@@ -1,0 +1,31 @@
+{
+  "id": "onnx-community/kokoro-82m-onnx",
+  "group": "kokoro-82m",
+  "family": "kokoro",
+  "catalogKey": "kokoro-82m",
+  "name": "Kokoro 82M Q8 (8-bit, ~82MB, TTS)",
+  "size": "82M",
+  "type": "audio",
+  "engine": "wandler",
+  "bits": 8,
+  "capabilities": [
+    "tts"
+  ],
+  "repo": "onnx-community/Kokoro-82M-v1.0-ONNX",
+  "vram": {
+    "model": 82,
+    "overhead": 50
+  },
+  "defaults": {},
+  "provider": {
+    "name": "wandler",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "platforms": [
+    "mac",
+    "linux",
+    "windows"
+  ],
+  "status": "experimental"
+}

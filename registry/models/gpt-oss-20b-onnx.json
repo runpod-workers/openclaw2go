@@ -1,0 +1,31 @@
+{
+  "id": "onnx-community/gpt-oss-20b-onnx",
+  "group": "gpt-oss-20b",
+  "family": "gpt-oss-20b",
+  "catalogKey": "gpt-oss-20b",
+  "name": "GPT-OSS 20B Q4 (4-bit, ~11.8GB, 128K context)",
+  "size": "20B",
+  "type": "llm",
+  "engine": "wandler",
+  "bits": 4,
+  "repo": "onnx-community/gpt-oss-20b-ONNX",
+  "vram": {
+    "model": 11800,
+    "overhead": 1000
+  },
+  "kvCacheMbPer1kTokens": 20,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "wandler",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "platforms": [
+    "mac",
+    "linux",
+    "windows"
+  ],
+  "status": "experimental"
+}

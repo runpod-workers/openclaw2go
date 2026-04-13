@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { cn } from '../lib/utils'
-import { formatVram, type CatalogModel, type OsPlatform } from '../lib/catalog'
+import { formatVram, type CatalogModel, type Platform } from '../lib/catalog'
 import { getVariantForOs, findSiblingsWithOs, type ModelGroup } from '../lib/group-models'
 import type { AgentFramework } from '../lib/frameworks'
 import { PlatformIcon } from './PlatformSelector'
@@ -132,7 +132,7 @@ export function CodeBlock({ code, requirements }: { code: string; requirements: 
   )
 }
 
-const TAB_CONFIG: { id: DeployTab; label: string; os: OsPlatform | null; icon?: 'agent' | 'cloud' }[] = [
+const TAB_CONFIG: { id: DeployTab; label: string; os: Platform | null; icon?: 'agent' | 'cloud' }[] = [
   { id: 'agent', label: 'agent', os: null, icon: 'agent' },
   { id: 'linux', label: 'linux', os: 'linux' },
   { id: 'windows', label: 'windows', os: 'windows' },
@@ -140,7 +140,7 @@ const TAB_CONFIG: { id: DeployTab; label: string; os: OsPlatform | null; icon?: 
   { id: 'cloud', label: 'cloud', os: null, icon: 'cloud' },
 ]
 
-function isTabVisible(tab: DeployTab, os: OsPlatform | null): boolean {
+function isTabVisible(tab: DeployTab, os: Platform | null): boolean {
   if (tab === 'agent') return true
   if (os === null) return true
   if (tab === 'cloud') return os !== 'mac'
@@ -568,7 +568,7 @@ export default function DeployCard({
 }: {
   selectedModels: CatalogModel[]
   modelIdToGroup: Map<string, ModelGroup>
-  globalOs: OsPlatform | null
+  globalOs: Platform | null
   contextOverride: number | null
   onToggle?: (model: CatalogModel) => void
   framework: AgentFramework

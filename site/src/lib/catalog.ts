@@ -3,7 +3,9 @@ export interface ModelVram {
   overhead: number
 }
 
-export type OsPlatform = 'linux' | 'windows' | 'mac'
+export const PLATFORMS = ['mac', 'linux', 'windows'] as const
+export type Platform = (typeof PLATFORMS)[number]
+export type OsPlatform = Platform
 
 export interface CatalogModel {
   id: string
@@ -22,7 +24,8 @@ export interface CatalogModel {
   kvCacheMbPer1kTokens?: number
   contextLength?: number
   tps?: Record<string, number>
-  os: OsPlatform[]
+  os: Platform[]
+  engineCategory: Engine
   isDefault: boolean
   hasVision: boolean
   capabilities?: string[]
@@ -32,7 +35,7 @@ export interface DeviceInfo {
   id: string
   name: string
   vramMb: number
-  os: OsPlatform[]
+  os: Platform[]
 }
 
 const MAC_DEVICES: DeviceInfo[] = [
@@ -45,6 +48,29 @@ const MAC_DEVICES: DeviceInfo[] = [
   { id: 'apple-m4-max-128gb', name: 'm4 max', vramMb: 131072, os: ['mac'] },
   { id: 'apple-m4-ultra-256gb', name: 'm4 ultra', vramMb: 262144, os: ['mac'] },
 ]
+
+/** User-facing inference engine categories */
+export const ENGINES = ['llamacpp', 'mlx', 'wandler'] as const
+export type Engine = (typeof ENGINES)[number]
+
+export const ENGINE_META: Record<Engine, { label: string; description: string; os: Platform[] }> = {
+  'llamacpp': { label: 'llama.cpp', description: 'NVIDIA GPU (CUDA)', os: ['linux', 'windows'] },
+  'mlx': { label: 'MLX', description: 'Apple Silicon', os: ['mac'] },
+  'wandler': { label: 'wandler', description: 'Any GPU (WebGPU)', os: ['mac', 'linux', 'windows'] },
+}
+
+/** Map raw model engine strings to user-facing engine categories */
+export function resolveEngine(rawEngine: string): Engine {
+  if (rawEngine === 'mlx' || rawEngine === 'mlx-lm' || rawEngine === 'mlx-audio') return 'mlx'
+  if (rawEngine === 'wandler' || rawEngine === 'onnx') return 'wandler'
+  return 'llamacpp' // llamacpp, a2go-llamacpp, a2go-media, image-gen, etc.
+}
+
+/** Get engines available on a given platform (null = all engines) */
+export function getEnginesForPlatform(platform: Platform | null): Engine[] {
+  if (!platform) return [...ENGINES]
+  return ENGINES.filter((e) => ENGINE_META[e].os.includes(platform))
+}
 
 export const VRAM_PRESETS = [8, 16, 24, 32, 48, 80, 128, 141, 192, 256, 288, 384, 512]
 export const DEVICE_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8] as const
@@ -133,7 +159,8 @@ interface RawModel {
   tps?: Record<string, number>
   defaults?: { contextLength?: number }
   mmproj?: string
-  platform?: 'nvidia' | 'mlx'
+  platform?: string
+  platforms?: Platform[]
   [key: string]: unknown
 }
 
@@ -149,6 +176,26 @@ interface RawCatalog {
   gpus: RawDevice[]
 }
 
+function resolveModelPlatforms(model: RawModel): Platform[] {
+  const declared = Array.isArray(model.platforms)
+    ? model.platforms.filter((platform): platform is Platform => PLATFORMS.includes(platform))
+    : []
+  if (declared.length > 0) return declared
+
+  switch (model.platform) {
+    case 'mlx':
+    case 'mac':
+      return ['mac']
+    case 'linux':
+      return ['linux']
+    case 'windows':
+      return ['windows']
+    case 'nvidia':
+    default:
+      return ['linux', 'windows']
+  }
+}
+
 export async function fetchCatalog(): Promise<{ models: CatalogModel[]; devices: DeviceInfo[] }> {
   const res = await fetch(`${import.meta.env.BASE_URL}v1/catalog.json`)
   if (!res.ok) throw new Error(`Failed to load catalog: ${res.status}`)
@@ -157,34 +204,7 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; devices:
   const models: CatalogModel[] = raw.models.flatMap((m) => {
     const hasVision = typeof m.mmproj === 'string' && m.mmproj.length > 0
 
-    // MLX-only models (platform: "mlx") → Mac tab only
-    if (m.platform === 'mlx') {
-      return [{
-        id: m.id,
-        group: m.group,
-        family: m.family,
-        catalogKey: m.catalogKey,
-        name: m.name.toLowerCase(),
-        size: m.size ?? '',
-        type: m.type,
-        engine: m.engine,
-        bits: m.bits,
-        primaryBits: m.bits,
-        status: m.status ?? 'stable',
-        repo: m.repo ?? m.id,
-        vram: m.vram,
-        kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
-        tps: m.tps,
-        contextLength: m.defaults?.contextLength,
-        os: ['mac'] as OsPlatform[],
-        isDefault: (m as Record<string, unknown>).default === true,
-        hasVision: false,
-        capabilities: m.capabilities,
-      }]
-    }
-
-    // GGUF model → Linux/Windows entry
-    const ggufEntry: CatalogModel = {
+    const entry: CatalogModel = {
       id: m.id,
       group: m.group,
       family: m.family,
@@ -201,13 +221,14 @@ export async function fetchCatalog(): Promise<{ models: CatalogModel[]; devices:
       kvCacheMbPer1kTokens: m.kvCacheMbPer1kTokens,
       tps: m.tps,
       contextLength: m.defaults?.contextLength,
-      os: ['linux', 'windows'] as OsPlatform[],
+      os: resolveModelPlatforms(m),
+      engineCategory: resolveEngine(m.engine),
       isDefault: (m as Record<string, unknown>).default === true,
       hasVision,
       capabilities: m.capabilities,
     }
 
-    return [ggufEntry]
+    return [entry]
   })
 
   const devices: DeviceInfo[] = [

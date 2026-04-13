@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { formatContext, formatVram, type CatalogModel, type DeviceInfo, type OsPlatform } from '../lib/catalog'
+import { formatContext, formatVram, ENGINE_META, type CatalogModel, type DeviceInfo, type OsPlatform, type Engine } from '../lib/catalog'
+import { getAvailableEnginesForFamily, resolveVariantForPlatformEngine } from '../lib/engine-resolver'
 import type { ModelGroup, ModelVariant, CatalogEntry, SubVariant, FamilyEntry } from '../lib/group-models'
 import { getVariantForOs, findSiblingsWithOs } from '../lib/group-models'
 import { PlatformIcon } from './PlatformSelector'
@@ -11,14 +12,6 @@ const SLOTS: { type: 'llm' | 'image' | 'audio'; label: string; color: string }[]
   { type: 'image', label: 'IMAGE', color: '#ec407a' },
   { type: 'audio', label: 'AUDIO', color: '#b388ff' },
 ]
-
-/** Map internal engine IDs to human-friendly display names */
-const ENGINE_DISPLAY: Record<string, string> = {
-  'llamacpp': 'llama.cpp',
-  'a2go-llamacpp': 'llama.cpp',
-  'image-gen': 'diffusers',
-  'mlx': 'mlx-lm',
-}
 
 /** Label (fixed narrow) | visible divider | Value (flex) */
 function InfoBlock({ label, value }: { label: string; value: string }) {
@@ -286,6 +279,65 @@ function VramBreakdownBar({
   )
 }
 
+/** Engine switcher row — uses central resolver for available engines */
+function EngineRow({
+  model,
+  familyEntry,
+  activeTabOs,
+  swapModelVariant,
+  onEngineSelect,
+}: {
+  model: CatalogModel
+  familyEntry: FamilyEntry | undefined
+  activeTabOs: OsPlatform | null
+  swapModelVariant?: (oldModel: CatalogModel, newModel: CatalogModel) => void
+  onEngineSelect?: (engine: Engine) => void
+}) {
+  // Use central resolver: get engines available for this family on the active tab's OS
+  const availableEngines = useMemo(
+    () => getAvailableEnginesForFamily(familyEntry, activeTabOs),
+    [familyEntry, activeTabOs],
+  )
+
+  const currentEngine = model.engineCategory
+
+  const handleEngineSwitch = useCallback((targetEngine: Engine) => {
+    if (targetEngine === currentEngine || !swapModelVariant || !familyEntry) return
+    onEngineSelect?.(targetEngine)
+    const resolved = resolveVariantForPlatformEngine(familyEntry, activeTabOs, targetEngine)
+    if (resolved) swapModelVariant(model, resolved)
+  }, [model, currentEngine, swapModelVariant, familyEntry, activeTabOs, onEngineSelect])
+
+  return (
+    <div className="flex items-stretch">
+      <span className="flex w-16 lg:w-20 shrink-0 items-center justify-end px-2 lg:px-3 py-1 lg:py-1.5 font-mono text-[9px] lg:text-[10px] uppercase tracking-widest text-foreground/40">
+        engine
+      </span>
+      <span className="w-px shrink-0 bg-foreground/[0.08]" />
+      <div className="flex flex-1 items-center gap-1 px-2 lg:px-3 py-1 lg:py-1.5">
+        {availableEngines.map((engine) => {
+          const isActive = engine === currentEngine
+          return (
+            <button
+              key={engine}
+              onClick={() => handleEngineSwitch(engine)}
+              className={cn(
+                "h-5 px-1.5 font-mono text-[8px] lg:text-[9px] tracking-wider transition-all",
+                isActive
+                  ? "border border-foreground/30 bg-foreground/10 text-foreground/90"
+                  : "border border-foreground/[0.08] bg-foreground/[0.04] text-foreground/50 hover:text-foreground/70 hover:border-foreground/15"
+              )}
+              title={ENGINE_META[engine]?.description}
+            >
+              {ENGINE_META[engine]?.label ?? engine}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /** Resolve which sub-variant + quant indices match the currently selected model */
 function resolveSelectedIndices(
   entry: CatalogEntry,
@@ -320,6 +372,7 @@ function FilledSlotCard({
   group,
   visibleVariants,
   activeTabIndex,
+  sharedOs,
   onTabSelect,
   accentColor,
   devices,
@@ -330,13 +383,15 @@ function FilledSlotCard({
   contextOverride,
   onContextChange,
   swapModelVariant,
+  onEnginePreferenceChange,
 }: {
   model: CatalogModel
   entry: CatalogEntry | undefined
   familyEntry: FamilyEntry | undefined
   group: ModelGroup | undefined
   visibleVariants: ModelVariant[]
-  activeTabIndex: number
+  activeTabIndex: number | undefined
+  sharedOs: OsPlatform | null
   onTabSelect: (os: OsPlatform) => void
   accentColor: string
   devices: DeviceInfo[]
@@ -347,6 +402,7 @@ function FilledSlotCard({
   contextOverride: number | null
   onContextChange: (ctx: number | null) => void
   swapModelVariant?: (oldModel: CatalogModel, newModel: CatalogModel) => void
+  onEnginePreferenceChange?: (engine: Engine) => void
 }) {
   const displayName = familyEntry?.displayName ?? entry?.displayName ?? group?.displayName ?? model.name
   const singleSizeLabel = !familyEntry?.isMultiSize ? (familyEntry?.sizeLabels[0] || null) : null
@@ -373,19 +429,52 @@ function FilledSlotCard({
   const currentSv = entry?.subVariants[activeSvIdx] ?? entry?.subVariants[0]
   const quantGroups = currentSv ? getQuantGroups(currentSv) : []
 
-  // ── Unified platform tabs: one array, one rendering path ──
+  // ── Fixed platform tabs: always "Linux · Windows" and "macOS" ──
+  // Tabs represent deployment targets, not variant OS arrays. A variant that supports
+  // ['mac', 'linux', 'windows'] still shows as two tabs, not one combined tab.
   const platformTabs = useMemo(() => {
+    // Check which platforms have variants in the entry (across all engines)
+    const allOs = new Set<string>()
+    if (entry) {
+      for (const g of entry.groups) {
+        for (const v of g.variants) {
+          for (const o of v.os) allOs.add(o)
+        }
+      }
+    } else if (visibleVariants.length > 0) {
+      for (const v of visibleVariants) {
+        for (const o of v.os) allOs.add(o)
+      }
+    }
+
+    const hasLinux = allOs.has('linux') || allOs.has('windows')
+    const hasMac = allOs.has('mac')
+
+    // Find a variant for each tab from visible variants
+    const linuxVariant = visibleVariants.find((v) => v.os.includes('linux') || v.os.includes('windows'))
+    const macVariant = visibleVariants.find((v) => v.os.includes('mac'))
+
     const tabs: { key: string; os: OsPlatform; available: boolean; variant?: ModelVariant; osLabels: OsPlatform[] }[] = []
-    for (const vt of visibleVariants) {
+
+    if (hasLinux) {
       tabs.push({
-        key: `${vt.model.id}-${vt.os.join(',')}`,
-        os: vt.os[0],
-        available: true,
-        variant: vt,
-        osLabels: [...vt.os],
+        key: 'linux-windows',
+        os: 'linux',
+        available: !!linuxVariant,
+        variant: linuxVariant,
+        osLabels: ['linux' as OsPlatform, 'windows' as OsPlatform],
       })
     }
-    if (macUnavailable) {
+
+    if (hasMac) {
+      tabs.push({
+        key: 'mac',
+        os: 'mac',
+        available: !!macVariant,
+        variant: macVariant,
+        osLabels: ['mac' as OsPlatform],
+      })
+    } else if (macUnavailable) {
       tabs.push({
         key: 'mac-unavailable',
         os: 'mac',
@@ -393,19 +482,22 @@ function FilledSlotCard({
         osLabels: ['mac' as OsPlatform],
       })
     }
-    return tabs
-  }, [visibleVariants, macUnavailable])
 
-  // activeTabIndex is -1 when parent indicates the unavailable tab should be active
+    return tabs
+  }, [visibleVariants, macUnavailable, entry])
+
+  // Compute active tab from sharedOs, matching against our fixed platform tabs
   const activeTabIdx = activeTabIndex === -1
     ? platformTabs.findIndex(t => !t.available)
-    : Math.max(0, Math.min(activeTabIndex, platformTabs.length - 1))
+    : sharedOs
+      ? Math.max(0, platformTabs.findIndex(t => t.os === sharedOs || t.osLabels.includes(sharedOs)))
+      : 0
   const isUnavailableActive = platformTabs[activeTabIdx]?.available === false
 
-  // Auto-switch quant when current quant is unavailable on the active OS
+  // Active OS comes from the selected platform tab
   const activeOs: OsPlatform | null = isUnavailableActive
     ? 'mac'
-    : visibleVariants[activeTabIndex]?.os[0] ?? null
+    : platformTabs[activeTabIdx]?.os ?? sharedOs ?? null
 
   useEffect(() => {
     if (!currentSv || !swapModelVariant || !activeOs) return
@@ -425,7 +517,6 @@ function FilledSlotCard({
   // Use the selected model directly — it always reflects the correct quant+platform after any swap
   const v = model
 
-  const engine = ENGINE_DISPLAY[v.engine] ?? v.engine
   const repo = model.repo
   const effectiveCtx = (model.type === 'llm' && contextOverride != null) ? contextOverride : v.contextLength
   const kvCacheMb = (v.kvCacheMbPer1kTokens && effectiveCtx)
@@ -443,14 +534,14 @@ function FilledSlotCard({
     const newSv = entry.subVariants[newSvIdx]
     if (!newSv) return
 
-    // Prefer smallest quant (groups sorted by bits ascending) for current OS
-    let bestGroup = newSv.groups.find((g) =>
-      g.variants.some((gv) => !activeOs || gv.os.includes(activeOs))
-    )
-    if (!bestGroup) bestGroup = newSv.groups[0]
-    if (!bestGroup) return
-
-    const variant = getVariantForOs(bestGroup, activeOs)
+    const curEngine = model.engineCategory
+    // Prefer variant matching current engine + OS
+    for (const g of newSv.groups) {
+      const v = g.variants.find((gv) => gv.model.engineCategory === curEngine && (!activeOs || gv.os.includes(activeOs)))
+      if (v) { swapModelVariant(model, v.model); return }
+    }
+    // Fallback: any variant matching OS
+    const variant = getVariantForOs(newSv.groups[0], activeOs)
     swapModelVariant(model, variant.model)
   }, [entry, model, activeOs, swapModelVariant])
 
@@ -459,6 +550,11 @@ function FilledSlotCard({
     const newGroup = currentSv.groups[newQuantIdx]
     if (!newGroup) return
 
+    const curEngine = model.engineCategory
+    // Prefer variant matching current engine
+    const v = newGroup.variants.find((gv) => gv.model.engineCategory === curEngine && (!activeOs || gv.os.includes(activeOs)))
+    if (v) { swapModelVariant(model, v.model); return }
+    // Fallback
     const variant = getVariantForOs(newGroup, activeOs)
     swapModelVariant(model, variant.model)
   }, [currentSv, model, activeOs, swapModelVariant])
@@ -479,18 +575,30 @@ function FilledSlotCard({
     const newEntry = familyEntry.entries[newSizeIdx]
     if (!newEntry) return
 
-    // Pick the first sub-variant, smallest quant, best OS variant
-    const sv = newEntry.subVariants[0]
-    if (!sv) return
-
-    let bestGroup = sv.groups.find((g) =>
-      g.variants.some((gv) => !activeOs || gv.os.includes(activeOs))
-    )
-    if (!bestGroup) bestGroup = sv.groups[0]
-    if (!bestGroup) return
-
-    const variant = getVariantForOs(bestGroup, activeOs)
-    swapModelVariant(model, variant.model)
+    // Use the current engine as preference when switching sizes
+    const currentEngine = model.engineCategory
+    // Find a variant in the new size that matches current engine + OS
+    for (const sv of newEntry.subVariants) {
+      for (const g of sv.groups) {
+        const variant = g.variants.find((v) =>
+          v.model.engineCategory === currentEngine && (!activeOs || v.os.includes(activeOs))
+        )
+        if (variant) {
+          swapModelVariant(model, variant.model)
+          return
+        }
+      }
+    }
+    // Fallback: any variant matching OS
+    for (const sv of newEntry.subVariants) {
+      for (const g of sv.groups) {
+        const variant = g.variants.find((v) => !activeOs || v.os.includes(activeOs))
+        if (variant) {
+          swapModelVariant(model, variant.model)
+          return
+        }
+      }
+    }
   }, [familyEntry, model, activeOs, swapModelVariant])
 
   const showConfigZone = isMultiSize || singleSizeLabel || hasMultipleSubVariants || availableQuantCount >= 1
@@ -751,7 +859,14 @@ function FilledSlotCard({
             <InfoBlockLink label="weights" url={`https://huggingface.co/${repo}`} text={repo} />
             <div className="h-px bg-foreground/[0.06]" />
 
-            <InfoBlock label="engine" value={engine} />
+            {/* Engine row — switchable pills for all available engines in this family */}
+            <EngineRow
+              model={v}
+              familyEntry={familyEntry}
+              activeTabOs={activeOs}
+              swapModelVariant={swapModelVariant}
+              onEngineSelect={onEnginePreferenceChange}
+            />
           </div>
         </>
       )}
@@ -794,6 +909,9 @@ export default function SelectedModels({
     if (os != null) setSharedOs(os)
   }, [os])
 
+  // Track user's explicit engine preference — sticky across tab switches
+  const [userEnginePreference, setUserEnginePreference] = useState<Engine | null>(null)
+
   // Deduplicated list of all groups for sibling lookup
   const allGroups = useMemo(
     () => [...new Map([...modelIdToGroup.values()].map((g) => [g.key, g])).values()],
@@ -825,15 +943,18 @@ export default function SelectedModels({
 
         // Collect all unique platform variants across the ENTIRE entry (not just current group)
         // so platform tabs remain visible even when the current quant is platform-exclusive.
+        // Deduplicate by individual OS to prevent duplicate tabs from ONNX variants that
+        // cover the same OSes as GGUF/MLX.
         const entryVariants: ModelVariant[] = []
-        const seenOs = new Set<string>()
+        const coveredOs = new Set<string>()
         if (entry) {
           for (const g of entry.groups) {
             for (const v of g.variants) {
-              const osKey = [...v.os].sort().join(',')
-              if (!seenOs.has(osKey)) {
-                seenOs.add(osKey)
+              // Only add this variant if it covers at least one new OS
+              const newOses = v.os.filter((o: string) => !coveredOs.has(o))
+              if (newOses.length > 0) {
                 entryVariants.push(v)
+                for (const o of v.os) coveredOs.add(o)
               }
             }
           }
@@ -860,12 +981,8 @@ export default function SelectedModels({
           ? findSiblingsWithOs(group, allGroups, 'mac')
           : []
 
-        // When the mac tab is active but unavailable, deselect real variant tabs
-        const activeIdx = isMacTabActive
-          ? -1
-          : sharedOs
-            ? Math.max(0, filtered.findIndex((vt) => vt.os.includes(sharedOs)))
-            : 0
+        // Pass sharedOs to FilledSlotCard — it computes the active tab from its own tabs
+        const activeIdx = isMacTabActive ? -1 : undefined // undefined = let card decide
 
         const handleSwapToSibling = (siblingGroup: ModelGroup) => {
           // Prefer linux variant so model stays visible in catalog; fall back to mac
@@ -892,24 +1009,15 @@ export default function SelectedModels({
               group={group}
               visibleVariants={filtered}
               activeTabIndex={activeIdx}
+              sharedOs={sharedOs}
               onTabSelect={(newOs) => {
                 setSharedOs(newOs)
                 onSharedOsChange?.(newOs)
-                // Swap model to the variant matching the new platform
-                if (swapModelVariant && entry) {
-                  // Try current group first
-                  const curVariant = group?.variants.find(v => v.os.includes(newOs))
-                  if (curVariant && curVariant.model.id !== m.id) {
-                    swapModelVariant(m, curVariant.model)
-                  } else if (!curVariant) {
-                    // Current group has no variant for this OS — find any group that does
-                    for (const g of entry.groups) {
-                      const v = g.variants.find(v => v.os.includes(newOs))
-                      if (v) {
-                        swapModelVariant(m, v.model)
-                        break
-                      }
-                    }
+                // Use user's engine preference if available, otherwise platform default
+                if (swapModelVariant && familyEntry) {
+                  const resolved = resolveVariantForPlatformEngine(familyEntry, newOs, userEnginePreference)
+                  if (resolved && resolved.id !== m.id) {
+                    swapModelVariant(m, resolved)
                   }
                 }
               }}
@@ -922,6 +1030,7 @@ export default function SelectedModels({
               contextOverride={contextOverride}
               onContextChange={onContextChange}
               swapModelVariant={swapModelVariant}
+              onEnginePreferenceChange={setUserEnginePreference}
             />
           </div>
         )]

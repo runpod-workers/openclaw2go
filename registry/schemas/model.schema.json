@@ -31,7 +31,7 @@
     },
     "engine": {
       "type": "string",
-      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "image-gen", "qwen3-tts", "mlx", "mlx-lm", "mlx-audio", "mflux", "a2go-llamacpp", "vllm"],
+      "enum": ["llamacpp", "llamacpp-audio", "llamacpp-glm-dsa", "image-gen", "qwen3-tts", "mlx", "mlx-lm", "mlx-audio", "mflux", "a2go-llamacpp", "a2go-media", "vllm", "wandler"],
       "description": "Engine to use for this model"
     },
     "repo": {

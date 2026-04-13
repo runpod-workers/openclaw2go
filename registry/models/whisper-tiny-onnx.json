@@ -1,0 +1,31 @@
+{
+  "id": "onnx-community/whisper-tiny-onnx",
+  "group": "whisper-tiny",
+  "family": "whisper",
+  "catalogKey": "whisper-tiny",
+  "name": "Whisper Tiny Q4 (4-bit, ~91MB, STT)",
+  "size": "39M",
+  "type": "audio",
+  "engine": "wandler",
+  "bits": 4,
+  "capabilities": [
+    "stt"
+  ],
+  "repo": "onnx-community/whisper-tiny",
+  "vram": {
+    "model": 91,
+    "overhead": 50
+  },
+  "defaults": {},
+  "provider": {
+    "name": "wandler",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "platforms": [
+    "mac",
+    "linux",
+    "windows"
+  ],
+  "status": "experimental"
+}

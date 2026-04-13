@@ -1,0 +1,32 @@
+{
+  "id": "onnx-community/gemma4-e4b-onnx",
+  "group": "gemma4-e4b",
+  "family": "gemma4",
+  "catalogKey": "gemma4-e4b",
+  "name": "Gemma 4 E4B Q4 (4-bit, ~4.8GB, 128K context, multimodal)",
+  "size": "4B",
+  "type": "llm",
+  "engine": "wandler",
+  "bits": 4,
+  "repo": "onnx-community/gemma-4-E4B-it-ONNX",
+  "mmproj": "vision_encoder",
+  "vram": {
+    "model": 4800,
+    "overhead": 500
+  },
+  "kvCacheMbPer1kTokens": 16,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "wandler",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "platforms": [
+    "mac",
+    "linux",
+    "windows"
+  ],
+  "status": "experimental"
+}

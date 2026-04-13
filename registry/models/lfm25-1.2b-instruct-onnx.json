@@ -1,0 +1,31 @@
+{
+  "id": "liquidai/lfm25-1.2b-instruct-onnx",
+  "group": "lfm25-12b",
+  "family": "lfm2",
+  "catalogKey": "lfm25-12b",
+  "name": "LFM2.5 1.2B Instruct Q4 (4-bit, ~811MB, 128K context)",
+  "size": "1.2B",
+  "type": "llm",
+  "engine": "wandler",
+  "bits": 4,
+  "repo": "LiquidAI/LFM2.5-1.2B-Instruct-ONNX",
+  "vram": {
+    "model": 811,
+    "overhead": 200
+  },
+  "kvCacheMbPer1kTokens": 4,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "wandler",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "platforms": [
+    "mac",
+    "linux",
+    "windows"
+  ],
+  "status": "experimental"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "onnx-community/nemotron3-nano-4b-onnx",
+  "group": "nemotron3-nano-4b",
+  "family": "nemotron3",
+  "catalogKey": "nemotron3-nano",
+  "name": "Nemotron-3-Nano 4B Q4 (4-bit, ~2.1GB, 128K context)",
+  "size": "4B",
+  "type": "llm",
+  "engine": "wandler",
+  "bits": 4,
+  "repo": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX",
+  "vram": {
+    "model": 2100,
+    "overhead": 400
+  },
+  "kvCacheMbPer1kTokens": 8,
+  "defaults": {
+    "contextLength": 131072
+  },
+  "provider": {
+    "name": "wandler",
+    "api": "openai-completions"
+  },
+  "default": false,
+  "platforms": [
+    "mac",
+    "linux",
+    "windows"
+  ],
+  "status": "experimental"
+}

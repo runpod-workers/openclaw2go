@@ -1,4 +1,4 @@
-import type { OsPlatform } from './catalog'
+import type { Platform } from './catalog'
 
 export interface ModelParam {
   repo: string
@@ -6,7 +6,7 @@ export interface ModelParam {
 }
 
 export interface UrlState {
-  os: OsPlatform | null
+  platform: Platform | null
   llm: ModelParam | null
   image: ModelParam | null
   audio: ModelParam | null
@@ -15,9 +15,10 @@ export interface UrlState {
   vram: number | null
   ctx: number | null
   agent: string | null
+  hasState: boolean
 }
 
-const VALID_OS: Set<string> = new Set(['linux', 'windows', 'mac'])
+const VALID_PLATFORMS: Set<string> = new Set(['linux', 'windows', 'mac', 'web'])
 
 const MODEL_ROLES = ['llm', 'image', 'audio'] as const
 
@@ -33,8 +34,8 @@ function parseModelParam(params: URLSearchParams, role: string): ModelParam | nu
 export function parseUrlState(): UrlState {
   const params = new URLSearchParams(window.location.search)
 
-  const osRaw = params.get('os')
-  const os = osRaw && VALID_OS.has(osRaw) ? (osRaw as OsPlatform) : null
+  const platformRaw = params.get('platform') ?? params.get('os')
+  const platform = platformRaw && VALID_PLATFORMS.has(platformRaw) ? (platformRaw as Platform) : null
 
   const vramRaw = params.get('vram')
   const vram = vramRaw ? Number(vramRaw) : null
@@ -45,8 +46,11 @@ export function parseUrlState(): UrlState {
   const deviceCountRaw = params.get('deviceCount')
   const deviceCount = deviceCountRaw ? Number(deviceCountRaw) : null
 
+  const recognizedKeys = ['platform', 'os', 'llm', 'image', 'audio', 'device', 'deviceCount', 'vram', 'ctx', 'agent']
+  const hasState = recognizedKeys.some((key) => params.has(key))
+
   return {
-    os,
+    platform,
     llm: parseModelParam(params, 'llm'),
     image: parseModelParam(params, 'image'),
     audio: parseModelParam(params, 'audio'),
@@ -55,6 +59,7 @@ export function parseUrlState(): UrlState {
     vram: vram && Number.isFinite(vram) ? vram : null,
     ctx: ctx && Number.isFinite(ctx) && ctx >= 16384 ? ctx : null,
     agent: params.get('agent'),
+    hasState,
   }
 }
 
@@ -67,7 +72,7 @@ function syncModelParam(params: URLSearchParams, role: string, model: ModelParam
 export function syncUrlState(state: UrlState): void {
   const params = new URLSearchParams()
 
-  if (state.os) params.set('os', state.os)
+  if (state.platform) params.set('platform', state.platform)
   for (const role of MODEL_ROLES) {
     syncModelParam(params, role, state[role])
   }
