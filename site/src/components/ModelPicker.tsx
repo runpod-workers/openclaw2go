@@ -57,7 +57,7 @@ export default function CatalogEntryCard({
       }}
       className={cn(
         "group flex w-full cursor-pointer items-center text-left transition-all duration-150",
-        "h-10 px-3 gap-2",
+        "h-8 px-3 gap-2",
         selected
           ? "bg-foreground/[0.07]"
           : "hover:bg-foreground/[0.03]",
