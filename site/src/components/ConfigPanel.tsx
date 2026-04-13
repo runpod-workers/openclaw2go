@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import SectionHeader from './SectionHeader'
 import CollapsibleSection from './CollapsibleSection'
-import DeviceSelector, { DeviceCountStepper } from './VramLegend'
 import VramGauge, { type VramSegment } from './VramSelector'
 import SelectedModels from './SelectedModels'
 import DeployCard from './DeployOutput'
@@ -43,8 +42,6 @@ export default function ConfigPanel({
   selectedDevice,
   devices,
   deviceCount,
-  onDeviceCountChange,
-  onDeviceSelect,
   onVramPreset,
   onToggleModel,
   onClearAll,
@@ -63,8 +60,6 @@ export default function ConfigPanel({
   selectedDevice: DeviceInfo | null
   devices: DeviceInfo[]
   deviceCount: DeviceCount
-  onDeviceCountChange: (count: DeviceCount) => void
-  onDeviceSelect: (device: DeviceInfo) => void
   onVramPreset: (gb: number) => void
   onToggleModel: (model: CatalogModel) => void
   onClearAll: () => void
@@ -128,44 +123,14 @@ export default function ConfigPanel({
     </span>
   ) : undefined
 
-  const hardwareBadge = selectedDevice ? (
-    <span className="font-mono text-[9px] text-foreground/40">
-      {selectedDevice.name}
-    </span>
-  ) : undefined
-
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-visible lg:overflow-y-scroll">
       {/* Memory — collapsible on mobile, inline on desktop */}
       <CollapsibleSection title="Memory" badge={memoryBadge}>
-        {/* Desktop: toolbar grid row with Memory + Hardware + Logo */}
+        {/* Desktop: toolbar grid row with Memory + Logo */}
         <div className="hidden lg:block">
           <div className="border-b border-foreground/[0.06]">
-            <div className="grid grid-cols-[1fr_1fr_auto]">
-              {/* Hardware */}
-              <div className="border-r border-foreground/[0.06]">
-                <SectionHeader>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
-                    Hardware
-                  </span>
-                  <span className="ml-auto flex items-center gap-1.5">
-                    <span className="font-mono text-[9px] font-medium uppercase tracking-widest text-foreground/40">
-                      count
-                    </span>
-                    <DeviceCountStepper count={deviceCount} onChange={onDeviceCountChange} />
-                  </span>
-                </SectionHeader>
-                <div className="px-3 py-2.5">
-                  <DeviceSelector
-                    devices={devices}
-                    selectedDevice={selectedDevice}
-                    onSelect={onDeviceSelect}
-                    deviceCount={deviceCount}
-                    totalVramMb={displayVramGb * 1024}
-                  />
-                </div>
-              </div>
-
+            <div className="grid grid-cols-[1fr_auto]">
               {/* Memory */}
               <div className="border-r border-foreground/[0.06]">
                 <SectionHeader>
@@ -224,27 +189,6 @@ export default function ConfigPanel({
           />
         </div>
       </CollapsibleSection>
-
-      {/* Hardware — collapsible on mobile only (desktop is rendered above inside the grid) */}
-      <div className="lg:hidden">
-        <CollapsibleSection title="Hardware" badge={hardwareBadge}>
-          <div className="flex items-center gap-1 border-b border-foreground/[0.04] px-3 py-1.5">
-            <span className="font-mono text-[8px] uppercase tracking-widest text-foreground/25">
-              count
-            </span>
-            <DeviceCountStepper count={deviceCount} onChange={onDeviceCountChange} />
-          </div>
-          <div className="px-3 py-2.5">
-            <DeviceSelector
-              devices={devices}
-              selectedDevice={selectedDevice}
-              onSelect={onDeviceSelect}
-              deviceCount={deviceCount}
-              totalVramMb={displayVramGb * 1024}
-            />
-          </div>
-        </CollapsibleSection>
-      </div>
 
       {/* Selected Models — sticky header */}
       <div className="sticky top-0 z-10 bg-background border-b border-foreground/[0.06]">

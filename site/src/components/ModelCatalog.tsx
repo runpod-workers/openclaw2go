@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, useEffect, useRef } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import CollapsibleSection from './CollapsibleSection'
 import ModelSearch from './ModelSearch'
@@ -6,9 +6,67 @@ import ModelFilters, { type FilterState, type TaskChip, EMPTY_FILTERS } from './
 import CatalogEntryCard from './ModelPicker'
 import SectionHeader from './SectionHeader'
 import FrameworkSelector from './FrameworkSelector'
-import type { CatalogModel, OsPlatform } from '../lib/catalog'
+import DeviceSelector from './VramLegend'
+import type { CatalogModel, DeviceInfo, DeviceCount, OsPlatform } from '../lib/catalog'
 import type { AgentFramework } from '../lib/frameworks'
 import { getFamilyEntrySummary, getVariantForOs, type FamilyEntry } from '../lib/group-models'
+
+// ---------------------------------------------------------------------------
+// GPU detection via WebGL
+// ---------------------------------------------------------------------------
+
+type DetectedBrand = 'nvidia' | 'apple'
+
+interface GpuDetection {
+  renderer: string
+  brand: DetectedBrand | null
+  chipHint: string | null
+}
+
+function detectGpuFromWebGL(): GpuDetection | null {
+  try {
+    const canvas = document.createElement('canvas')
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+    if (!gl || !(gl instanceof WebGLRenderingContext)) return null
+    const ext = gl.getExtension('WEBGL_debug_renderer_info')
+    if (!ext) return null
+    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string
+    canvas.remove()
+    if (!renderer) return null
+
+    const lower = renderer.toLowerCase()
+    if (lower.includes('nvidia') || lower.includes('geforce') || lower.includes('rtx') || lower.includes('quadro') || lower.includes('tesla')) {
+      return { renderer, brand: 'nvidia', chipHint: renderer.replace(/\/.*$/, '').trim() }
+    }
+    if (lower.includes('apple')) {
+      const m = renderer.match(/Apple\s+(M\d+(?:\s+(?:Pro|Max|Ultra))?)/i)
+      return { renderer, brand: 'apple', chipHint: m ? m[1] : null }
+    }
+    if (typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform ?? '')) {
+      return { renderer, brand: 'apple', chipHint: null }
+    }
+    return { renderer, brand: null, chipHint: null }
+  } catch {
+    return null
+  }
+}
+
+function matchDevice(detection: GpuDetection, devices: DeviceInfo[]): DeviceInfo | null {
+  if (!detection.brand) return null
+  const pool = detection.brand === 'nvidia'
+    ? devices.filter((d) => !d.os.includes('mac'))
+    : devices.filter((d) => d.os.includes('mac'))
+
+  if (detection.brand === 'nvidia') {
+    const lower = detection.renderer.toLowerCase()
+    for (const d of pool) { if (lower.includes(d.name)) return d }
+  } else if (detection.brand === 'apple' && detection.chipHint) {
+    const chip = detection.chipHint.toLowerCase()
+    const hits = pool.filter((d) => d.name.includes(chip))
+    if (hits.length === 1) return hits[0]
+  }
+  return null
+}
 
 type SortColumn = 'name' | 'ctx' | 'tps' | 'memory'
 type SortDirection = 'asc' | 'desc'
@@ -72,10 +130,15 @@ export default function ModelCatalog({
   onToggleModel,
   remainingVramMb,
   effectiveVramMb,
-  onClearAll,
-  hasSelections,
+  onClearModels,
   framework,
   onFrameworkSelect,
+  devices,
+  selectedDevice,
+  onDeviceSelect,
+  deviceCount,
+  onDeviceCountChange,
+  totalVramMb,
 }: {
   familyEntries: FamilyEntry[]
   os: OsPlatform | null
@@ -85,14 +148,45 @@ export default function ModelCatalog({
   onToggleModel: (model: CatalogModel) => void
   remainingVramMb: number
   effectiveVramMb: number
-  onClearAll: () => void
-  hasSelections: boolean
+  onClearModels: () => void
   framework: AgentFramework
   onFrameworkSelect: (fw: AgentFramework) => void
+  devices: DeviceInfo[]
+  selectedDevice: DeviceInfo | null
+  onDeviceSelect: (device: DeviceInfo) => void
+  deviceCount: DeviceCount
+  onDeviceCountChange: (count: DeviceCount) => void
+  totalVramMb: number
 }) {
   const [search, setSearch] = useState("")
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
   const [sort, setSort] = useState<SortState>({ column: 'name', direction: 'asc' })
+
+  // GPU detection — runs once on mount, button allows re-apply
+  const autoDetectRan = useRef(false)
+  const [detection, setDetection] = useState<GpuDetection | null>(null)
+
+  useEffect(() => {
+    const result = detectGpuFromWebGL()
+    if (result) setDetection(result)
+  }, [])
+
+  // Auto-apply on mount (once, only if no device already selected from URL)
+  useEffect(() => {
+    if (autoDetectRan.current || !detection || selectedDevice) return
+    autoDetectRan.current = true
+    if (detection.brand) {
+      const matched = matchDevice(detection, devices)
+      if (matched) onDeviceSelect(matched)
+    }
+  }, [detection, devices, selectedDevice, onDeviceSelect])
+
+  const handleDetect = useCallback(() => {
+    const result = detection ?? detectGpuFromWebGL()
+    if (!result?.brand) return
+    const matched = matchDevice(result, devices)
+    if (matched && matched.id !== selectedDevice?.id) onDeviceSelect(matched)
+  }, [detection, devices, selectedDevice, onDeviceSelect])
 
   const toggleSort = useCallback((col: SortColumn) => {
     setSort((prev) => {
@@ -242,14 +336,14 @@ export default function ModelCatalog({
     [os, selectedModelIds, onToggleModel]
   )
 
-  const hasActiveFilters = hasSelections || os !== null || filters.task !== null || filters.contextMin !== null || search !== "" || sort.column !== 'name' || sort.direction !== 'asc'
+  const hasActiveFilters = selectedModels.length > 0 || os !== null || filters.task !== null || filters.contextMin !== null || search !== "" || sort.column !== 'name' || sort.direction !== 'asc'
 
   const handleReset = useCallback(() => {
     setSearch("")
     setFilters(EMPTY_FILTERS)
     setSort({ column: 'name', direction: 'asc' })
-    onClearAll()
-  }, [onClearAll])
+    onClearModels()
+  }, [onClearModels])
 
   const modelsBadge = selectedModels.length > 0 ? (
     <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 font-mono text-[10px] font-bold text-primary">
@@ -267,6 +361,33 @@ export default function ModelCatalog({
           </span>
         </SectionHeader>
         <FrameworkSelector selected={framework} onSelect={onFrameworkSelect} />
+      </div>
+
+      {/* Hardware */}
+      <div className="border-b border-foreground/[0.06]">
+        <SectionHeader>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
+            Hardware
+          </span>
+          {detection?.brand && (
+            <button
+              onClick={handleDetect}
+              className="ml-auto shrink-0 font-mono text-[9px] font-medium lowercase tracking-widest text-foreground/40 transition-colors hover:text-foreground/70"
+            >
+              detect
+            </button>
+          )}
+        </SectionHeader>
+        <div className="px-2 py-2">
+          <DeviceSelector
+            devices={devices}
+            selectedDevice={selectedDevice}
+            onSelect={onDeviceSelect}
+            deviceCount={deviceCount}
+            onDeviceCountChange={onDeviceCountChange}
+            totalVramMb={totalVramMb}
+          />
+        </div>
       </div>
 
       <CollapsibleSection title="Models" badge={modelsBadge} className="lg:flex-1 lg:min-h-0 flex flex-col">

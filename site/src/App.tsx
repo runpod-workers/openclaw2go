@@ -225,6 +225,12 @@ function App() {
     setSelectedVramGb(null)
   }, [os, modelIdToGroup])
 
+  const handleClearModels = useCallback(() => {
+    setSelectedModelIds(new Set())
+    setOs(null)
+    setContextOverride(null)
+  }, [])
+
   const handleClearAll = useCallback(() => {
     setSelectedModelIds(new Set())
     setOs(null)
@@ -297,10 +303,15 @@ function App() {
         onToggleModel={toggleModel}
         remainingVramMb={remainingVramMb}
         effectiveVramMb={effectiveVramMb}
-        onClearAll={handleClearAll}
-        hasSelections={hasSelections}
+        onClearModels={handleClearModels}
         framework={framework}
         onFrameworkSelect={setFramework}
+        devices={filteredDevices}
+        selectedDevice={selectedDevice}
+        onDeviceSelect={handleDeviceSelect}
+        deviceCount={deviceCount}
+        onDeviceCountChange={handleDeviceCountChange}
+        totalVramMb={totalVramMb}
       />
       <ConfigPanel
         selectedModels={selectedModels}
@@ -308,8 +319,6 @@ function App() {
         selectedDevice={selectedDevice}
         devices={filteredDevices}
         deviceCount={deviceCount}
-        onDeviceCountChange={handleDeviceCountChange}
-        onDeviceSelect={handleDeviceSelect}
         onVramPreset={handleVramPreset}
         onToggleModel={toggleModel}
         onClearAll={handleClearAll}
