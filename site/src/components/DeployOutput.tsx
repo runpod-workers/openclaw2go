@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { cn } from '../lib/utils'
-import { formatVram, type CatalogModel, type Platform } from '../lib/catalog'
+import { formatVram, ENGINE_META, type CatalogModel, type Platform } from '../lib/catalog'
 import { getVariantForOs, findSiblingsWithOs, type ModelGroup } from '../lib/group-models'
 import type { AgentFramework } from '../lib/frameworks'
 import { PlatformIcon } from './PlatformSelector'
@@ -393,14 +393,15 @@ function buildAgentPrompt(
   const image = models.find((m) => m.type === 'image')
   const audio = models.find((m) => m.type === 'audio')
 
-  const hasWandler = models.some((m) => m.engineCategory === 'wandler')
+  // Always include the engine — determined by the LLM model (primary)
+  const engineModel = llm ?? models[0]
+  const engineLabel = engineModel ? ENGINE_META[engineModel.engineCategory].label : ''
+  const engineHint = engineLabel ? ` with the ${engineLabel.toLowerCase()} engine` : ''
 
   const parts: string[] = []
   if (llm) parts.push(`${cleanModelLabel(llm, modelIdToGroup)} as llm`)
   if (image) parts.push(`${cleanModelLabel(image, modelIdToGroup)} as image`)
   if (audio) parts.push(`${cleanModelLabel(audio, modelIdToGroup)} as audio`)
-
-  const engineHint = hasWandler ? ' with the wandler engine' : ''
 
   if (parts.length === 0) {
     return `/a2go deploy with ${frameworkName.toLowerCase()} as the agent${engineHint}`

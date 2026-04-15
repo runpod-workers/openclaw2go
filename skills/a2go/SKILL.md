@@ -27,13 +27,21 @@ Pick a model value with `a2go models`; use the `repo:bits` value from the output
 ## Commands
 
 ```bash
-a2go run --agent <agent> --llm <repo>:<bits>bit [--image <repo>] [--audio <repo>:<bits>bit]
+a2go run --agent <agent> --llm <repo>:<bits>bit [--image <repo>] [--audio <repo>:<bits>bit] [--engine <engine>]
 a2go doctor                                              # Prereq check + image pull
 a2go status                                              # Service health
 a2go stop                                                # Stop containers
 ```
 
 Agents: `hermes` (recommended) or `openclaw`.
+
+## Engines
+
+- **llama.cpp** — NVIDIA GPU (CUDA). Default on Linux/Windows. Uses GGUF models.
+- **MLX** — Apple Silicon. Default on Mac. Uses MLX models.
+- **wandler** — ONNX runtime. Works on all platforms (CUDA on Linux, CPU fallback). Uses ONNX models. Pass `--engine wandler` to use it.
+
+The engine is auto-detected from the model when possible. Use `--engine` to override (e.g. `--engine wandler` for ONNX models).
 
 ## Ports
 
@@ -58,5 +66,6 @@ Output: `type | os | vram | context | repo:bits | name` — use `repo:bits` as t
 
 ## Notes
 
-- **Mac/Apple Silicon:** `a2go run` runs natively via MLX (no Docker). Only MLX-compatible models work.
+- **Mac/Apple Silicon:** `a2go run` runs natively via MLX (no Docker). Only MLX-compatible models work. Wandler models also work on Mac.
+- **Wandler engine:** Uses ONNX models via `@huggingface/transformers`. Handles LLM + STT in one process. Pass `--engine wandler --llm <onnx-repo>` to use.
 - **Browse models visually:** https://a2go.run
