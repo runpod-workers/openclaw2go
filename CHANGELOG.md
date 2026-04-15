@@ -1,5 +1,14 @@
 # openclaw2go
 
+## 0.18.0
+
+### Minor Changes
+
+- 17c05f2: Add Wandler (ONNX) as a third inference engine alongside llama.cpp and MLX. Includes end-to-end support: engine filter UI with 9 ONNX model configs, `--engine` CLI flag with auto-detection from catalog, `a2go doctor` installs Wandler on Mac, Docker image includes Wandler, and entrypoint handles Wandler service startup.
+- 1afc3c8: feat(site): redesign hardware device selector with brand/device dropdowns
+
+  Replace the crowded pill-based hardware device list with two clean select dropdowns (brand + device) and an integrated count stepper. Move the hardware section into the sidebar alongside agent and model selection. Add WebGL-based GPU auto-detection with a "detect" button in the section header. Reduce model row height for a more compact catalog.
+
 ## 0.17.0
 
 ### Minor Changes
