@@ -177,8 +177,18 @@ func runDoctorMlx(cmd *cobra.Command, args []string) error {
 	}
 	ui.Ok("openclaw installed")
 
-	// Step 7: Install or update Hermes
-	ui.Step(7, "Installing Hermes")
+	// Step 7: Install Wandler (ONNX inference engine)
+	ui.Step(7, "Installing Wandler")
+	wandlerCmd := exec.Command("npm", "install", "-g", "wandler")
+	wandlerCmd.Stdout = os.Stdout
+	wandlerCmd.Stderr = os.Stderr
+	if err := wandlerCmd.Run(); err != nil {
+		return fmt.Errorf("npm install wandler failed: %w", err)
+	}
+	ui.Ok("wandler installed")
+
+	// Step 8: Install or update Hermes
+	ui.Step(8, "Installing Hermes")
 	if _, err := exec.LookPath("hermes"); err != nil {
 		// Fresh install — skip the interactive setup wizard in non-interactive shells.
 		// The hermes install script's setup wizard reads from /dev/tty which fails

@@ -163,6 +163,13 @@ function buildCliCommand(
   const doctor = 'a2go doctor'
 
   const flags: string[] = [`--agent ${agentId}`]
+
+  // Auto-detect if any model uses the wandler engine
+  const hasWandler = models.some((m) => m.engineCategory === 'wandler')
+  if (hasWandler) {
+    flags.push('--engine wandler')
+  }
+
   for (const m of models) {
     const role = m.type === 'llm' ? 'llm' : m.type === 'image' ? 'image' : m.type === 'audio' ? 'audio' : null
     if (!role) continue
@@ -591,6 +598,8 @@ export default function DeployCard({
 
   const dockerModels = useMemo(
     () => selectedModels.map((m) => {
+      // If user explicitly selected a wandler variant, keep it (wandler runs on all platforms)
+      if (m.engineCategory === 'wandler') return m
       const group = modelIdToGroup.get(m.id)
       return group ? getVariantForOs(group, 'linux').model : m
     }),
@@ -599,6 +608,8 @@ export default function DeployCard({
 
   const mlxResolvedModels = useMemo(
     () => selectedModels.map((m) => {
+      // If user explicitly selected a wandler variant, keep it (wandler runs on all platforms)
+      if (m.engineCategory === 'wandler') return m
       const group = modelIdToGroup.get(m.id)
       return group ? getVariantForOs(group, 'mac').model : m
     }),

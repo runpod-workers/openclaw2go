@@ -47,13 +47,14 @@ type catalogJSON struct {
 }
 
 type catalogModel struct {
-	Name     string        `json:"name"`
-	Type     string        `json:"type"`
-	Engine   string        `json:"engine"`
-	Repo     string        `json:"repo"`
-	Bits     *int          `json:"bits"`
-	VRAM     *catalogVRAM  `json:"vram"`
-	Defaults *catalogDefaults `json:"defaults"`
+	Name      string           `json:"name"`
+	Type      string           `json:"type"`
+	Engine    string           `json:"engine"`
+	Repo      string           `json:"repo"`
+	Bits      *int             `json:"bits"`
+	VRAM      *catalogVRAM     `json:"vram"`
+	Defaults  *catalogDefaults `json:"defaults"`
+	Platforms []string         `json:"platforms"`
 }
 
 type catalogVRAM struct {
@@ -72,7 +73,14 @@ var mlxEngines = map[string]bool{
 	"mlx-audio": true,
 }
 
-func modelOS(engine string) string {
+var wandlerEngines = map[string]bool{
+	"wandler": true,
+}
+
+func modelOS(engine string, platforms []string) string {
+	if len(platforms) > 0 {
+		return strings.Join(platforms, ",")
+	}
 	if mlxEngines[engine] {
 		return "mac"
 	}
@@ -117,7 +125,7 @@ func runModels(cmd *cobra.Command, args []string) error {
 	filterOS := strings.ToLower(flagModelsOS)
 
 	for _, m := range catalog.Models {
-		os := modelOS(m.Engine)
+		os := modelOS(m.Engine, m.Platforms)
 
 		if filterType != "" && m.Type != filterType {
 			continue

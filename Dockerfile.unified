@@ -98,7 +98,7 @@ RUN python3 -m pip install --no-cache-dir huggingface_hub
 
 # ── OpenClaw + Claude Code ────────────────────────────────
 ARG OPENCLAW_VERSION=latest
-RUN npm install -g --prefer-offline --omit=dev @anthropic-ai/claude-code openclaw@${OPENCLAW_VERSION} && \
+RUN npm install -g --prefer-offline --omit=dev @anthropic-ai/claude-code openclaw@${OPENCLAW_VERSION} wandler@latest && \
     npm cache clean --force
 
 # ── Hermes Agent ──────────────────────────────────────────

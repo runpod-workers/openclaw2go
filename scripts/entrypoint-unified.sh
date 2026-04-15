@@ -315,6 +315,39 @@ print('  Done: $f')
     # Start service based on role
     case "$role" in
         llm)
+          if [ "$ENGINE_TYPE" = "npm-global" ] || [ "$engine_id" = "wandler" ]; then
+            # ── LLM via Wandler (ONNX) ──
+            echo "Starting Wandler server..."
+            echo "  Model: $MODEL_REPO"
+            echo "  Port: $port"
+
+            # cuDNN is needed by onnxruntime-node CUDA execution provider
+            export LD_LIBRARY_PATH="/opt/engines/pytorch/venv/lib/python3.12/site-packages/nvidia/cudnn/lib:${LD_LIBRARY_PATH:-}"
+
+            # Use CUDA when an NVIDIA GPU is present, otherwise let wandler auto-detect
+            WANDLER_DEVICE="auto"
+            if command -v nvidia-smi >/dev/null 2>&1; then
+                WANDLER_DEVICE="cuda"
+            fi
+
+            wandler \
+                --llm "$MODEL_REPO" \
+                --device "$WANDLER_DEVICE" \
+                --port "$port" \
+                --host 0.0.0.0 \
+                --api-key "$A2GO_API_KEY" \
+                2>&1 &
+
+            echo "$!" > /tmp/oc_llm_pid
+
+            PROVIDER_NAME="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('provider',{}).get('name','wandler'))")"
+            echo "$PROVIDER_NAME" > /tmp/oc_llm_provider
+            echo "$port" > /tmp/oc_llm_port
+            echo "$MODEL_SERVED_AS" > /tmp/oc_llm_model_name
+            DEFAULT_CTX="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('defaults',{}).get('contextLength',131072))")"
+            echo "${CONTEXT_LENGTH:-$DEFAULT_CTX}" > /tmp/oc_llm_context
+
+          else
             # ── LLM (standard or vision-as-LLM) via llama-server ──
                 DEFAULT_CTX="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('defaults',{}).get('contextLength',150000))")"
                 DEFAULT_LAYERS="$(echo "$model_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('startDefaults',{}).get('gpuLayers','999'))")"
@@ -404,6 +437,7 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
             if [ "$VISION_AS_LLM" = "true" ]; then
                 echo "true" > /tmp/oc_llm_vision
             fi
+          fi
             ;;
 
         audio)

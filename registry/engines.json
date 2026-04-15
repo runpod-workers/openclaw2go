@@ -33,5 +33,11 @@
     "name": "mflux Image Gen (Mac)",
     "binary": "~/.a2go/bin/mflux-server",
     "type": "python-venv"
+  },
+  "wandler": {
+    "id": "wandler",
+    "name": "Wandler (ONNX, any platform)",
+    "binary": "wandler",
+    "type": "npm-global"
   }
 }

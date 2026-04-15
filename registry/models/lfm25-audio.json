@@ -3,7 +3,7 @@
   "group": "lfm25-audio",
   "family": "lfm25-audio",
   "catalogKey": "lfm25-audio",
-  "name": "LFM2.5-Audio-1.5B GGUF Q4_0 (TTS + STT)",
+  "name": "LFM 2.5 Audio 1.5B GGUF Q4_0 (TTS + STT)",
   "size": "1.5B",
   "type": "audio",
   "capabilities": [

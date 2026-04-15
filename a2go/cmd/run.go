@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,7 @@ var (
 	flagAudio  string
 	flagToken  string
 	flagConfig string
+	flagEngine string
 )
 
 var runCmd = &cobra.Command{
@@ -61,6 +63,7 @@ func init() {
 	runCmd.Flags().StringVar(&flagAudio, "audio", "", "Audio model (e.g. LiquidAI/LFM2.5-Audio-1.5B-GGUF:4bit, or 'off' to disable)")
 	runCmd.Flags().StringVar(&flagToken, "token", "changeme", "Auth token for gateway")
 	runCmd.Flags().StringVar(&flagConfig, "config", "", "JSON config (same format as Docker A2GO_CONFIG)")
+	runCmd.Flags().StringVar(&flagEngine, "engine", "", "Override engine (wandler, llamacpp, mlx)")
 }
 
 func resolveConfig() (*config.Config, error) {
@@ -123,6 +126,12 @@ func execRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Resolve engine: explicit flag > auto-detect from catalog > platform default
+	engine := resolveEngine(cfg, flagEngine)
+
+	if engine == "wandler" {
+		return execRunWandler(cfg)
+	}
 	if platform.UseDockerBackend() {
 		return execRunDocker(cfg)
 	}
@@ -564,6 +573,187 @@ func execRunMlx(cfg *config.Config) error {
 	}
 	fmt.Printf("  API:     http://localhost:8080  (%s)\n", modelName)
 	fmt.Printf("  Gateway: http://localhost:%d  (%s)\n", mlxGwSvc.Port, cfg.Agent)
+	fmt.Println()
+	fmt.Printf("  Logs: %s/\n", paths.Logs())
+	fmt.Println()
+	fmt.Println("  a2go status    check services")
+	fmt.Println("  a2go stop      stop all")
+	fmt.Println("  Ctrl+C          stop all")
+	fmt.Println()
+
+	// Wait forever (until signal)
+	select {}
+}
+
+// resolveEngine determines the inference engine to use.
+// Priority: explicit --engine flag > auto-detect from catalog > empty (platform default).
+func resolveEngine(cfg *config.Config, explicit string) string {
+	if explicit != "" {
+		return explicit
+	}
+	// Auto-detect from catalog: look up the LLM model's engine field
+	if cfg.LLM != nil {
+		data, err := catalog.Fetch(catalogURL, 10*time.Second)
+		if err == nil {
+			var cat catalogJSON
+			if json.Unmarshal(data, &cat) == nil {
+				slug := strings.ToLower(config.ModelSlug(cfg.LLM.Model))
+				for _, m := range cat.Models {
+					if strings.ToLower(m.Repo) == slug && wandlerEngines[m.Engine] {
+						return "wandler"
+					}
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func execRunWandler(cfg *config.Config) error {
+	// Check wandler is installed
+	if _, err := exec.LookPath("wandler"); err != nil {
+		return fmt.Errorf("wandler not found — install it: npm install -g wandler\n  or run: a2go doctor")
+	}
+
+	// Validate model names against catalog
+	allEngines := map[string]bool{}
+	for k, v := range mlxEngines {
+		allEngines[k] = v
+	}
+	for k, v := range wandlerEngines {
+		allEngines[k] = v
+	}
+	if err := validateModels(cfg, allEngines); err != nil {
+		return err
+	}
+
+	// Check not already running
+	if pid, err := process.ReadPid("llm"); err == nil && process.IsAlive(pid) {
+		return fmt.Errorf("already running (LLM pid %d)\n\n  a2go status    check services\n  a2go stop      stop first", pid)
+	}
+
+	// Check ports
+	gwSvc := services.GatewayFor(cfg.Agent)
+	portChecks := []struct {
+		port int
+		name string
+	}{
+		{services.LLM.Port, "LLM"},
+		{services.WebProxy.Port, "Web Proxy"},
+		{gwSvc.Port, gwSvc.Name},
+	}
+	for _, pc := range portChecks {
+		if process.PortListening(pc.port) {
+			return fmt.Errorf("port %d already in use (needed for %s)\n\n  a2go stop    stop previous session\n  lsof -iTCP:%d -sTCP:LISTEN    see what's using it", pc.port, pc.name, pc.port)
+		}
+	}
+
+	// Save config for restart
+	config.Save(cfg)
+
+	// Banner
+	ui.Banner("agent2go — Starting (Wandler)")
+	fmt.Printf("  LLM:    %s\n", cfg.LLM.Model)
+	fmt.Printf("  Engine: wandler (ONNX)\n")
+
+	// Track PIDs for cleanup
+	var pids []int
+	cleanup := func() {
+		fmt.Println()
+		fmt.Println("Shutting down...")
+		for _, pid := range pids {
+			process.Kill(pid)
+		}
+		for _, svc := range services.All {
+			process.RemovePidFile(svc.Name)
+		}
+		fmt.Println("All services stopped.")
+	}
+
+	// Signal handler
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-sigCh
+		cleanup()
+		os.Exit(0)
+	}()
+
+	// Wandler uses HuggingFace repo names directly (no :quant stripping needed for the server,
+	// but strip for display — Wandler handles precision internally via :q4/:fp16 suffixes)
+	llmModel := cfg.LLM.Model
+
+	// Start Wandler
+	llmPid, err := services.StartWandler(llmModel, cfg.GetAuthToken())
+	if err != nil {
+		return err
+	}
+	pids = append(pids, llmPid)
+
+	// Wait for health
+	fmt.Println()
+	ui.Info("waiting for Wandler server (model may need to download on first run)...")
+	isAlive := func() bool { return process.IsAlive(llmPid) }
+	if err := health.WaitForReady("http://localhost:8000/health", isAlive, 300*time.Second, "Wandler process"); err != nil {
+		ui.Fail(fmt.Sprintf("Wandler server: %v", err))
+		logPath := filepath.Join(paths.Logs(), "llm.log")
+		showLogTail(logPath, 20)
+		cleanup()
+		return fmt.Errorf("Wandler server failed to start")
+	}
+	ui.Ok("Wandler server ready")
+
+	// Start web proxy
+	wpPid, err := services.StartWebProxy(paths.Audio(), "")
+	if err != nil {
+		return err
+	}
+	pids = append(pids, wpPid)
+
+	// Agent-specific gateway startup
+	switch cfg.Agent {
+	case "openclaw":
+		ui.Info("generating openclaw config...")
+		hasImage := cfg.Image != nil && cfg.Image.Model != ""
+		if err := openclaw.GenerateConfig(cfg.LLM.Model, cfg.GetContextLength(), cfg.GetMaxOutputTokens(), cfg.GetAuthToken(), hasImage); err != nil {
+			return fmt.Errorf("failed to generate openclaw.json: %w", err)
+		}
+		ui.Ok(paths.OpenClawState() + "/openclaw.json")
+
+		gwPid, err := services.StartGateway(cfg.GetAuthToken())
+		if err != nil {
+			return err
+		}
+		pids = append(pids, gwPid)
+
+	case "hermes":
+		ui.Info("generating hermes config...")
+		if err := hermes.GenerateConfig(cfg.LLM.Model, cfg.GetContextLength(), cfg.GetAuthToken()); err != nil {
+			return fmt.Errorf("failed to generate hermes config: %w", err)
+		}
+		ui.Ok(paths.HermesState() + "/config.yaml")
+
+		gwPid, err := services.StartHermesGateway(cfg.GetAuthToken())
+		if err != nil {
+			return err
+		}
+		pids = append(pids, gwPid)
+	}
+
+	// Model name for display
+	modelName := cfg.LLM.Model
+	if idx := strings.LastIndex(modelName, "/"); idx >= 0 {
+		modelName = modelName[idx+1:]
+	}
+
+	// Ready banner
+	ui.Banner(fmt.Sprintf("agent2go — Ready! (Wandler, %s)", cfg.Agent))
+	fmt.Println()
+	if cfg.Agent == "hermes" {
+		fmt.Println("  Chat:    hermes chat              (start chatting)")
+	}
+	fmt.Printf("  API:     http://localhost:8080  (%s)\n", modelName)
+	fmt.Printf("  Gateway: http://localhost:%d  (%s)\n", gwSvc.Port, cfg.Agent)
 	fmt.Println()
 	fmt.Printf("  Logs: %s/\n", paths.Logs())
 	fmt.Println()

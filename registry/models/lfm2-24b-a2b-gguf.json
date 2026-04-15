@@ -3,7 +3,7 @@
   "group": "lfm2-24b-a2b",
   "family": "lfm2",
   "catalogKey": "lfm2-24b-a2b",
-  "name": "LFM2-24B-A2B Q4_K_M (4-bit, 14.4GB, 128K context)",
+  "name": "LFM 2 24B A2B Q4_K_M (4-bit, 14.4GB, 128K context)",
   "size": "24B",
   "type": "llm",
   "engine": "a2go-llamacpp",

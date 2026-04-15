@@ -2,4 +2,4 @@
 "a2go": minor
 ---
 
-Add engine filter system (llama.cpp, MLX, wandler) with 9 ONNX model configs. Remove web platform, add central engine resolver for platform/engine/variant resolution, engine switcher on model cards with sticky preference across tab and size switches.
+Add Wandler (ONNX) as a third inference engine alongside llama.cpp and MLX. Includes end-to-end support: engine filter UI with 9 ONNX model configs, `--engine` CLI flag with auto-detection from catalog, `a2go doctor` installs Wandler on Mac, Docker image includes Wandler, and entrypoint handles Wandler service startup.
