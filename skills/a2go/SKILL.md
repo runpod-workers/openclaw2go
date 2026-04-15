@@ -73,7 +73,15 @@ Image `runpod/a2go:latest`, configured via `A2GO_CONFIG` env var (JSON):
 {"agent":"openclaw", "engine":"wandler", "llm":"onnx-community/gemma-4-E4B-it-ONNX:4bit"}
 ```
 
-Fields: `agent` (required), `engine`, `llm`, `audio`, `image`, `contextLength`. Also set `A2GO_AUTH_TOKEN` and `A2GO_API_KEY`.
+Fields:
+- `agent` — `hermes` or `openclaw` (required)
+- `engine` — `llamacpp`, `mlx`, or `wandler`
+- `llm` — model as `repo:bits` from `a2go models`
+- `audio` — audio model (optional)
+- `image` — image model (optional)
+- `contextLength` — override context window (optional)
+
+Env vars: `A2GO_AUTH_TOKEN` (gateway auth), `A2GO_API_KEY` (LLM API auth).
 
 ## Notes
 
