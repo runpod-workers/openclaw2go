@@ -56,10 +56,15 @@ type agentModel struct {
 }
 
 type gatewayBlock struct {
-	Mode   string   `json:"mode"`
-	Bind   string   `json:"bind"`
-	Auth   authConf `json:"auth"`
-	Remote authConf `json:"remote"`
+	Mode      string        `json:"mode"`
+	Bind      string        `json:"bind"`
+	ControlUI controlUIConf `json:"controlUi"`
+	Auth      authConf      `json:"auth"`
+	Remote    authConf      `json:"remote"`
+}
+type controlUIConf struct {
+	AllowedOrigins               []string `json:"allowedOrigins"`
+	DangerouslyDisableDeviceAuth bool     `json:"dangerouslyDisableDeviceAuth"`
 }
 type authConf struct {
 	Mode  string `json:"mode,omitempty"`
@@ -140,10 +145,11 @@ func GenerateConfig(llmModelName string, contextWindow int, maxOutputTokens int,
 		Skills:  skills,
 		Plugins: plugins,
 		Gateway: gatewayBlock{
-			Mode:   "local",
-			Bind:   "lan",
-			Auth:   authConf{Mode: "token", Token: authToken},
-			Remote: authConf{Token: authToken},
+			Mode:      "local",
+			Bind:      "lan",
+			ControlUI: controlUIConf{AllowedOrigins: []string{}, DangerouslyDisableDeviceAuth: false},
+			Auth:      authConf{Mode: "token", Token: authToken},
+			Remote:    authConf{Token: authToken},
 		},
 		Logging: loggingBlock{Level: "info"},
 	}

@@ -146,6 +146,80 @@ PY
     chmod 600 "$cfg" 2>/dev/null || true
 }
 
+oc_sync_openclaw_runtime() {
+    local cfg="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}/openclaw.json"
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "WARNING: python3 not found; skipping OpenClaw runtime config sync"
+        return
+    fi
+
+    python3 - <<'PY'
+import json
+import os
+
+cfg = os.path.join(os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw")), "openclaw.json")
+provider_name = os.environ.get("A2GO_OC_PROVIDER_NAME", "local-llamacpp")
+base_url = os.environ.get("A2GO_OC_BASE_URL", "http://localhost:8000/v1")
+api_key = os.environ.get("A2GO_OC_API_KEY", os.environ.get("A2GO_API_KEY", "changeme"))
+model_id = os.environ.get("A2GO_OC_MODEL_ID", "local-model")
+model_name = os.environ.get("A2GO_OC_MODEL_NAME", model_id)
+context_window = int(os.environ.get("A2GO_OC_CONTEXT_WINDOW", "131072"))
+max_tokens = int(os.environ.get("A2GO_OC_MAX_TOKENS", "8192"))
+workspace = os.environ.get("OPENCLAW_WORKSPACE", "/workspace/openclaw")
+allowed_origins = json.loads(os.environ.get("A2GO_OC_ALLOWED_ORIGINS_JSON", "[]"))
+has_vision = os.environ.get("A2GO_OC_HAS_VISION", "false").lower() == "true"
+disable_device_auth = os.environ.get("A2GO_OC_DISABLE_DEVICE_AUTH", "false").lower() == "true"
+
+data = {}
+if os.path.exists(cfg):
+    with open(cfg, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+models_cfg = data.setdefault("models", {})
+providers = models_cfg.setdefault("providers", {})
+providers[provider_name] = {
+    "baseUrl": base_url,
+    "apiKey": api_key,
+    "api": "openai-completions",
+    "models": [{
+        "id": model_id,
+        "name": model_name,
+        "contextWindow": context_window,
+        "maxTokens": max_tokens,
+        "reasoning": False,
+        "input": ["text", "image"] if has_vision else ["text"],
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    }],
+}
+
+agents_cfg = data.setdefault("agents", {})
+defaults = agents_cfg.setdefault("defaults", {})
+model_cfg = defaults.get("model")
+if not isinstance(model_cfg, dict):
+    model_cfg = {}
+    defaults["model"] = model_cfg
+model_cfg["primary"] = f"{provider_name}/{model_id}"
+defaults["contextTokens"] = min(context_window, 135000)
+defaults["workspace"] = workspace
+
+gateway = data.setdefault("gateway", {})
+gateway["mode"] = "local"
+gateway["bind"] = "lan"
+control_ui = gateway.setdefault("controlUi", {})
+control_ui["allowedOrigins"] = allowed_origins
+control_ui["dangerouslyDisableDeviceAuth"] = disable_device_auth
+
+logging = data.setdefault("logging", {})
+logging["level"] = logging.get("level", "info")
+
+os.makedirs(os.path.dirname(cfg), exist_ok=True)
+with open(cfg, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+PY
+    chmod 600 "$cfg" 2>/dev/null || true
+}
+
 oc_setup_ssh_manual() {
     echo "Initializing SSH..."
 

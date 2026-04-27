@@ -180,6 +180,7 @@ if [ -n "${RUNPOD_POD_ID:-}" ]; then
 else
     A2GO_ALLOWED_ORIGINS_JSON='[]'
 fi
+A2GO_DISABLE_DEVICE_AUTH="${A2GO_DISABLE_DEVICE_AUTH:-true}"
 
 BOT_CMD="openclaw"
 if [ "$AGENT" = "openclaw" ] && ! command -v "$BOT_CMD" >/dev/null 2>&1; then
@@ -436,7 +437,8 @@ print(' '.join(f'{k}={v}' for k,v in env_vars.items()))
                 fi
 
                 # Build env command with optional extra env vars
-                ENV_CMD=(env LD_LIBRARY_PATH="$ENGINE_LIB_PATH")
+                ENGINE_LD_LIBRARY_PATH="$ENGINE_LIB_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+                ENV_CMD=(env LD_LIBRARY_PATH="$ENGINE_LD_LIBRARY_PATH")
                 if [ -n "$EXTRA_ENV_VARS" ]; then
                     read -ra ENV_PAIRS <<< "$EXTRA_ENV_VARS"
                     ENV_CMD+=("${ENV_PAIRS[@]}")
@@ -521,7 +523,8 @@ json.dump(plugins, sys.stdout)
                 VISION_ARGS+=(--mmproj "$MODEL_DOWNLOAD_DIR/$MMPROJ_FILE")
             fi
 
-            env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
+            ENGINE_LD_LIBRARY_PATH="$ENGINE_LIB_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            env LD_LIBRARY_PATH="$ENGINE_LD_LIBRARY_PATH" \
                 "$ENGINE_BINARY" "${VISION_ARGS[@]}" \
                 2>&1 &
 
@@ -553,7 +556,8 @@ json.dump(plugins, sys.stdout)
                 EMBED_ARGS+=("${EXTRA_ARGS[@]}")
             fi
 
-            env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
+            ENGINE_LD_LIBRARY_PATH="$ENGINE_LIB_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            env LD_LIBRARY_PATH="$ENGINE_LD_LIBRARY_PATH" \
                 "$ENGINE_BINARY" "${EMBED_ARGS[@]}" \
                 2>&1 &
 
@@ -578,7 +582,8 @@ json.dump(plugins, sys.stdout)
                 --api-key "$A2GO_API_KEY"
             )
 
-            env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
+            ENGINE_LD_LIBRARY_PATH="$ENGINE_LIB_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            env LD_LIBRARY_PATH="$ENGINE_LD_LIBRARY_PATH" \
                 "$ENGINE_BINARY" "${RERANK_ARGS[@]}" \
                 2>&1 &
 
@@ -626,7 +631,8 @@ json.dump(plugins, sys.stdout)
                     TTS_ARGS+=(--vocoder "$MODEL_DOWNLOAD_DIR/$VOCODER_FILE")
                 fi
 
-                env LD_LIBRARY_PATH="$ENGINE_LIB_PATH" \
+                ENGINE_LD_LIBRARY_PATH="$ENGINE_LIB_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+                env LD_LIBRARY_PATH="$ENGINE_LD_LIBRARY_PATH" \
                     "$TTS_BINARY" "${TTS_ARGS[@]}" \
                     2>&1 &
 
@@ -829,10 +835,33 @@ EOF
             cp /opt/a2go/config/workspace/IDENTITY.md "$OPENCLAW_WORKSPACE/"
         fi
 
+        A2GO_OC_PROVIDER_NAME="$LLM_PROVIDER_NAME" \
+        A2GO_OC_BASE_URL="http://localhost:${LLM_PORT}/v1" \
+        A2GO_OC_API_KEY="$A2GO_API_KEY" \
+        A2GO_OC_MODEL_ID="$LLM_MODEL_NAME" \
+        A2GO_OC_MODEL_NAME="${PROFILE_NAME} LLM" \
+        A2GO_OC_CONTEXT_WINDOW="$LLM_CONTEXT" \
+        A2GO_OC_MAX_TOKENS="8192" \
+        A2GO_OC_ALLOWED_ORIGINS_JSON="$A2GO_ALLOWED_ORIGINS_JSON" \
+        A2GO_OC_HAS_VISION="$LLM_HAS_VISION" \
+        A2GO_OC_DISABLE_DEVICE_AUTH="$A2GO_DISABLE_DEVICE_AUTH" \
+        oc_sync_openclaw_runtime
+
         # Auto-fix config
         echo "Running openclaw doctor to validate/fix config..."
         OPENCLAW_STATE_DIR=$OPENCLAW_STATE_DIR "$BOT_CMD" doctor --fix || true
         chmod 600 "$OPENCLAW_STATE_DIR/openclaw.json" 2>/dev/null || true
+        A2GO_OC_PROVIDER_NAME="$LLM_PROVIDER_NAME" \
+        A2GO_OC_BASE_URL="http://localhost:${LLM_PORT}/v1" \
+        A2GO_OC_API_KEY="$A2GO_API_KEY" \
+        A2GO_OC_MODEL_ID="$LLM_MODEL_NAME" \
+        A2GO_OC_MODEL_NAME="${PROFILE_NAME} LLM" \
+        A2GO_OC_CONTEXT_WINDOW="$LLM_CONTEXT" \
+        A2GO_OC_MAX_TOKENS="8192" \
+        A2GO_OC_ALLOWED_ORIGINS_JSON="$A2GO_ALLOWED_ORIGINS_JSON" \
+        A2GO_OC_HAS_VISION="$LLM_HAS_VISION" \
+        A2GO_OC_DISABLE_DEVICE_AUTH="$A2GO_DISABLE_DEVICE_AUTH" \
+        oc_sync_openclaw_runtime
         oc_sync_skills_disable "openai-image-gen,nano-banana-pro"
         oc_sync_gateway_auth "token"
 

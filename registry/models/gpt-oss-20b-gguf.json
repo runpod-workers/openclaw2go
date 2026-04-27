@@ -29,9 +29,7 @@
   },
   "extraStartArgs": [
     "-fa",
-    "on",
-    "--reasoning-format",
-    "none"
+    "on"
   ],
   "tps": {
     "rtx-4090": 92
