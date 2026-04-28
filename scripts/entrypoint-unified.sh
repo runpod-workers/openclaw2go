@@ -918,7 +918,9 @@ EOF
             done
         fi
 
-        # Start Hermes gateway (API server on port 8642, foreground mode, backgrounded by us)
+        # Start Hermes gateway (API server on port 8642, public — protected by
+        # API_SERVER_KEY; needed for external API access and platform webhooks
+        # like Telegram/Discord/WhatsApp)
         echo ""
         echo "Starting Hermes gateway..."
         OPENAI_API_KEY="$A2GO_API_KEY" \
