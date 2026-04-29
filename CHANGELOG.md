@@ -1,5 +1,15 @@
 # openclaw2go
 
+## 0.19.0
+
+### Minor Changes
+
+- c881f13: Add Qwen 3.6 model support: 27B dense (73 tok/s) and 35B-A3B MoE (185 tok/s) with GGUF and MLX configs. Both verified on RTX 5090 with full 262K context using q4_0 KV cache quantization. Fix resolve-profile.py to auto-discover GGUF files from HuggingFace for unknown model repos instead of crashing.
+
+### Patch Changes
+
+- c881f13: Remove `--reasoning-format none` from the existing Qwen 3.5, GLM 4.7, and GPT-OSS GGUF configs so OpenClaw tool calling uses llama.cpp's default auto handling. Also update the unified Docker entrypoint and generated OpenClaw config shape so llama-server keeps the a2go llama.cpp library path, the resolved model is synced into `openclaw.json`, and the Control UI gets the RunPod origin plus device-auth bypass for headless access.
+
 ## 0.18.0
 
 ### Minor Changes
