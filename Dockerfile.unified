@@ -47,7 +47,7 @@ RUN python3 -m venv /opt/engines/pytorch/venv && \
         sdnq git+https://github.com/huggingface/diffusers.git \
         transformers accelerate safetensors \
         qwen-tts liquid-audio soundfile \
-        fastapi "uvicorn[standard]" httpx && \
+        fastapi "uvicorn[standard]" httpx python-multipart && \
     /opt/engines/pytorch/venv/bin/pip install --no-cache-dir \
         flash-attn --no-build-isolation || true && \
     find /opt/engines/pytorch/venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \
