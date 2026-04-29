@@ -6,13 +6,13 @@ This directory contains templates and workflows for the `runpod-labs/a2go-llamac
 
 Fork created at `runpod-labs/a2go-llamacpp`. Branch `main` has all cherry-picks applied.
 
-Current base: **b8323** (tag: `b8323-openclaw.1`)
+Current base: **b8967** (tag: `b8967-openclaw.1`)
 
 Merged PRs on `main`:
-- PR #18641 (liquid-audio: TTS/STT for LFM2.5)
 - PR #18039 (Eagle-3 speculative decoding)
 
-Already merged upstream (included in b8323):
+Already merged upstream:
+- PR #18641 (liquid-audio: TTS/STT for LFM2.5) — merged upstream, audio now in mtmd library
 - PR #19460 (glm-dsa: GLM-5 MoE dynamic sparse attention)
 - PR #20411 (Nemotron-3-Super support)
 
