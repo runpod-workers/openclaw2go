@@ -49,6 +49,10 @@ function generateConfig() {
     gateway: {
       mode: 'local',
       bind: 'lan',
+      controlUi: {
+        allowedOrigins: [],
+        dangerouslyDisableDeviceAuth: false,
+      },
       auth: { mode: 'token', token: 'test-token' },
       remote: { token: 'test-token' },
     },
@@ -81,6 +85,13 @@ function generateDockerConfig() {
     plugins: {
       load: { paths: ['/workspace/openclaw/.openclaw/extensions'] },
       entries: { 'toolresult-images': { enabled: true } },
+    },
+    gateway: {
+      ...base.gateway,
+      controlUi: {
+        allowedOrigins: ['https://test-pod-18789.proxy.runpod.net'],
+        dangerouslyDisableDeviceAuth: true,
+      },
     },
   }
 }

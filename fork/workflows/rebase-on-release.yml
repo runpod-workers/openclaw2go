@@ -28,10 +28,10 @@ on:
 env:
   UPSTREAM_REPO: ggml-org/llama.cpp
   # Cherry-picked PRs (in order of application)
-  # NOTE: PR #19460 (GLM-5 DSA) was merged upstream — no longer needed here
+  # NOTE: PR #18641 (liquid-audio) merged upstream in b8967 — no longer needed
+  # NOTE: PR #19460 (GLM-5 DSA) merged upstream — no longer needed
+  # NOTE: PR #12794 (OuteTTS) dropped — build disabled, API stale
   CHERRY_PICKS: |
-    18641
-    12794
     18039
 
 jobs:

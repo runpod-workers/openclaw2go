@@ -16,6 +16,8 @@ export interface OpenClawConfigInput {
   contextWindow: number
   hasVision: boolean
   authToken: string
+  allowedOrigins?: string[]
+  dangerouslyDisableDeviceAuth?: boolean
   workspace?: string
 }
 
@@ -51,6 +53,10 @@ export function generateOpenClawConfig(input: OpenClawConfigInput): Record<strin
     gateway: {
       mode: 'local',
       bind: 'lan',
+      controlUi: {
+        allowedOrigins: input.allowedOrigins ?? [],
+        dangerouslyDisableDeviceAuth: input.dangerouslyDisableDeviceAuth ?? false,
+      },
       auth: { mode: 'token', token: input.authToken },
       remote: { token: input.authToken },
     },

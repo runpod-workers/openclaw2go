@@ -244,20 +244,93 @@ def resolve_model(value, models, model_type):
                       f"(available bit sizes: {', '.join(repo_bits)})", file=sys.stderr)
                 print(f"Available {model_type} models: {', '.join(available)}", file=sys.stderr)
                 sys.exit(1)
-        # Unknown model — warn and create synthetic fallback entry
+        # Unknown model — try to auto-discover GGUF files from HuggingFace
         print(f"WARNING: unknown model '{model_name}' for type '{model_type}', "
-              f"using as-is with conservative defaults", file=sys.stderr)
+              f"attempting auto-discovery from HuggingFace", file=sys.stderr)
         print(f"Available {model_type} models: {', '.join(available)}", file=sys.stderr)
+
+        discovered_files = []
+        mmproj_file = None
+        try:
+            from huggingface_hub import list_repo_files
+            all_files = list(list_repo_files(model_name))
+            gguf_files = sorted([f for f in all_files if f.endswith('.gguf')])
+
+            # Separate mmproj (vision) files from model files
+            mmproj_candidates = [f for f in gguf_files if 'mmproj' in f.lower()]
+            model_gguf_files = [f for f in gguf_files if 'mmproj' not in f.lower()]
+
+            if mmproj_candidates:
+                # Prefer F16 mmproj
+                mmproj_file = next((f for f in mmproj_candidates if 'F16' in f), mmproj_candidates[0])
+
+            if bits is not None and model_gguf_files:
+                # Map bit count to preferred quant names (ordered by preference)
+                bit_quants = {
+                    1: ['IQ1_M', 'IQ1_S', 'TQ1_0'],
+                    2: ['Q2_K_XL', 'Q2_K', 'IQ2_M', 'IQ2_XXS', 'IQ2_XS'],
+                    3: ['Q3_K_M', 'Q3_K_XL', 'Q3_K_S', 'Q3_K_L', 'IQ3_M', 'IQ3_S', 'IQ3_XXS'],
+                    4: ['Q4_K_M', 'Q4_K_XL', 'Q4_K_S', 'Q4_0', 'Q4_1', 'IQ4_NL', 'IQ4_XS'],
+                    5: ['Q5_K_M', 'Q5_K_XL', 'Q5_K_S'],
+                    6: ['Q6_K', 'Q6_K_XL'],
+                    8: ['Q8_0', 'Q8_K_XL'],
+                    16: ['BF16', 'F16'],
+                }
+                preferred = bit_quants.get(bits, [])
+                # Try each preferred quant in order
+                for quant in preferred:
+                    match = [f for f in model_gguf_files if quant in f]
+                    if match:
+                        discovered_files = [match[0]]
+                        break
+                # Fallback: pick first file if no quant matched
+                if not discovered_files and model_gguf_files:
+                    discovered_files = [model_gguf_files[0]]
+            elif model_gguf_files:
+                # No bit preference — pick Q4_K_M if available, else first file
+                q4km = [f for f in model_gguf_files if 'Q4_K_M' in f]
+                discovered_files = [q4km[0]] if q4km else [model_gguf_files[0]]
+
+            if mmproj_file:
+                discovered_files.append(mmproj_file)
+
+            if discovered_files:
+                print(f"Auto-discovered GGUF files: {discovered_files}", file=sys.stderr)
+            else:
+                print(f"WARNING: no GGUF files found in repo '{model_name}'", file=sys.stderr)
+        except Exception as e:
+            print(f"WARNING: auto-discovery failed for '{model_name}': {e}", file=sys.stderr)
+
+        # Build a reasonable download directory from the repo name
+        repo_dir_name = model_name.split("/", 1)[1] if "/" in model_name else model_name
+        download_dir = f"/workspace/models/{repo_dir_name}"
+
+        # Estimate VRAM from file size if we discovered files
+        estimated_vram = 20000  # conservative default
+        if discovered_files:
+            try:
+                from huggingface_hub import get_paths_info
+                model_file = discovered_files[0]  # first file (not mmproj)
+                infos = list(get_paths_info(model_name, [model_file], repo_type="model"))
+                if infos and hasattr(infos[0], 'size'):
+                    estimated_vram = int(infos[0].size / (1024 * 1024))  # bytes to MB
+                    print(f"Estimated VRAM from file size: {estimated_vram} MB", file=sys.stderr)
+            except Exception:
+                pass  # keep conservative default
+
         model = {
             "id": model_name,
             "type": model_type,
             "repo": model_name,
             "engine": "a2go-llamacpp",
-            "vram": {"model": 20000, "overhead": 2000},
+            "downloadDir": download_dir,
+            "files": discovered_files,
+            "vram": {"model": estimated_vram, "overhead": 2000},
             "defaults": {"contextLength": 32768},
-            "files": [],
             "_synthetic": True,
         }
+        if mmproj_file:
+            model["mmproj"] = mmproj_file
     return model
 
 

@@ -1,0 +1,61 @@
+{
+  "id": "unsloth/qwen36-27b-gguf",
+  "group": "qwen36-27b",
+  "family": "qwen36",
+  "catalogKey": "qwen36-27b",
+  "name": "Qwen3.6-27B Q4_K_M (4-bit, 16.8GB, multimodal)",
+  "size": "27B",
+  "type": "llm",
+  "engine": "a2go-llamacpp",
+  "bits": 4,
+  "repo": "unsloth/Qwen3.6-27B-GGUF",
+  "files": [
+    "Qwen3.6-27B-Q4_K_M.gguf",
+    "mmproj-F16.gguf"
+  ],
+  "mmproj": "mmproj-F16.gguf",
+  "downloadDir": "/workspace/models/Qwen3.6-27B-GGUF",
+  "servedAs": "qwen3.6-27b",
+  "vram": {
+    "model": 19100,
+    "overhead": 2000
+  },
+  "kvCacheMbPer1kTokens": 9,
+  "defaults": {
+    "contextLength": 262144,
+    "port": 8000
+  },
+  "startDefaults": {
+    "gpuLayers": "999",
+    "parallel": "1"
+  },
+  "extraStartArgs": [
+    "-fa",
+    "on",
+    "--no-context-shift",
+    "-ctk",
+    "q4_0",
+    "-ctv",
+    "q4_0",
+    "--alias",
+    "qwen3.6-27b",
+    "--temp",
+    "0.6",
+    "--top-p",
+    "0.95",
+    "--top-k",
+    "20",
+    "--override-kv",
+    "qwen35.context_length=int:262144"
+  ],
+  "provider": {
+    "name": "local-llamacpp",
+    "api": "openai-completions"
+  },
+  "tps": {
+    "RTX_5090": 73
+  },
+  "verifiedOn": ["RTX_5090"],
+  "default": false,
+  "status": "experimental"
+}

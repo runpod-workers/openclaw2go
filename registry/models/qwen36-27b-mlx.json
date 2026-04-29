@@ -1,0 +1,27 @@
+{
+  "id": "mlx-community/qwen36-27b-mlx",
+  "group": "qwen36-27b",
+  "family": "qwen36",
+  "catalogKey": "qwen36-27b",
+  "name": "Qwen3.6-27B MLX 4-bit",
+  "size": "27B",
+  "type": "llm",
+  "engine": "mlx-lm",
+  "bits": 4,
+  "repo": "mlx-community/Qwen3.6-27B-4bit",
+  "vram": {
+    "model": 16100,
+    "overhead": 0
+  },
+  "kvCacheMbPer1kTokens": 62,
+  "defaults": {
+    "contextLength": 262144
+  },
+  "provider": {
+    "name": "local-mlx",
+    "api": "openai-completions"
+  },
+  "platform": "mlx",
+  "default": false,
+  "status": "experimental"
+}

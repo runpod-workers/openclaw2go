@@ -44,9 +44,7 @@
     "--top-k",
     "20",
     "--override-kv",
-    "qwen35moe.context_length=int:1010000",
-    "--reasoning-format",
-    "none"
+    "qwen35moe.context_length=int:1010000"
   ],
   "provider": {
     "name": "local-llamacpp",

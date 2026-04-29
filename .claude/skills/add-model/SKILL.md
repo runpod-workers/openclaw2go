@@ -44,6 +44,8 @@ For GGUF models, also set:
 - `files`: array of GGUF files to download (include mmproj if vision)
 - `downloadDir`: must start with `/workspace/models/`
 - `extraStartArgs`: any extra llama.cpp flags (check existing similar models)
+  - **Always include `-ctk q4_0 -ctv q4_0`** for KV cache quantization — this reduces KV cache VRAM by ~4x, enabling much larger context windows. All models should use this unless there's a specific reason not to (e.g., model quality degrades with quantized KV).
+  - When using q4_0 KV cache, set `kvCacheMbPer1kTokens` based on q4_0 rates (roughly 1/4 of f16 rates), not the default f16/q8_0 rates.
 - `startDefaults.gpuLayers`: `"999"` to offload all layers to GPU
 - `provider.name`: `"local-llamacpp"`
 

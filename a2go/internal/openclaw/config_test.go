@@ -59,6 +59,12 @@ func TestGenerateConfig_WritesOpenclawJSON(t *testing.T) {
 	if m.MaxTokens != 32768 {
 		t.Errorf("MaxTokens = %d, want %d (should use passed value, not hardcoded 8192)", m.MaxTokens, 32768)
 	}
+	if got := cfg.Gateway.ControlUI.AllowedOrigins; len(got) != 0 {
+		t.Errorf("ControlUI.AllowedOrigins = %v, want empty list", got)
+	}
+	if cfg.Gateway.ControlUI.DangerouslyDisableDeviceAuth {
+		t.Error("DangerouslyDisableDeviceAuth = true, want false")
+	}
 }
 
 func TestGenerateConfig_CapsContextTokens(t *testing.T) {
