@@ -1,8 +1,11 @@
 """
-LFM2.5-Audio plugin — TTS and STT via native llama-liquid-audio-server (GGUF).
+LFM2.5-Audio plugin — TTS and STT via llama-server with mtmd audio support (GGUF).
 
-Spawns llama-liquid-audio-server as a subprocess, loading 4 GGUF files (~2GB VRAM).
+Spawns llama-server as a subprocess, loading 4 GGUF files (~2GB VRAM).
 Proxies OpenAI-compatible TTS/STT requests through the native binary.
+
+Note: Prior to llama.cpp b8967 this used a separate llama-server (audio)
+binary. That binary was merged upstream into llama-server via the mtmd library.
 """
 
 import base64
@@ -36,7 +39,7 @@ SUBPROCESS_PORT = 18401  # internal port for the native server
 
 
 class LFM2AudioPlugin(MediaPlugin):
-    """LFM2.5-Audio TTS/STT via native GGUF binary (~2GB VRAM)."""
+    """LFM2.5-Audio TTS/STT via llama-server with mtmd audio (~2GB VRAM)."""
 
     name = "lfm2-audio"
     role = "audio"
@@ -69,6 +72,7 @@ class LFM2AudioPlugin(MediaPlugin):
             "-ngl", "999",
             "--host", "127.0.0.1",
             "--port", str(SUBPROCESS_PORT),
+            "--jinja",
         ]
         if files.get("vocoder"):
             cmd.extend(["-mv", files["vocoder"]])
@@ -90,11 +94,11 @@ class LFM2AudioPlugin(MediaPlugin):
         print(f"[Audio] Native server ready (PID {self._process.pid})")
 
     def _find_binary(self) -> str:
-        """Find llama-liquid-audio-server binary."""
-        path = "/opt/engines/a2go-llamacpp/bin/llama-liquid-audio-server"
+        """Find llama-server binary (audio support merged via mtmd in b8967)."""
+        path = "/opt/engines/a2go-llamacpp/bin/llama-server"
         if os.path.isfile(path) and os.access(path, os.X_OK):
             return path
-        raise FileNotFoundError(f"llama-liquid-audio-server not found at {path}")
+        raise FileNotFoundError(f"llama-server not found at {path}")
 
     def _find_gguf_files(self, model_dir: str) -> dict:
         """Locate the 4 GGUF files in the model directory."""
@@ -129,7 +133,7 @@ class LFM2AudioPlugin(MediaPlugin):
                 except Exception:
                     out = "(no log)"
                 raise RuntimeError(
-                    f"llama-liquid-audio-server exited with code {self._process.returncode}\n{out}"
+                    f"llama-server (audio) exited with code {self._process.returncode}\n{out}"
                 )
             try:
                 self._client.get(f"{self._base_url}/", timeout=2.0)
@@ -137,7 +141,7 @@ class LFM2AudioPlugin(MediaPlugin):
             except (httpx.ConnectError, httpx.ReadTimeout):
                 pass
             time.sleep(2)
-        raise TimeoutError(f"llama-liquid-audio-server not ready after {timeout}s")
+        raise TimeoutError(f"llama-server (audio) not ready after {timeout}s")
 
     def health(self) -> dict:
         alive = self._process is not None and self._process.poll() is None
