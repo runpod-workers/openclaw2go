@@ -70,7 +70,7 @@ def build_app(config: dict, port: int, llm_url: str, web_root: str) -> FastAPI:
             import traceback
             print(f"[MediaServer] ERROR: plugin '{plugin_id}' failed to load: {exc}")
             traceback.print_exc()
-            print(f"[MediaServer] Skipping '{engine_id}', continuing with remaining plugins")
+            print(f"[MediaServer] Skipping '{plugin_id}', continuing with remaining plugins")
 
     # ── Aggregated health (probes LLM + gateway + media plugins) ──
     # Registered before backward-compatible flat routes so that plugin /health
