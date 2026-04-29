@@ -921,6 +921,18 @@ EOF
         # Start Hermes gateway (API server on port 8642, public — protected by
         # API_SERVER_KEY; needed for external API access and platform webhooks
         # like Telegram/Discord/WhatsApp)
+        #
+        # Hermes rejects "placeholder" API keys (short strings, common words)
+        # when binding to 0.0.0.0. Generate a proper hex key if the user's
+        # A2GO_AUTH_TOKEN would be blocked.
+        HERMES_API_KEY="$A2GO_AUTH_TOKEN"
+        if [ ${#HERMES_API_KEY} -lt 32 ] || echo "$HERMES_API_KEY" | grep -qiE '^(changeme|test|dummy|password|secret|placeholder|a2go-local-changeme)'; then
+            HERMES_API_KEY="$(openssl rand -hex 32)"
+            echo "Note: Generated secure API key for Hermes gateway (original token too short/placeholder)."
+            echo "  Hermes API key: $HERMES_API_KEY"
+        fi
+        echo "$HERMES_API_KEY" > /tmp/oc_hermes_api_key
+
         echo ""
         echo "Starting Hermes gateway..."
         OPENAI_API_KEY="$A2GO_API_KEY" \
@@ -928,7 +940,7 @@ EOF
         API_SERVER_ENABLED=true \
         API_SERVER_PORT=8642 \
         API_SERVER_HOST=0.0.0.0 \
-        API_SERVER_KEY="$A2GO_AUTH_TOKEN" \
+        API_SERVER_KEY="$HERMES_API_KEY" \
         "$HERMES_CMD" gateway run &
         GATEWAY_PID=$!
         ;;
@@ -956,12 +968,19 @@ gpu_vram = data.get('gpuDetected', {}).get('vramMb', 0) or data.get('gpu', {}).g
 print(f\"VRAM: {' + '.join(parts)} = ~{total // 1000}GB / {gpu_vram // 1000}GB\")
 " 2>/dev/null || echo "VRAM: see profile")"
 
+HERMES_KEY_FILE="/tmp/oc_hermes_api_key"
+HERMES_KEY_INFO=""
+if [ -f "$HERMES_KEY_FILE" ]; then
+    HERMES_KEY_INFO="Hermes API key: $(cat "$HERMES_KEY_FILE")"
+fi
+
 echo ""
 oc_print_ready "LLM API" "$LLM_MODEL_NAME" "$LLM_CONTEXT tokens" "token" \
     "$VRAM_SUMMARY" \
     "Profile: $PROFILE_NAME ($PROFILE_ID)" \
     "Media UI (local): http://localhost:${MEDIA_SERVER_PORT}" \
-    "${MEDIA_PROXY_URL:+Media UI (public): ${MEDIA_PROXY_URL}}"
+    "${MEDIA_PROXY_URL:+Media UI (public): ${MEDIA_PROXY_URL}}" \
+    "${HERMES_KEY_INFO}"
 
 # Print service details
 if [ -n "$MEDIA_PID" ]; then
