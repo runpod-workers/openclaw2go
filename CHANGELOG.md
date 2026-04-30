@@ -1,5 +1,15 @@
 # openclaw2go
 
+## 0.19.4
+
+### Patch Changes
+
+- 8247efe: fix: enable OpenClaw device pairing by default
+
+  Changed `A2GO_DISABLE_DEVICE_AUTH` default from `true` to `false` so device pairing is enabled out of the box. Users who want headless/automated access can opt in by setting `A2GO_DISABLE_DEVICE_AUTH=true`. Documented the env var and device pairing flow in the README, RunPod template readme, and add-model skill.
+
+- 8247efe: Fix Hermes gateway failing to start when `A2GO_AUTH_TOKEN` is a short or placeholder value. Hermes rejects weak API keys when binding to 0.0.0.0 — the entrypoint now auto-generates a secure 32-byte hex key and displays it in the ready banner. Also fix the LFM2.5-Audio plugin to use `llama-server` instead of the removed `llama-liquid-audio-server` binary (audio support merged upstream in llama.cpp b8967 via mtmd).
+
 ## 0.19.3
 
 ### Patch Changes
