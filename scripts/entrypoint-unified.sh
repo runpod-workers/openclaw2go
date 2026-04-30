@@ -180,7 +180,7 @@ if [ -n "${RUNPOD_POD_ID:-}" ]; then
 else
     A2GO_ALLOWED_ORIGINS_JSON='[]'
 fi
-A2GO_DISABLE_DEVICE_AUTH="${A2GO_DISABLE_DEVICE_AUTH:-true}"
+A2GO_DISABLE_DEVICE_AUTH="${A2GO_DISABLE_DEVICE_AUTH:-false}"
 
 BOT_CMD="openclaw"
 if [ "$AGENT" = "openclaw" ] && ! command -v "$BOT_CMD" >/dev/null 2>&1; then

@@ -26,7 +26,26 @@ a2go helps you run open-source AI models on your own hardware — locally, on a 
 
 On Runpod the URL is `https://<pod-id>-18789.proxy.runpod.net/?token=<A2GO_AUTH_TOKEN>`.
 
-First time: approve device pairing when prompted (SSH into the machine, run `openclaw devices list` then `openclaw devices approve <requestId>`).
+First time: approve device pairing when prompted — see [Device pairing](#device-pairing).
+
+### Device pairing
+
+OpenClaw requires you to approve each new browser before it can chat. This prevents unauthorized access even if someone discovers your pod URL and token.
+
+When you open the Web UI for the first time, you'll see a pairing request. SSH into the machine and approve it:
+
+```bash
+openclaw devices list              # shows pending requests
+openclaw devices approve <id>      # approve the device
+```
+
+To skip device pairing entirely (e.g. for automated/headless setups), set the environment variable:
+
+```
+A2GO_DISABLE_DEVICE_AUTH=true
+```
+
+This is less secure — anyone with your token can connect without approval.
 
 ## Docker (Linux / Windows / Runpod)
 
@@ -51,6 +70,7 @@ Models download on first start and persist on the volume.
 | `A2GO_CONFIG` | JSON config — models to load | `{}` (auto-detect) |
 | `A2GO_AUTH_TOKEN` | Web UI + API auth token | `changeme` |
 | `A2GO_API_KEY` | LLM API key (OpenAI-compatible endpoint) | `changeme` |
+| `A2GO_DISABLE_DEVICE_AUTH` | Skip OpenClaw device pairing (`true`/`false`). When `false`, new browsers must be approved via SSH — see [Device pairing](#device-pairing). | `false` |
 | `TELEGRAM_BOT_TOKEN` | Enable Telegram bot integration | — |
 | `GITHUB_TOKEN` | GitHub auth for Claude Code | — |
 

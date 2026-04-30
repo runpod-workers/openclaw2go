@@ -38,6 +38,21 @@ Each agent supports additional environment variables for integrations like Teleg
 - [OpenClaw documentation](https://docs.openclaw.ai/getting-started)
 - [Hermes documentation](https://hermes-agent.nousresearch.com/docs)
 
+### Device pairing (OpenClaw)
+
+OpenClaw requires you to approve each new browser before it can chat. When you open the Web UI for the first time, you'll see a pairing request. SSH into the pod and approve it:
+
+```bash
+openclaw devices list              # shows pending requests
+openclaw devices approve <id>      # approve the device
+```
+
+To skip device pairing (e.g. for automated/headless setups), add this environment variable:
+
+| Variable | Value | Effect |
+|----------|-------|--------|
+| `A2GO_DISABLE_DEVICE_AUTH` | `true` | Skips device pairing — anyone with your token can connect without approval |
+
 ### 3. Deploy
 
 Hit deploy. The pod will automatically download your selected models and start all services. First boot takes a few minutes depending on model size. Subsequent starts use the cached models on your volume.
