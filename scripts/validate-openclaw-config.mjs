@@ -90,7 +90,7 @@ function generateDockerConfig() {
       ...base.gateway,
       controlUi: {
         allowedOrigins: ['https://test-pod-18789.proxy.runpod.net'],
-        dangerouslyDisableDeviceAuth: true,
+        dangerouslyDisableDeviceAuth: false,
       },
     },
   }

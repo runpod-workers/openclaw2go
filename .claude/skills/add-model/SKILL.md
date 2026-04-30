@@ -158,7 +158,7 @@ Hermes is the agent framework. It manages tools internally (browser, terminal, s
 If the pod was deployed with `"agent":"openclaw"`, OpenClaw serves a web UI on port 18789. Use the `/agent-browser` skill to test end-to-end:
 
 1. **Open the agent UI** — navigate to `https://{pod-id}-18789.proxy.runpod.net`
-2. **Device pairing** — approve the device when prompted
+2. **Device pairing** — approve the device via SSH: `openclaw devices list` then `openclaw devices approve <id>` (unless `A2GO_DISABLE_DEVICE_AUTH=true` is set)
 3. **Send a chat message** — verify the agent responds correctly
 4. **Test tool calling in the UI** — ask the agent to perform a task that requires tools
 5. **Test image generation** (if image service is running) — ask the agent to generate an image
